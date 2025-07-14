@@ -11,6 +11,9 @@
 #include <algorithm>
 #include <windows.h>
 #include <psapi.h>
+#include <fstream>
+#include <sstream>
+#include <filesystem>
 
 int CHUNK_WIDTH = 32;
 int CHUNK_HEIGHT = 16;
@@ -63,6 +66,37 @@ void main()
 //
 //    return dot > 0.3f;
 //}
+
+// Settings Loader
+void loadSettings(int &Render_Dist, int &VramAlloc, int &Chunkx, int &Chunky, int &Chunkz) {
+    std::ifstream file("MyCraft/Settings.txt");
+
+    if (file.is_open()) {
+        std::string line;
+        while (std::getline(file, line)) {
+            std::istringstream ss(line);
+            std::string key;
+            if (std::getline(ss, key, '=')) {
+                std::string value;
+                if (std::getline(ss, value)) {
+                    if (key == "Render Distance") {
+                        Render_Dist = std::stoi(value);
+                    } else if (key == "VRam Alloc") {
+                        VramAlloc = std::stoi(value);
+                    } else if (key == "Chunk Width") {
+                        Chunkx = std::stoi(value);
+                    } else if (key == "Chunk Height") {
+                        Chunky = std::stoi(value);
+                    } else if (key == "Chunk Depth") {
+                        Chunkz = std::stoi(value);
+                    }
+                }
+            }
+        }
+    } else {
+        std::cerr << "Cant Open Settings File" << std::endl;
+    }
+}
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -415,6 +449,7 @@ void Game::CleanUp() {
 }
 
 bool Game::Init_Window() {
+    loadSettings(game.Render_Distance, game.VRamAlloc, CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH);
      if (!glfwInit()) {
         std::cerr << "Cant Initalize GLFW (skill issue)!\n";
         return true;
@@ -451,6 +486,7 @@ bool Game::Init_Window() {
 }
 
 void Game::Init_Shader() {
+    loadSettings(game.Render_Distance, game.VRamAlloc, CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH);
     // Compilation of Shaders
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
@@ -502,6 +538,7 @@ void Game::Init_Shader() {
 
 void Game::MainLoop() {
     Fps.Init();
+    loadSettings(game.Render_Distance, game.VRamAlloc, CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH);
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(window, true);
@@ -564,7 +601,6 @@ void Game::MainLoop() {
                     GetProcessMemoryInfo(GetCurrentProcess(), &meminfo, sizeof(meminfo));
                     ramUsed = meminfo.WorkingSetSize;
                     
-                    
                     std::cout << "Sending: #" << game.Frame << " Info: verts=" << vertecies.size() << " chunks=" << World.size() << " Buffer size B: " 
                         << (vertecies.size() * sizeof(float))/1048576 << "MB/"<< game.sizeInBytes/1048576 << "MB" << " Render Dist:" << game.Render_Distance << " Ram Used:" << ramUsed / 1024 / 1024 << "MB"
                         << " World usage:" << (vertecies.capacity() * sizeof(float)) / 1048576 << "MB" <<"\n";
@@ -581,13 +617,13 @@ void Game::MainLoop() {
 }
 
 int main() {
-    Game game;
+    Game main;
 
-    if (game.Init_Window()) return -1;
+    if (main.Init_Window()) return -1;
     
-    game.Init_Shader();
-    game.MainLoop();
-    game.CleanUp();
+    main.Init_Shader();
+    main.MainLoop();
+    main.CleanUp();
     std::cout << "Safely Closed App";
     return 0;
 }

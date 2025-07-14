@@ -1,0 +1,5 @@
+Render Distance=5
+VRam Alloc=512
+Chunk Width=32
+Chunk Height=8
+Chunk Depth=32
