@@ -1,0 +1,11 @@
+*.log
+*.user
+.vscode/
+*.sdf
+*.db
+*.suo
+*.vcxproj.*
+CMakeFiles/
+CMakeCache.txt
+Makefile
+cmake_install.cmake
