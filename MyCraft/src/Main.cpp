@@ -13,7 +13,7 @@
 #include <psapi.h>
 
 int CHUNK_WIDTH = 32;
-int CHUNK_HEIGHT = 8;
+int CHUNK_HEIGHT = 16;
 int CHUNK_DEPTH = 32;
 
 const char* vertexShaderSource = R"glsl(
@@ -43,6 +43,27 @@ void main()
 }
 )glsl";
 
+//bool IsChunkInFrontOfCamera(const glm::vec3& cameraPos, float yaw, float pitch, int chunkX, int chunkZ) {
+//
+//    glm::vec3 direction;
+//    direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+//    direction.y = sin(glm::radians(pitch));
+//    direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+//    direction = glm::normalize(direction);
+//
+//    glm::vec3 chunkCenter = glm::vec3(
+//        chunkX * CHUNK_WIDTH + CHUNK_WIDTH / 2,
+//        cameraPos.y,
+//        chunkZ * CHUNK_DEPTH + CHUNK_DEPTH / 2
+//    );
+//
+//    glm::vec3 toChunk = glm::normalize(chunkCenter - cameraPos);
+//
+//    float dot = glm::dot(direction, toChunk);
+//
+//    return dot > 0.3f;
+//}
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
@@ -69,7 +90,7 @@ struct camera {
 };
 
 struct Game_Variables {
-    int Render_Distance = 4;
+    int Render_Distance = 6;
     int VRamAlloc = 512; // In MB
     GLint sizeInBytes = 0;
     uint64_t Frame = 0;
@@ -146,7 +167,7 @@ void Get_World_Chunk(int Chunk_x, int Chunk_z, std::map<std::pair<int, int>, Chu
     World[{Chunk_x, Chunk_z}] = std::move(chunk);
 }
 
-void Generate_Chunks(const Entity& Player, int Render_Dist, std::map<std::pair<int, int>, Chunk>& World) {
+void Generate_Chunks(const Entity& Player, int Render_Dist, std::map<std::pair<int, int>, Chunk>& World, camera &Camera) {
     glm::ivec3 Start_Chunk = Player.Chunk;
 
     for (int dx = -Render_Dist; dx <= Render_Dist; ++dx) {
@@ -157,13 +178,15 @@ void Generate_Chunks(const Entity& Player, int Render_Dist, std::map<std::pair<i
             std::pair<int, int> key = {chunkX, chunkZ};
 
             if (World.find(key) == World.end()) {
+                //if (IsChunkInFrontOfCamera(Player.Pos, Camera.Yaw, Camera.Pitch, chunkX, chunkZ)) {
                 Get_World_Chunk(chunkX, chunkZ, World);
+                //}
             }
         }
     }
 }
 
-void Remove_Chunks_Outside_Radius(const glm::ivec3& PlayerChunk, int Render_Dist, std::map<std::pair<int, int>, Chunk>& World) {
+void Remove_Chunks_Outside_Radius(const glm::ivec3& PlayerChunk, int Render_Dist, std::map<std::pair<int, int>, Chunk>& World, camera &Camera, Entity &Player) {
     // Keys to Delete
     std::vector<std::pair<int,int>> toRemove;
 
@@ -176,7 +199,7 @@ void Remove_Chunks_Outside_Radius(const glm::ivec3& PlayerChunk, int Render_Dist
 
         int dist = std::max(std::abs(dx), std::abs(dz));
 
-        if (dist > Render_Dist) {
+        if (dist > Render_Dist) { //|| !IsChunkInFrontOfCamera(Player.Pos, Camera.Yaw, Camera.Pitch, chunkX, chunkZ)) {
             toRemove.push_back(key);
         }
     }
@@ -187,17 +210,17 @@ void Remove_Chunks_Outside_Radius(const glm::ivec3& PlayerChunk, int Render_Dist
     }
 }
 
-void AddCube(std::vector<float>& vertices, float x, float y, float z) {
+void AddCube(std::vector<float>& vertices, float wx, float wy, float wz, const Chunk& chunk, int Localx, int Localy, int Localz) {
     float size = 1.0f;
 
-    glm::vec3 p000 = {x,     y,     z};
-    glm::vec3 p001 = {x,     y,     z+size};
-    glm::vec3 p010 = {x,     y+size, z};
-    glm::vec3 p011 = {x,     y+size, z+size};
-    glm::vec3 p100 = {x+size, y,     z};
-    glm::vec3 p101 = {x+size, y,     z+size};
-    glm::vec3 p110 = {x+size, y+size, z};
-    glm::vec3 p111 = {x+size, y+size, z+size};
+    glm::vec3 p000 = {wx,     wy,     wz};
+    glm::vec3 p001 = {wx,     wy,     wz+size};
+    glm::vec3 p010 = {wx,     wy+size, wz};
+    glm::vec3 p011 = {wx,     wy+size, wz+size};
+    glm::vec3 p100 = {wx+size, wy,     wz};
+    glm::vec3 p101 = {wx+size, wy,     wz+size};
+    glm::vec3 p110 = {wx+size, wy+size, wz};
+    glm::vec3 p111 = {wx+size, wy+size, wz+size};
 
     auto pushTri = [&](glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 color) {
         for (glm::vec3 v : {a, b, c}) {
@@ -214,28 +237,40 @@ void AddCube(std::vector<float>& vertices, float x, float y, float z) {
     glm::vec3 magenta = {1.0f, 0.0f, 1.0f};
 
     // FRONT (z+)
+    if (Localz + 1 >= CHUNK_DEPTH || chunk.get(Localx,Localy,Localz+1).id == 0) {
     pushTri(p001, p101, p111, red);
     pushTri(p001, p111, p011, red);
-
+    }
+    
     // BACK (z-)
+    if ((Localz - 1 < 0) || chunk.get(Localx,Localy,Localz-1).id == 0) {
     pushTri(p100, p000, p010, green);
     pushTri(p100, p010, p110, green);
+    }
 
     // LEFT (x-)
+    if ((Localx - 1 < 0) || chunk.get(Localx-1,Localy,Localz).id == 0) {
     pushTri(p000, p001, p011, blue);
     pushTri(p000, p011, p010, blue);
+    }
 
     // RIGHT (x+)
+    if (Localx + 1 >= CHUNK_WIDTH || chunk.get(Localx+1,Localy,Localz).id == 0) {
     pushTri(p100, p101, p111, yellow);
     pushTri(p100, p111, p110, yellow);
+    }
 
     // TOP (y+)
+    if (Localy + 1 >= CHUNK_HEIGHT || chunk.get(Localx,Localy+1,Localz).id == 0) {
     pushTri(p010, p011, p111, cyan);
     pushTri(p010, p111, p110, cyan);
+    }
 
     // BOTTOM (y-)
+    if ((Localy - 1 < 0) || chunk.get(Localx,Localy-1,Localz).id == 0) {
     pushTri(p000, p100, p101, magenta);
     pushTri(p000, p101, p001, magenta);
+    }
 }
 
 void GenerateMesh(const Chunk& chunk, std::vector<float>& outVertices, int chunkX, int chunkZ) {
@@ -247,8 +282,7 @@ void GenerateMesh(const Chunk& chunk, std::vector<float>& outVertices, int chunk
                     float wy = y;
                     float wz = chunkZ * CHUNK_DEPTH + z;
 
-                    //if (chunk.get(x,y+1,z) )
-                    AddCube(outVertices, wx, wy, wz);
+                    AddCube(outVertices, wx, wy, wz, chunk, x, y, z);
                 }
             }
         }
@@ -506,8 +540,8 @@ void Game::MainLoop() {
 
         // Generating Chunks
             if (game.ChunkUpdated) {
-                Generate_Chunks(Player, game.Render_Distance, World);
-                Remove_Chunks_Outside_Radius(Player.Chunk, game.Render_Distance, World);
+                Generate_Chunks(Player, game.Render_Distance, World, Camera);
+                Remove_Chunks_Outside_Radius(Player.Chunk, game.Render_Distance, World, Camera, Player);
                 // Generating Mesh
                 vertecies.clear();
                 for (auto& [key, chunk] : World) {
