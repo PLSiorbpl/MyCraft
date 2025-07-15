@@ -1,5 +1,5 @@
 Render Distance=5
 VRam Alloc=512
-Chunk Width=32
+Chunk Width=16
 Chunk Height=8
-Chunk Depth=32
+Chunk Depth=16

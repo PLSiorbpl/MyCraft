@@ -45,31 +45,9 @@ void main()
     FragColor = vec4(fragColor, 1.0);
 }
 )glsl";
-
-//bool IsChunkInFrontOfCamera(const glm::vec3& cameraPos, float yaw, float pitch, int chunkX, int chunkZ) {
-//
-//    glm::vec3 direction;
-//    direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-//    direction.y = sin(glm::radians(pitch));
-//    direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-//    direction = glm::normalize(direction);
-//
-//    glm::vec3 chunkCenter = glm::vec3(
-//        chunkX * CHUNK_WIDTH + CHUNK_WIDTH / 2,
-//        cameraPos.y,
-//        chunkZ * CHUNK_DEPTH + CHUNK_DEPTH / 2
-//    );
-//
-//    glm::vec3 toChunk = glm::normalize(chunkCenter - cameraPos);
-//
-//    float dot = glm::dot(direction, toChunk);
-//
-//    return dot > 0.3f;
-//}
-
 // Settings Loader
 void loadSettings(int &Render_Dist, int &VramAlloc, int &Chunkx, int &Chunky, int &Chunkz) {
-    std::ifstream file("MyCraft/Settings.txt");
+    std::ifstream file("MyCraft/Assets/Settings.txt");
 
     if (file.is_open()) {
         std::string line;
@@ -103,13 +81,18 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 struct camera {
-    glm::vec3 Position = glm::vec3(0.0f, 5.0f, 5.0f);
+    glm::vec3 Position = glm::vec3(0.0f, 100.0f, 5.0f);
+    float CameraDrag = 0.1f;
     float Pitch = 0.0f;
     float Yaw = -90.0f;
     float Speed = 5.0f;
     float Sensitivity = 0.1f;
     bool FirstMouse = true;
     float LastX = 400, LastY = 300;
+    glm::vec3 Vel = glm::vec3(0.0f,0.0f,0.0f);
+    bool onGround = false;
+    float Gravity = 0.20f;
+    float JumpStrength = 0.05f; 
 
     bool operator!=(const camera& other) const {
         return Position != other.Position ||
@@ -193,7 +176,8 @@ void Get_World_Chunk(int Chunk_x, int Chunk_z, std::map<std::pair<int, int>, Chu
             int height = static_cast<int>(height_f * CHUNK_HEIGHT);
 
             for (int y = 0; y <= height; ++y) {
-                chunk.setID(x,y,z,1);
+                //chunk.setID(x,y,z,1);
+                chunk.set(x, y, z ,chunk.BlockDefs.at(1));
             }
         }
     }
@@ -361,28 +345,124 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     cam->Pitch = std::clamp(cam->Pitch, -89.0f, 89.0f);
 }
 
-void Input_Handler(camera &Camera, GLFWwindow* window, float deltaTime) {
-    float velocity = Camera.Speed * deltaTime;
-    glm::vec3 direction;
-    direction.x = cos(glm::radians(Camera.Yaw)) * cos(glm::radians(Camera.Pitch));
-    direction.y = sin(glm::radians(Camera.Pitch));
-    direction.z = sin(glm::radians(Camera.Yaw)) * cos(glm::radians(Camera.Pitch));
-    glm::vec3 front = glm::normalize(direction);
-    glm::vec3 right = glm::normalize(glm::cross(front, glm::vec3(0,1,0)));
+bool isSolidAt(glm::vec3 pos, const std::map<std::pair<int, int>, Chunk>& World) {
+    int blockX = static_cast<int>(floor(pos.x));
+    int blockY = static_cast<int>(floor(pos.y-1.8f));
+    int blockZ = static_cast<int>(floor(pos.z));
 
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        Camera.Position += front * velocity;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        Camera.Position -= front * velocity;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        Camera.Position -= right * velocity;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        Camera.Position += right * velocity;
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        Camera.Position.y += velocity;
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        Camera.Position.y -= velocity;
+    int chunkX = floor((float)blockX / CHUNK_WIDTH);
+    int chunkZ = floor((float)blockZ / CHUNK_DEPTH);
+
+    int localX = blockX - chunkX * CHUNK_WIDTH;
+    int localZ = blockZ - chunkZ * CHUNK_DEPTH;
+
+    if (localX < 0 || localX >= CHUNK_WIDTH || localZ < 0 || localZ >= CHUNK_DEPTH)
+        return false;
+
+    auto it = World.find({chunkX, chunkZ});
+    if (it != World.end()) {
+        const Chunk& chunk = it->second;
+
+        if (blockY >= 0 && blockY < CHUNK_HEIGHT) {
+            return chunk.get(localX, blockY, localZ).solid;
+        }
+    }
+
+    return false;
 }
+
+bool isSolidAround(glm::vec3 pos, const std::map<std::pair<int, int>, Chunk>& World, float margin = 0.25f, float height = 1.8f) {
+
+    for (float dx : {-margin, margin}) {
+        for (float dz : {-margin, margin}) {
+            for (float dy : {0.0f, height / 2.0f, height}) {
+                glm::vec3 offsetPos = pos + glm::vec3(dx, dy, dz);
+                if (isSolidAt(offsetPos, World)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+void Input_Handler(camera &Camera, GLFWwindow* window, float deltaTime, std::map<std::pair<int, int>, Chunk>& World) {
+    float velocity = Camera.Speed * deltaTime;
+    glm::vec2 Cos;
+    glm::vec2 Sin;
+    Cos.x = cos(glm::radians(Camera.Pitch));
+    Cos.y = cos(glm::radians(Camera.Yaw));
+    Sin.x = sin(glm::radians(Camera.Pitch));
+    Sin.y = sin(glm::radians(Camera.Yaw));
+
+    // Sterowanie
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        Camera.Vel.x += -velocity * Sin.y;
+        Camera.Vel.z +=  velocity * Cos.y;
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        Camera.Vel.x +=  velocity * Sin.y;
+        Camera.Vel.z += -velocity * Cos.y;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        Camera.Vel.x += -velocity * Cos.y;
+        Camera.Vel.z += -velocity * Sin.y;
+    }
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        Camera.Vel.x +=  velocity * Cos.y;
+        Camera.Vel.z +=  velocity * Sin.y;
+    }
+
+    Camera.Vel.y -= Camera.Gravity * deltaTime;
+
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && Camera.onGround) {
+        Camera.Vel.y = Camera.JumpStrength;
+        Camera.onGround = false;
+    }
+
+    glm::vec3 testPos;
+
+    testPos = Camera.Position + glm::vec3(Camera.Vel.x, 0, 0);
+    if (!isSolidAround(testPos, World)) {
+        Camera.Position.x = testPos.x;
+    } else {
+        Camera.Vel.x = 0.0f;
+    }
+
+    testPos = Camera.Position + glm::vec3(0, Camera.Vel.y, 0);
+    if (!isSolidAround(testPos, World)) {
+        Camera.Position.y = testPos.y;
+        Camera.onGround = false;
+    } else {
+        if (Camera.Vel.y < 0.0f) {
+            Camera.onGround = true;
+        }
+        Camera.Vel.y = 0.0f;
+    }
+
+    testPos = Camera.Position + glm::vec3(0, 0, Camera.Vel.z);
+    if (!isSolidAround(testPos, World)) {
+        Camera.Position.z = testPos.z;
+    } else {
+        Camera.Vel.z = 0.0f;
+    }
+
+    Camera.Vel.x = std::clamp(Camera.Vel.x, -3.0f, 3.0f);
+    Camera.Vel.z = std::clamp(Camera.Vel.z, -3.0f, 3.0f);
+    Camera.Vel.y = std::clamp(Camera.Vel.y, -20.0f, 20.0f);
+
+    auto damp = [&](float& v) {
+        if (v > Camera.CameraDrag)
+            v -= Camera.CameraDrag;
+        else if (v < -Camera.CameraDrag)
+            v += Camera.CameraDrag;
+        else
+            v = 0;
+    };
+    damp(Camera.Vel.x);
+    damp(Camera.Vel.z);
+}
+
 
 class FPS {
 private:
@@ -547,7 +627,7 @@ void Game::MainLoop() {
             
             DeltaTime = Fps.Start();
 
-            Input_Handler(Camera, window, DeltaTime); // handle Camera Movment
+            Input_Handler(Camera, window, DeltaTime, World); // handle Camera Movment
 
         // Clearing
             glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
