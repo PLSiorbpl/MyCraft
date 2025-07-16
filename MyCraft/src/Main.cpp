@@ -91,8 +91,8 @@ struct camera {
     float LastX = 400, LastY = 300;
     glm::vec3 Vel = glm::vec3(0.0f,0.0f,0.0f);
     bool onGround = false;
-    float Gravity = 0.20f;
-    float JumpStrength = 0.05f; 
+    float Gravity = 0.2f; // 0.2
+    float JumpStrength = 0.018f;  // 0.05
 
     bool operator!=(const camera& other) const {
         return Position != other.Position ||
@@ -356,9 +356,10 @@ bool isSolidAt(glm::vec3 pos, const std::map<std::pair<int, int>, Chunk>& World)
     int localX = blockX - chunkX * CHUNK_WIDTH;
     int localZ = blockZ - chunkZ * CHUNK_DEPTH;
 
-    if (localX < 0 || localX >= CHUNK_WIDTH || localZ < 0 || localZ >= CHUNK_DEPTH)
+    if (localX < 0 || localX >= CHUNK_WIDTH || localZ < 0 || localZ >= CHUNK_DEPTH) {
         return false;
-
+    }
+    
     auto it = World.find({chunkX, chunkZ});
     if (it != World.end()) {
         const Chunk& chunk = it->second;
@@ -388,6 +389,7 @@ bool isSolidAround(glm::vec3 pos, const std::map<std::pair<int, int>, Chunk>& Wo
 
 void Input_Handler(camera &Camera, GLFWwindow* window, float deltaTime, std::map<std::pair<int, int>, Chunk>& World) {
     float velocity = Camera.Speed * deltaTime;
+    float Jump_Boost = Camera.JumpStrength;
     glm::vec2 Cos;
     glm::vec2 Sin;
     Cos.x = cos(glm::radians(Camera.Pitch));
@@ -413,10 +415,12 @@ void Input_Handler(camera &Camera, GLFWwindow* window, float deltaTime, std::map
         Camera.Vel.z +=  velocity * Sin.y;
     }
 
+
     Camera.Vel.y -= Camera.Gravity * deltaTime;
 
+    // Jump
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && Camera.onGround) {
-        Camera.Vel.y = Camera.JumpStrength;
+        Camera.Vel.y = Jump_Boost * (1.0f / deltaTime) / 60.0f;
         Camera.onGround = false;
     }
 
@@ -447,8 +451,8 @@ void Input_Handler(camera &Camera, GLFWwindow* window, float deltaTime, std::map
         Camera.Vel.z = 0.0f;
     }
 
-    Camera.Vel.x = std::clamp(Camera.Vel.x, -3.0f, 3.0f);
-    Camera.Vel.z = std::clamp(Camera.Vel.z, -3.0f, 3.0f);
+    Camera.Vel.x = std::clamp(Camera.Vel.x, -1.0f, 1.0f);
+    Camera.Vel.z = std::clamp(Camera.Vel.z, -1.0f, 1.0f);
     Camera.Vel.y = std::clamp(Camera.Vel.y, -20.0f, 20.0f);
 
     auto damp = [&](float& v) {
@@ -462,7 +466,6 @@ void Input_Handler(camera &Camera, GLFWwindow* window, float deltaTime, std::map
     damp(Camera.Vel.x);
     damp(Camera.Vel.z);
 }
-
 
 class FPS {
 private:
@@ -627,7 +630,9 @@ void Game::MainLoop() {
             
             DeltaTime = Fps.Start();
 
-            Input_Handler(Camera, window, DeltaTime, World); // handle Camera Movment
+            if (!game.ChunkUpdated) {
+                Input_Handler(Camera, window, DeltaTime, World); // handle Camera Movment
+            }
 
         // Clearing
             glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
