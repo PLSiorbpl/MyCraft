@@ -15,9 +15,9 @@
 #include <sstream>
 #include <filesystem>
 
-int CHUNK_WIDTH = 32;
+int CHUNK_WIDTH = 16;
 int CHUNK_HEIGHT = 16;
-int CHUNK_DEPTH = 32;
+int CHUNK_DEPTH = 16;
 
 const char* vertexShaderSource = R"glsl(
 #version 330 core
@@ -81,18 +81,18 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 struct camera {
-    glm::vec3 Position = glm::vec3(0.0f, 100.0f, 5.0f);
+    glm::vec3 Position = glm::vec3(0.0f, 20.0f, 0.0f);
     float CameraDrag = 0.1f;
     float Pitch = 0.0f;
     float Yaw = -90.0f;
-    float Speed = 5.0f;
+    float Speed = 0.10f;
     float Sensitivity = 0.1f;
     bool FirstMouse = true;
     float LastX = 400, LastY = 300;
     glm::vec3 Vel = glm::vec3(0.0f,0.0f,0.0f);
     bool onGround = false;
-    float Gravity = 0.2f; // 0.2
-    float JumpStrength = 0.018f;  // 0.05
+    float Gravity = 0.01f;
+    float JumpStrength = 0.15f;
 
     bool operator!=(const camera& other) const {
         return Position != other.Position ||
@@ -113,6 +113,8 @@ struct Game_Variables {
     uint64_t Frame = 0;
     glm::ivec3 Last_Chunk;
     bool ChunkUpdated;
+    const float TickRate = 1.0f / 60.0f;
+    float Tick_Timer = 0.0f;
 };
 
 struct Entity {
@@ -388,8 +390,9 @@ bool isSolidAround(glm::vec3 pos, const std::map<std::pair<int, int>, Chunk>& Wo
 }
 
 void Input_Handler(camera &Camera, GLFWwindow* window, float deltaTime, std::map<std::pair<int, int>, Chunk>& World) {
-    float velocity = Camera.Speed * deltaTime;
+    float velocity = Camera.Speed; //* deltaTime;
     float Jump_Boost = Camera.JumpStrength;
+    glm::vec3 direction(0.0f);
     glm::vec2 Cos;
     glm::vec2 Sin;
     Cos.x = cos(glm::radians(Camera.Pitch));
@@ -415,14 +418,26 @@ void Input_Handler(camera &Camera, GLFWwindow* window, float deltaTime, std::map
         Camera.Vel.z +=  velocity * Sin.y;
     }
 
-
-    Camera.Vel.y -= Camera.Gravity * deltaTime;
+    Camera.Vel.y -= Camera.Gravity; //* deltaTime;
 
     // Jump
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && Camera.onGround) {
-        Camera.Vel.y = Jump_Boost * (1.0f / deltaTime) / 60.0f;
+        Camera.Vel.y = Jump_Boost;
         Camera.onGround = false;
     }
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+        Camera.Vel.y = Jump_Boost;
+    }
+
+    if (glm::length(direction) > 0.0f) {
+        direction = glm::normalize(direction);
+        Camera.Vel.x += direction.x * velocity;
+        Camera.Vel.z += direction.z * velocity;
+    }
+
+    Camera.Vel.x = std::clamp(Camera.Vel.x, -0.1f, 0.1f);
+    Camera.Vel.z = std::clamp(Camera.Vel.z, -0.1f, 0.1f);
+    Camera.Vel.y = std::clamp(Camera.Vel.y, -0.2f, 0.2f);
 
     glm::vec3 testPos;
 
@@ -450,10 +465,6 @@ void Input_Handler(camera &Camera, GLFWwindow* window, float deltaTime, std::map
     } else {
         Camera.Vel.z = 0.0f;
     }
-
-    Camera.Vel.x = std::clamp(Camera.Vel.x, -1.0f, 1.0f);
-    Camera.Vel.z = std::clamp(Camera.Vel.z, -1.0f, 1.0f);
-    Camera.Vel.y = std::clamp(Camera.Vel.y, -20.0f, 20.0f);
 
     auto damp = [&](float& v) {
         if (v > Camera.CameraDrag)
@@ -619,6 +630,10 @@ void Game::Init_Shader() {
     glUseProgram(ShaderProgram);
 } 
 
+void Tick_Update(camera &Camera, GLFWwindow* window, float &DeltaTime, std::map<std::pair<int, int>, Chunk> &World) {
+    Input_Handler(Camera, window, DeltaTime, World);
+}
+
 void Game::MainLoop() {
     Fps.Init();
     loadSettings(game.Render_Distance, game.VRamAlloc, CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH);
@@ -629,10 +644,19 @@ void Game::MainLoop() {
         // Main Engine -------------------------------------------------------------------
             
             DeltaTime = Fps.Start();
+            game.Tick_Timer += DeltaTime;
 
-            if (!game.ChunkUpdated) {
-                Input_Handler(Camera, window, DeltaTime, World); // handle Camera Movment
+            // Tick abdejt
+            while (game.Tick_Timer >= game.TickRate) {
+                game.Tick_Timer -= game.TickRate;
+                if (!game.ChunkUpdated) {
+                    Tick_Update(Camera, window, DeltaTime, World);
+                }
             }
+
+            //if (!game.ChunkUpdated) {
+            //    Input_Handler(Camera, window, DeltaTime, World); // handle Camera Movment
+            //}
 
         // Clearing
             glClearColor(0.5f, 0.7f, 1.0f, 1.0f);

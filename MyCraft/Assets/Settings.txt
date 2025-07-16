@@ -1,4 +1,4 @@
-Render Distance=5
+Render Distance=4
 VRam Alloc=512
 Chunk Width=32
 Chunk Height=8
