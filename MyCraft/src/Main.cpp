@@ -143,6 +143,9 @@ public:
     Chunk() : blocks(CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_DEPTH) {}
 
     int index(int x, int y, int z) const {
+        assert(x >= 0 && x < CHUNK_WIDTH);
+        assert(y >= 0 && y < CHUNK_HEIGHT);
+        assert(z >= 0 && z < CHUNK_DEPTH);
         return x + z * CHUNK_WIDTH + y * CHUNK_WIDTH * CHUNK_DEPTH;
     }
 
@@ -178,9 +181,12 @@ void Get_World_Chunk(int Chunk_x, int Chunk_z, std::map<std::pair<int, int>, Chu
             float height_f = 0.5f + 0.5f * std::sin(worldX * 0.3f) * std::cos(worldZ * 0.3f);
             int height = static_cast<int>(height_f * CHUNK_HEIGHT);
 
-            for (int y = 0; y <= height; ++y) {
-                //chunk.setID(x,y,z,1);
-                chunk.set(x, y, z ,chunk.BlockDefs.at(1));
+            for (int y = 0; y < std::min(height + 1, CHUNK_HEIGHT); ++y) {
+                if (y < 5) {
+                    chunk.set(x, y, z ,Chunk::BlockDefs.at(1));
+                } else {
+                    chunk.set(x, y, z ,Chunk::BlockDefs.at(2));
+                }
             }
         }
     }
@@ -243,11 +249,29 @@ void AddCube(std::vector<float>& vertices, float wx, float wy, float wz, const C
     glm::vec3 p110 = {wx+size, wy+size, wz};
     glm::vec3 p111 = {wx+size, wy+size, wz+size};
 
-    // 2D tekstura np. 1x1 (pełny kwadrat)
-    glm::vec2 uv00 = {0.0f, 0.0f}; // lewy dolny
-    glm::vec2 uv10 = {0.125f, 0.0f}; // prawy dolny
-    glm::vec2 uv01 = {0.0f, 0.125f}; // lewy górny
-    glm::vec2 uv11 = {0.125f, 0.125f}; // prawy górny
+    int texX = 0;
+    int texY = 0;
+
+    if (chunk.get(Localx, Localy, Localz).id == 1) {
+        texX = 0;
+        texY = 0;
+    } else if (chunk.get(Localx, Localy, Localz).id == 2) {
+        texX = 1;
+        texY = 0;
+    } else {
+        texX = 0;
+        texY = 1;
+    }
+
+    float tileSize = 1.0f / 8.0f; // 0.125   8 textures in a row
+
+    float u = texX * tileSize;
+    float v = texY * tileSize;
+
+    glm::vec2 uv00 = {u, v};                         // left down
+    glm::vec2 uv10 = {u + tileSize, v};              // right up
+    glm::vec2 uv01 = {u, v + tileSize};              // left up
+    glm::vec2 uv11 = {u + tileSize, v + tileSize};   // right down
 
     // push trójkąt z 3 parami: pozycja i UV
     auto pushTri = [&](glm::vec3 a, glm::vec2 uva,
