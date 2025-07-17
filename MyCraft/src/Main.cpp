@@ -182,7 +182,7 @@ void Get_World_Chunk(int Chunk_x, int Chunk_z, std::map<std::pair<int, int>, Chu
             int height = static_cast<int>(height_f * CHUNK_HEIGHT);
 
             for (int y = 0; y < std::min(height + 1, CHUNK_HEIGHT); ++y) {
-                if (y < 5) {
+                if (y < CHUNK_HEIGHT/2) {
                     chunk.set(x, y, z ,Chunk::BlockDefs.at(1));
                 } else {
                     chunk.set(x, y, z ,Chunk::BlockDefs.at(2));
