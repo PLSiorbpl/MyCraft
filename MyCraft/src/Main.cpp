@@ -14,6 +14,8 @@
 #include <fstream>
 #include <sstream>
 #include <filesystem>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 int CHUNK_WIDTH = 16;
 int CHUNK_HEIGHT = 16;
@@ -21,30 +23,29 @@ int CHUNK_DEPTH = 16;
 
 const char* vertexShaderSource = R"glsl(
 #version 330 core
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec3 aColor;
-
-out vec3 fragColor;
-
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec2 aTexCoord;
 uniform mat4 MVP;
+
+out vec2 TexCoord;
 
 void main() {
     gl_Position = MVP * vec4(aPos, 1.0);
-    fragColor = aColor;
+    TexCoord = aTexCoord;
 }
 )glsl";
 
 const char* fragmentShaderSource = R"glsl(
 #version 330 core
-in vec3 fragColor;
-//uniform vec3 myColor;
+in vec2 TexCoord;
+uniform sampler2D tex;
 out vec4 FragColor;
 
-void main()
-{
-    FragColor = vec4(fragColor, 1.0);
+void main() {
+    FragColor = texture(tex, TexCoord);
 }
 )glsl";
+
 // Settings Loader
 void loadSettings(int &Render_Dist, int &VramAlloc, int &Chunkx, int &Chunky, int &Chunkz) {
     std::ifstream file("MyCraft/Assets/Settings.txt");
@@ -242,54 +243,57 @@ void AddCube(std::vector<float>& vertices, float wx, float wy, float wz, const C
     glm::vec3 p110 = {wx+size, wy+size, wz};
     glm::vec3 p111 = {wx+size, wy+size, wz+size};
 
-    auto pushTri = [&](glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 color) {
-        for (glm::vec3 v : {a, b, c}) {
-            vertices.insert(vertices.end(), { v.x, v.y, v.z, color.r, color.g, color.b });
+    // 2D tekstura np. 1x1 (pełny kwadrat)
+    glm::vec2 uv00 = {0.0f, 0.0f}; // lewy dolny
+    glm::vec2 uv10 = {0.125f, 0.0f}; // prawy dolny
+    glm::vec2 uv01 = {0.0f, 0.125f}; // lewy górny
+    glm::vec2 uv11 = {0.125f, 0.125f}; // prawy górny
+
+    // push trójkąt z 3 parami: pozycja i UV
+    auto pushTri = [&](glm::vec3 a, glm::vec2 uva,
+                       glm::vec3 b, glm::vec2 uvb,
+                       glm::vec3 c, glm::vec2 uvc) {
+        for (int i = 0; i < 3; ++i) {
+            const glm::vec3& v = i == 0 ? a : (i == 1 ? b : c);
+            const glm::vec2& uv = i == 0 ? uva : (i == 1 ? uvb : uvc);
+            vertices.insert(vertices.end(), { v.x, v.y, v.z, uv.x, uv.y });
         }
     };
 
-    // Colors soon uv cords
-    glm::vec3 red     = {1.0f, 0.0f, 0.0f};
-    glm::vec3 green   = {0.0f, 1.0f, 0.0f};
-    glm::vec3 blue    = {0.0f, 0.0f, 1.0f};
-    glm::vec3 yellow  = {1.0f, 1.0f, 0.0f};
-    glm::vec3 cyan    = {0.0f, 1.0f, 1.0f};
-    glm::vec3 magenta = {1.0f, 0.0f, 1.0f};
-
     // FRONT (z+)
     if (Localz + 1 >= CHUNK_DEPTH || chunk.get(Localx,Localy,Localz+1).id == 0) {
-    pushTri(p001, p101, p111, red);
-    pushTri(p001, p111, p011, red);
+        pushTri(p001, uv00, p101, uv10, p111, uv11);
+        pushTri(p001, uv00, p111, uv11, p011, uv01);
     }
-    
+
     // BACK (z-)
     if ((Localz - 1 < 0) || chunk.get(Localx,Localy,Localz-1).id == 0) {
-    pushTri(p100, p000, p010, green);
-    pushTri(p100, p010, p110, green);
+        pushTri(p100, uv00, p000, uv10, p010, uv11);
+        pushTri(p100, uv00, p010, uv11, p110, uv01);
     }
 
     // LEFT (x-)
     if ((Localx - 1 < 0) || chunk.get(Localx-1,Localy,Localz).id == 0) {
-    pushTri(p000, p001, p011, blue);
-    pushTri(p000, p011, p010, blue);
+        pushTri(p000, uv00, p001, uv10, p011, uv11);
+        pushTri(p000, uv00, p011, uv11, p010, uv01);
     }
 
     // RIGHT (x+)
     if (Localx + 1 >= CHUNK_WIDTH || chunk.get(Localx+1,Localy,Localz).id == 0) {
-    pushTri(p100, p101, p111, yellow);
-    pushTri(p100, p111, p110, yellow);
+        pushTri(p100, uv00, p101, uv10, p111, uv11);
+        pushTri(p100, uv00, p111, uv11, p110, uv01);
     }
 
     // TOP (y+)
     if (Localy + 1 >= CHUNK_HEIGHT || chunk.get(Localx,Localy+1,Localz).id == 0) {
-    pushTri(p010, p011, p111, cyan);
-    pushTri(p010, p111, p110, cyan);
+        pushTri(p010, uv00, p011, uv10, p111, uv11);
+        pushTri(p010, uv00, p111, uv11, p110, uv01);
     }
 
     // BOTTOM (y-)
     if ((Localy - 1 < 0) || chunk.get(Localx,Localy-1,Localz).id == 0) {
-    pushTri(p000, p100, p101, magenta);
-    pushTri(p000, p101, p001, magenta);
+        pushTri(p000, uv00, p100, uv10, p101, uv11);
+        pushTri(p000, uv00, p101, uv11, p001, uv01);
     }
 }
 
@@ -478,6 +482,26 @@ void Input_Handler(camera &Camera, GLFWwindow* window, float deltaTime, std::map
     damp(Camera.Vel.z);
 }
 
+void Load_Texture(unsigned int &Texture_ID) {
+    glGenTextures(1, &Texture_ID);
+    glBindTexture(GL_TEXTURE_2D, Texture_ID);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load("MyCraft/Assets/Stone.png", &width, &height, &nrChannels, 4);
+    if (data) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    } else {
+        std::cout << "Failed to load texture (skill Issue)" << std::endl;
+    }
+    stbi_image_free(data);
+}
+
 class FPS {
 private:
     float lastFrame = 0.0f;
@@ -580,6 +604,8 @@ bool Game::Init_Window() {
 }
 
 void Game::Init_Shader() {
+    unsigned int TextureID;
+    Load_Texture(TextureID);
     loadSettings(game.Render_Distance, game.VRamAlloc, CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH);
     // Compilation of Shaders
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -609,11 +635,11 @@ void Game::Init_Shader() {
     glBufferData(GL_ARRAY_BUFFER, 1024 * 1024 * game.VRamAlloc, nullptr, GL_DYNAMIC_DRAW);
 
     // aPos (location = 0)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // aColor (location = 1)
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    // atexture (location = 1)
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -627,7 +653,13 @@ void Game::Init_Shader() {
         std::cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
     }
 
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, TextureID);
+
+    int texLoc = glGetUniformLocation(ShaderProgram, "tex");
     glUseProgram(ShaderProgram);
+    glUniform1i(texLoc, 0); // GL_TEXTURE0 = 0
+
 } 
 
 void Tick_Update(camera &Camera, GLFWwindow* window, float &DeltaTime, std::map<std::pair<int, int>, Chunk> &World) {
@@ -653,10 +685,6 @@ void Game::MainLoop() {
                     Tick_Update(Camera, window, DeltaTime, World);
                 }
             }
-
-            //if (!game.ChunkUpdated) {
-            //    Input_Handler(Camera, window, DeltaTime, World); // handle Camera Movment
-            //}
 
         // Clearing
             glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
@@ -703,19 +731,16 @@ void Game::MainLoop() {
                     glBindBuffer(GL_ARRAY_BUFFER, VBO);
                     glBufferSubData(GL_ARRAY_BUFFER, 0, vertecies.size() * sizeof(float), vertecies.data());
 
-                    //GLuint colorLoc = glGetUniformLocation(ShaderProgram, "myColor");
-                    //glUniform3f(colorLoc, 0.8f, 0.9f, 1.0f);
-
                     glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &game.sizeInBytes);
                     GetProcessMemoryInfo(GetCurrentProcess(), &meminfo, sizeof(meminfo));
                     ramUsed = meminfo.WorkingSetSize;
                     
                     std::cout << "Sending: #" << game.Frame << " Info: verts=" << vertecies.size() << " chunks=" << World.size() << " Buffer size B: " 
                         << (vertecies.size() * sizeof(float))/1048576 << "MB/"<< game.sizeInBytes/1048576 << "MB" << " Render Dist:" << game.Render_Distance << " Ram Used:" << ramUsed / 1024 / 1024 << "MB"
-                        << " World usage:" << (vertecies.capacity() * sizeof(float)) / 1048576 << "MB" <<"\n";
+                        << "\n";
                 }
             glBindVertexArray(VAO);
-            glDrawArrays(GL_TRIANGLES, 0, vertecies.size() / 6);
+            glDrawArrays(GL_TRIANGLES, 0, vertecies.size() / 5);
             }
 
             Fps.End();
