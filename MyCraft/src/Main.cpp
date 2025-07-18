@@ -21,31 +21,6 @@ int CHUNK_WIDTH = 16;
 int CHUNK_HEIGHT = 16;
 int CHUNK_DEPTH = 16;
 
-const char* vertexShaderSource = R"glsl(
-#version 330 core
-layout(location = 0) in vec3 aPos;
-layout(location = 1) in vec2 aTexCoord;
-uniform mat4 MVP;
-
-out vec2 TexCoord;
-
-void main() {
-    gl_Position = MVP * vec4(aPos, 1.0);
-    TexCoord = aTexCoord;
-}
-)glsl";
-
-const char* fragmentShaderSource = R"glsl(
-#version 330 core
-in vec2 TexCoord;
-uniform sampler2D tex;
-out vec4 FragColor;
-
-void main() {
-    FragColor = texture(tex, TexCoord);
-}
-)glsl";
-
 // Settings Loader
 void loadSettings(int &Render_Dist, int &VramAlloc, int &Chunkx, int &Chunky, int &Chunkz) {
     std::ifstream file("MyCraft/Assets/Settings.txt");
@@ -526,6 +501,16 @@ void Load_Texture(unsigned int &Texture_ID) {
     stbi_image_free(data);
 }
 
+std::string LoadShaderSource(const std::string& path) {
+    std::ifstream file(path);
+    if (!file.is_open())
+        throw std::runtime_error("Cant Open File: " + path);
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
+}
+
 class FPS {
 private:
     float lastFrame = 0.0f;
@@ -631,13 +616,20 @@ void Game::Init_Shader() {
     unsigned int TextureID;
     Load_Texture(TextureID);
     loadSettings(game.Render_Distance, game.VRamAlloc, CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH);
+    // Load Shaders
+    std::string vertexCode = LoadShaderSource("MyCraft/shaders/vertex.glsl");
+    std::string fragmentCode = LoadShaderSource("MyCraft/shaders/fragment.glsl");
+
+    const char* vertexSrc = vertexCode.c_str();
+    const char* fragmentSrc = fragmentCode.c_str();
+
     // Compilation of Shaders
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
+    glShaderSource(vertexShader, 1, &vertexSrc, nullptr);
     glCompileShader(vertexShader);
 
     GLuint FragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(FragmentShader, 1, &fragmentShaderSource, nullptr);
+    glShaderSource(FragmentShader, 1, &fragmentSrc, nullptr);
     glCompileShader(FragmentShader);
     
     ShaderProgram = glCreateProgram();
