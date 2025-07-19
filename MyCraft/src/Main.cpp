@@ -16,10 +16,11 @@
 #include <filesystem>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "FastNoiseLite.h"
 
-int CHUNK_WIDTH = 16;
-int CHUNK_HEIGHT = 16;
-int CHUNK_DEPTH = 16;
+int CHUNK_WIDTH;
+int CHUNK_HEIGHT;
+int CHUNK_DEPTH;
 
 // Settings Loader
 void loadSettings(int &Render_Dist, int &VramAlloc, int &Chunkx, int &Chunky, int &Chunkz) {
@@ -57,7 +58,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 struct camera {
-    glm::vec3 Position = glm::vec3(0.0f, 20.0f, 0.0f);
+    glm::vec3 Position = glm::vec3(0.0f, 40.0f, 0.0f);
     float CameraDrag = 0.1f;
     float Pitch = 0.0f;
     float Yaw = -90.0f;
@@ -145,23 +146,38 @@ const std::map<uint8_t, Block> Chunk::BlockDefs = {
 
 void Get_World_Chunk(int Chunk_x, int Chunk_z, std::map<std::pair<int, int>, Chunk>& World) {
     Chunk chunk;
+    FastNoiseLite noise;
+    noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2); // Lepszy niż Perlin
+
+    const float baseFreq = 0.1f;
+    const float baseAmp = 0.30f;
+    const int octaves = 4;
 
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
         for (int z = 0; z < CHUNK_DEPTH; ++z) {
-            // Coordinates
-            int worldX = Chunk_x * CHUNK_WIDTH + x;
-            int worldZ = Chunk_z * CHUNK_DEPTH + z;
+            float worldX = Chunk_x * CHUNK_WIDTH + x;
+            float worldZ = Chunk_z * CHUNK_DEPTH + z;
 
-            // Sin terrain
-            float height_f = 0.5f + 0.5f * std::sin(worldX * 0.3f) * std::cos(worldZ * 0.3f);
-            int height = static_cast<int>(height_f * CHUNK_HEIGHT);
+            // Warstwowy szum (octave noise)
+            float total = 0.0f;
+            float freq = baseFreq;
+            float amp = baseAmp;
 
-            for (int y = 0; y < std::min(height + 1, CHUNK_HEIGHT); ++y) {
-                if (y < CHUNK_HEIGHT/2) {
-                    chunk.set(x, y, z ,Chunk::BlockDefs.at(1));
-                } else {
-                    chunk.set(x, y, z ,Chunk::BlockDefs.at(2));
-                }
+            for (int i = 0; i < octaves; ++i) {
+                total += noise.GetNoise(worldX * freq, worldZ * freq) * amp;
+                freq *= 2.0f;
+                amp *= 0.5f; // Wyższe warstwy mają mniejszy wpływ
+            }
+
+            // Wysokość terenu z normalizacją i przesunięciem
+            float height_f = total * 0.5f + 0.5f; // w zakresie 0.0–1.0
+            int height = static_cast<int>(height_f * CHUNK_HEIGHT * 0.8f); // 80% max wysokości
+
+            for (int y = 0; y <= height && y < CHUNK_HEIGHT; ++y) {
+                if (y < height - 1)
+                    chunk.set(x, y, z, Chunk::BlockDefs.at(1)); // Stone
+                else
+                    chunk.set(x, y, z, Chunk::BlockDefs.at(2)); // Grass
             }
         }
     }
@@ -441,6 +457,11 @@ void Input_Handler(camera &Camera, GLFWwindow* window, float deltaTime, std::map
     Camera.Vel.x = std::clamp(Camera.Vel.x, -0.1f, 0.1f);
     Camera.Vel.z = std::clamp(Camera.Vel.z, -0.1f, 0.1f);
     Camera.Vel.y = std::clamp(Camera.Vel.y, -0.2f, 0.2f);
+
+    // get unstuck from block
+    if (isSolidAt(Camera.Position, World)) {
+        Camera.Position.y += 1.0f;
+    }
 
     glm::vec3 testPos;
 
