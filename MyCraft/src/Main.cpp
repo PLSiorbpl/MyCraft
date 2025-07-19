@@ -147,7 +147,7 @@ const std::map<uint8_t, Block> Chunk::BlockDefs = {
 void Get_World_Chunk(int Chunk_x, int Chunk_z, std::map<std::pair<int, int>, Chunk>& World) {
     Chunk chunk;
     FastNoiseLite noise;
-    noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2); // Lepszy niż Perlin
+    noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
 
     const float baseFreq = 0.1f;
     const float baseAmp = 0.30f;
@@ -158,7 +158,7 @@ void Get_World_Chunk(int Chunk_x, int Chunk_z, std::map<std::pair<int, int>, Chu
             float worldX = Chunk_x * CHUNK_WIDTH + x;
             float worldZ = Chunk_z * CHUNK_DEPTH + z;
 
-            // Warstwowy szum (octave noise)
+            // Leyered noise
             float total = 0.0f;
             float freq = baseFreq;
             float amp = baseAmp;
@@ -166,13 +166,11 @@ void Get_World_Chunk(int Chunk_x, int Chunk_z, std::map<std::pair<int, int>, Chu
             for (int i = 0; i < octaves; ++i) {
                 total += noise.GetNoise(worldX * freq, worldZ * freq) * amp;
                 freq *= 2.0f;
-                amp *= 0.5f; // Wyższe warstwy mają mniejszy wpływ
+                amp *= 0.5f;
             }
 
-            // Wysokość terenu z normalizacją i przesunięciem
-            float height_f = total * 0.5f + 0.5f; // w zakresie 0.0–1.0
-            int height = static_cast<int>(height_f * CHUNK_HEIGHT * 0.8f); // 80% max wysokości
-
+            float height_f = total * 0.5f + 0.5f;
+            int height = static_cast<int>(height_f * CHUNK_HEIGHT * 0.8f);
             for (int y = 0; y <= height && y < CHUNK_HEIGHT; ++y) {
                 if (y < height - 1)
                     chunk.set(x, y, z, Chunk::BlockDefs.at(1)); // Stone
