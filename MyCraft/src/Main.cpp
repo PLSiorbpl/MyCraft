@@ -17,6 +17,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include "FastNoiseLite.h"
+#include "Utils/FPS.hpp"
 
 int CHUNK_WIDTH;
 int CHUNK_HEIGHT;
@@ -119,9 +120,9 @@ public:
     Chunk() : blocks(CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_DEPTH) {}
 
     int index(int x, int y, int z) const {
-        assert(x >= 0 && x < CHUNK_WIDTH);
-        assert(y >= 0 && y < CHUNK_HEIGHT);
-        assert(z >= 0 && z < CHUNK_DEPTH);
+        //assert(x >= 0 && x < CHUNK_WIDTH);
+        //assert(y >= 0 && y < CHUNK_HEIGHT);
+        //assert(z >= 0 && z < CHUNK_DEPTH);
         return x + z * CHUNK_WIDTH + y * CHUNK_WIDTH * CHUNK_DEPTH;
     }
 
@@ -194,9 +195,7 @@ void Generate_Chunks(const Entity& Player, int Render_Dist, std::map<std::pair<i
             std::pair<int, int> key = {chunkX, chunkZ};
 
             if (World.find(key) == World.end()) {
-                //if (IsChunkInFrontOfCamera(Player.Pos, Camera.Yaw, Camera.Pitch, chunkX, chunkZ)) {
                 Get_World_Chunk(chunkX, chunkZ, World);
-                //}
             }
         }
     }
@@ -530,41 +529,6 @@ std::string LoadShaderSource(const std::string& path) {
     return buffer.str();
 }
 
-class FPS {
-private:
-    float lastFrame = 0.0f;
-    float deltaTime = 0.0f;
-    int nbFrames = 0;
-    float lastTime = 0.0f;
-
-public:
-    void Init() {
-        lastFrame = glfwGetTime();
-        lastTime = lastFrame;
-        deltaTime = 0.0f;
-        nbFrames = 0;
-    }
-
-    float Start() {
-        float currentFrame = glfwGetTime();
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
-        return deltaTime;
-    }
-
-    void End() {
-        float currentTime = glfwGetTime();
-        nbFrames++;
-        if (currentTime - lastTime >= 2.0f) {
-            std::cout << "FPS: " << nbFrames/2 << "\n";
-            nbFrames = 0;
-            lastTime = currentTime;
-        }
-    }
-
-    float GetDeltaTime() const { return deltaTime; }
-};
-
 class Game {
 private:
     SIZE_T ramUsed;
@@ -604,8 +568,10 @@ bool Game::Init_Window() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // OpenGL 3.3
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    window = glfwCreateWindow(800, 600, "MyCraft", nullptr, nullptr);
+    
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
+    window = glfwCreateWindow(width, height, "MyCraft", nullptr, nullptr);
     if (!window) {
         std::cerr << "skill issue with GLFW!\n";
         glfwTerminate();
@@ -702,6 +668,8 @@ void Tick_Update(camera &Camera, GLFWwindow* window, float &DeltaTime, std::map<
 }
 
 void Game::MainLoop() {
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
     Fps.Init();
     loadSettings(game.Render_Distance, game.VRamAlloc, CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH);
     while (!glfwWindowShouldClose(window)) {
@@ -728,7 +696,7 @@ void Game::MainLoop() {
         // MVP
             glm::mat4 model = glm::mat4(1.0f);
             glm::mat4 view = GetViewMatrix(Camera);
-            glm::mat4 proj = glm::perspective(glm::radians(45.0f), 800.0f/600.0f, 0.1f, 1000.0f);
+            glm::mat4 proj = glm::perspective(glm::radians(50.0f), (float)width / (float)height, 0.1f, 600.0f);
             glm::mat4 MVP = proj * view * model;
 
             GLuint mvpLoc = glGetUniformLocation(ShaderProgram, "MVP");
