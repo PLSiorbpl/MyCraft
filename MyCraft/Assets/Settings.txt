@@ -1,5 +1,7 @@
-Render Distance=5
+Render Distance=6
 VRam Alloc=256
-Chunk Width=32
+Chunk Width=16
 Chunk Height=128
-Chunk Depth=32
+Chunk Depth=16
+V-Sync=1
+Tick Rate=60.0f

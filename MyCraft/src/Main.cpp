@@ -18,81 +18,27 @@
 #include "stb_image.h"
 #include "FastNoiseLite.h"
 #include "Utils/FPS.hpp"
+#include "Render/Camera.hpp"
+#include "Utils/Settings.hpp"
 
 int CHUNK_WIDTH;
 int CHUNK_HEIGHT;
 int CHUNK_DEPTH;
 
-// Settings Loader
-void loadSettings(int &Render_Dist, int &VramAlloc, int &Chunkx, int &Chunky, int &Chunkz) {
-    std::ifstream file("MyCraft/Assets/Settings.txt");
-
-    if (file.is_open()) {
-        std::string line;
-        while (std::getline(file, line)) {
-            std::istringstream ss(line);
-            std::string key;
-            if (std::getline(ss, key, '=')) {
-                std::string value;
-                if (std::getline(ss, value)) {
-                    if (key == "Render Distance") {
-                        Render_Dist = std::stoi(value);
-                    } else if (key == "VRam Alloc") {
-                        VramAlloc = std::stoi(value);
-                    } else if (key == "Chunk Width") {
-                        Chunkx = std::stoi(value);
-                    } else if (key == "Chunk Height") {
-                        Chunky = std::stoi(value);
-                    } else if (key == "Chunk Depth") {
-                        Chunkz = std::stoi(value);
-                    }
-                }
-            }
-        }
-    } else {
-        std::cerr << "Cant Open Settings File" << std::endl;
-    }
-}
-
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-struct camera {
-    glm::vec3 Position = glm::vec3(0.0f, 40.0f, 0.0f);
-    float CameraDrag = 0.1f;
-    float Pitch = 0.0f;
-    float Yaw = -90.0f;
-    float Speed = 0.10f;
-    float Sensitivity = 0.1f;
-    bool FirstMouse = true;
-    float LastX = 400, LastY = 300;
-    glm::vec3 Vel = glm::vec3(0.0f,0.0f,0.0f);
-    bool onGround = false;
-    float Gravity = 0.01f;
-    float JumpStrength = 0.15f;
-
-    bool operator!=(const camera& other) const {
-        return Position != other.Position ||
-               Pitch != other.Pitch ||
-               Yaw != other.Yaw ||
-               Speed != other.Speed ||
-               Sensitivity != other.Sensitivity ||
-               FirstMouse != other.FirstMouse ||
-               LastX != other.LastX ||
-               LastY != other.LastY;
-    }
-};
-
 struct Game_Variables {
-    int Render_Distance = 6;
-    int VRamAlloc = 512; // In MB
+    int Render_Distance;
+    int VRamAlloc; // In MB
     GLint sizeInBytes = 0;
     uint64_t Frame = 0;
     glm::ivec3 Last_Chunk;
     bool ChunkUpdated;
-    const float TickRate = 1.0f / 60.0f;
+    float TickRate;
     float Tick_Timer = 0.0f;
+    int V_Sync;
 };
 
 struct Entity {
@@ -536,19 +482,35 @@ private:
     FPS Fps;
     camera Camera;
     Game_Variables game;
-    GLFWwindow* window;
     GLuint VAO, VBO, ShaderProgram;
     std::vector<float> vertecies;
     Entity Player;
     std::map<std::pair<int, int>, Chunk> World;
     float DeltaTime;
+    int width, height;
 
 public:
+    Settings_Loader Settings;
+    GLFWwindow* window;
+
     bool Init_Window();
     void Init_Shader();
     void MainLoop();
     void CleanUp();
+    void Init_Settings(const std::string Path);
 };
+
+void Game::Init_Settings(const std::string Path) {
+    Settings.Load_Settings(Path);
+
+    game.Render_Distance = Settings.GetInt("Render Distance");
+    game.VRamAlloc = Settings.GetInt("VRam Alloc");
+    CHUNK_WIDTH = Settings.GetInt("Chunk Width");
+    CHUNK_HEIGHT = Settings.GetInt("Chunk Height");
+    CHUNK_DEPTH = Settings.GetInt("Chunk Depth");
+    game.V_Sync = Settings.GetInt("V-Sync");
+    game.TickRate = 1.0f / Settings.GetFloat("Tick Rate");
+}
 
 void Game::CleanUp() {
     glDeleteVertexArrays(1, &VAO);
@@ -559,7 +521,6 @@ void Game::CleanUp() {
 }
 
 bool Game::Init_Window() {
-    loadSettings(game.Render_Distance, game.VRamAlloc, CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH);
      if (!glfwInit()) {
         std::cerr << "Cant Initalize GLFW (skill issue)!\n";
         return true;
@@ -569,8 +530,12 @@ bool Game::Init_Window() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     
-    int width, height;
-    glfwGetWindowSize(window, &width, &height);
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor); // Window or Full Screen
+
+    width = mode->width;
+    height = mode->height;
+
     window = glfwCreateWindow(width, height, "MyCraft", nullptr, nullptr);
     if (!window) {
         std::cerr << "skill issue with GLFW!\n";
@@ -579,7 +544,7 @@ bool Game::Init_Window() {
     }
 
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1); // V-sync
+    glfwSwapInterval(game.V_Sync); // V-sync
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -587,7 +552,7 @@ bool Game::Init_Window() {
         return true;
     }
 
-    glEnable(GL_DEPTH_TEST); // Not Working but maybe someday
+    glEnable(GL_DEPTH_TEST);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetWindowUserPointer(window, &Camera);
     glfwSetCursorPosCallback(window, mouse_callback);
@@ -600,7 +565,6 @@ bool Game::Init_Window() {
 void Game::Init_Shader() {
     unsigned int TextureID;
     Load_Texture(TextureID);
-    loadSettings(game.Render_Distance, game.VRamAlloc, CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH);
     // Load Shaders
     std::string vertexCode = LoadShaderSource("MyCraft/shaders/vertex.glsl");
     std::string fragmentCode = LoadShaderSource("MyCraft/shaders/fragment.glsl");
@@ -668,10 +632,8 @@ void Tick_Update(camera &Camera, GLFWwindow* window, float &DeltaTime, std::map<
 }
 
 void Game::MainLoop() {
-    int width, height;
     glfwGetWindowSize(window, &width, &height);
     Fps.Init();
-    loadSettings(game.Render_Distance, game.VRamAlloc, CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH);
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(window, true);
@@ -756,6 +718,7 @@ void Game::MainLoop() {
 int main() {
     Game main;
 
+    main.Init_Settings("MyCraft/Assets/Settings.txt");
     if (main.Init_Window()) return -1;
     
     main.Init_Shader();
