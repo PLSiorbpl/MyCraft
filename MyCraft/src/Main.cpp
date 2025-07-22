@@ -50,50 +50,6 @@ struct Entity {
     float Speed;
 };
 
-//struct Block {
-//    int8_t id;
-//    bool transparent; // glass
-//    bool solid;       // Colisions
-//    uint8_t light;    // How Block is Lighted
-//
-//    Block(uint8_t id = 0, bool transparent = false, bool solid = false, uint8_t light = 0)
-//        : id(id), transparent(transparent), solid(solid), light(light) {}
-//};
-
-//class Chunk {
-//private:
-//    std::vector<Block> blocks;
-//public:
-//    static const std::map<uint8_t, Block> BlockDefs;
-//
-//    Chunk() : blocks(CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_DEPTH) {}
-//
-//    int index(int x, int y, int z) const {
-//        //assert(x >= 0 && x < CHUNK_WIDTH);
-//        //assert(y >= 0 && y < CHUNK_HEIGHT);
-//        //assert(z >= 0 && z < CHUNK_DEPTH);
-//        return x + z * CHUNK_WIDTH + y * CHUNK_WIDTH * CHUNK_DEPTH;
-//    }
-//
-//    const Block& get(int x, int y, int z) const {
-//        return blocks[index(x, y, z)];
-//    }
-//
-//    void set(int x, int y, int z, const Block& block) {
-//        blocks[index(x, y, z)] = block;
-//    }
-//
-//    void setID(int x, int y, int z, uint8_t id) {
-//        blocks[index(x, y, z)].id = id;
-//    }
-//};
-
-//const std::map<uint8_t, Block> Chunk::BlockDefs = {
-//    { 0, Block(0, false, false) }, // Air
-//    { 1, Block(1, false, true)  }, // Stone
-//    { 2, Block(2, false,  true)  }, // Grass
-//};
-
 void Get_World_Chunk(int Chunk_x, int Chunk_z, std::map<std::pair<int, int>, Chunk>& World) {
     Chunk Chunk;
     Chunk.width = CHUNK_WIDTH;
@@ -318,147 +274,11 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     cam->Pitch = std::clamp(cam->Pitch, -89.0f, 89.0f);
 }
 
-//bool isSolidAt(glm::vec3 pos, const std::map<std::pair<int, int>, Chunk>& World) {
-//    int blockX = static_cast<int>(floor(pos.x));
-//    int blockY = static_cast<int>(floor(pos.y-1.8f));
-//    int blockZ = static_cast<int>(floor(pos.z));
-//
-//    int chunkX = floor((float)blockX / CHUNK_WIDTH);
-//    int chunkZ = floor((float)blockZ / CHUNK_DEPTH);
-//
-//    int localX = blockX - chunkX * CHUNK_WIDTH;
-//    int localZ = blockZ - chunkZ * CHUNK_DEPTH;
-//
-//    if (localX < 0 || localX >= CHUNK_WIDTH || localZ < 0 || localZ >= CHUNK_DEPTH) {
-//        return false;
-//    }
-//    
-//    auto it = World.find({chunkX, chunkZ});
-//    if (it != World.end()) {
-//        const Chunk& chunk = it->second;
-//
-//        if (blockY >= 0 && blockY < CHUNK_HEIGHT) {
-//            return chunk.get(localX, blockY, localZ).solid;
-//        }
-//    }
-//
-//    return false;
-//}
-
-//bool isSolidAround(glm::vec3 pos, const std::map<std::pair<int, int>, Chunk>& World, float margin = 0.25f, float height = 1.8f) {
-//
-//    for (float dx : {-margin, margin}) {
-//        for (float dz : {-margin, margin}) {
-//            for (float dy : {0.0f, height / 2.0f, height}) {
-//                glm::vec3 offsetPos = pos + glm::vec3(dx, dy, dz);
-//                if (isSolidAt(offsetPos, World)) {
-//                    return true;
-//                }
-//            }
-//        }
-//    }
-//    return false;
-//}
-
-void Input_Handler(camera &Camera, GLFWwindow* window, float deltaTime, std::map<std::pair<int, int>, Chunk>& World) {
-    Movement movement;
-
-    Camera.Position.x += 0.1f;
+void Input_Handler(camera &Camera, GLFWwindow* window, float deltaTime, std::map<std::pair<int, int>, Chunk>& World, Movement &movement, colisions &Colisions) {
     movement.Init(Camera);
     movement.Input(window, Camera);
-    movement.TestColisions(Camera, World, glm::vec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH));
+    movement.TestColisions(Camera, World, glm::vec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Colisions);
     movement.Damp(Camera);
-    //float velocity = Camera.Speed;
-    //float Jump_Boost = Camera.JumpStrength;
-    //glm::vec3 direction(0.0f);
-    //glm::vec2 Cos;
-    //glm::vec2 Sin;
-    //Cos.x = cos(glm::radians(Camera.Pitch));
-    //Cos.y = cos(glm::radians(Camera.Yaw));
-    //Sin.x = sin(glm::radians(Camera.Pitch));
-    //Sin.y = sin(glm::radians(Camera.Yaw));
-//
-    //// Sterowanie
-    //if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-    //    Camera.Vel.x += -velocity * Sin.y;
-    //    Camera.Vel.z +=  velocity * Cos.y;
-    //}
-    //if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-    //    Camera.Vel.x +=  velocity * Sin.y;
-    //    Camera.Vel.z += -velocity * Cos.y;
-    //}
-    //if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-    //    Camera.Vel.x += -velocity * Cos.y;
-    //    Camera.Vel.z += -velocity * Sin.y;
-    //}
-    //if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-    //    Camera.Vel.x +=  velocity * Cos.y;
-    //    Camera.Vel.z +=  velocity * Sin.y;
-    //}
-//
-    //Camera.Vel.y -= Camera.Gravity;
-//
-    //// Jump
-    //if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && Camera.onGround) {
-    //    Camera.Vel.y = Jump_Boost;
-    //    Camera.onGround = false;
-    //}
-    //if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-    //    Camera.Vel.y = Jump_Boost;
-    //}
-//
-    //if (glm::length(direction) > 0.0f) {
-    //    direction = glm::normalize(direction);
-    //    Camera.Vel.x += direction.x * velocity;
-    //    Camera.Vel.z += direction.z * velocity;
-    //}
-//
-    //Camera.Vel.x = std::clamp(Camera.Vel.x, -0.1f, 0.1f);
-    //Camera.Vel.z = std::clamp(Camera.Vel.z, -0.1f, 0.1f);
-    //Camera.Vel.y = std::clamp(Camera.Vel.y, -0.2f, 0.2f);
-//
-    //// get unstuck from block
-    //if (isSolidAt(Camera.Position, World)) {
-    //    Camera.Position.y += 1.0f;
-    //}
-//
-    //glm::vec3 testPos;
-//
-    //testPos = Camera.Position + glm::vec3(Camera.Vel.x, 0, 0);
-    //if (!isSolidAround(testPos, World)) {
-    //    Camera.Position.x = testPos.x;
-    //} else {
-    //    Camera.Vel.x = 0.0f;
-    //}
-//
-    //testPos = Camera.Position + glm::vec3(0, Camera.Vel.y, 0);
-    //if (!isSolidAround(testPos, World)) {
-    //    Camera.Position.y = testPos.y;
-    //    Camera.onGround = false;
-    //} else {
-    //    if (Camera.Vel.y < 0.0f) {
-    //        Camera.onGround = true;
-    //    }
-    //    Camera.Vel.y = 0.0f;
-    //}
-//
-    //testPos = Camera.Position + glm::vec3(0, 0, Camera.Vel.z);
-    //if (!isSolidAround(testPos, World)) {
-    //    Camera.Position.z = testPos.z;
-    //} else {
-    //    Camera.Vel.z = 0.0f;
-    //}
-//
-    //auto damp = [&](float& v) {
-    //    if (v > Camera.CameraDrag)
-    //        v -= Camera.CameraDrag;
-    //    else if (v < -Camera.CameraDrag)
-    //        v += Camera.CameraDrag;
-    //    else
-    //        v = 0;
-    //};
-    //damp(Camera.Vel.x);
-    //damp(Camera.Vel.z);
 }
 
 void Load_Texture(unsigned int &Texture_ID) {
@@ -502,8 +322,10 @@ private:
     std::vector<float> vertecies;
     Entity Player;
     std::map<std::pair<int, int>, Chunk> World;
+    Movement movement;
     float DeltaTime;
     int width, height;
+    colisions Colisions;
 
 public:
     Settings_Loader Settings;
@@ -643,8 +465,8 @@ void Game::Init_Shader() {
 
 } 
 
-void Tick_Update(camera &Camera, GLFWwindow* window, float &DeltaTime, std::map<std::pair<int, int>, Chunk> &World) {
-    Input_Handler(Camera, window, DeltaTime, World);
+void Tick_Update(camera &Camera, GLFWwindow* window, float &DeltaTime, std::map<std::pair<int, int>, Chunk> &World, Movement &movement, colisions &Colisions) {
+    Input_Handler(Camera, window, DeltaTime, World, movement, Colisions);
 }
 
 void Game::MainLoop() {
@@ -663,7 +485,7 @@ void Game::MainLoop() {
             while (game.Tick_Timer >= game.TickRate) {
                 game.Tick_Timer -= game.TickRate;
                 if (!game.ChunkUpdated) {
-                    Tick_Update(Camera, window, DeltaTime, World);
+                    Tick_Update(Camera, window, DeltaTime, World, movement, Colisions);
                 }
             }
 

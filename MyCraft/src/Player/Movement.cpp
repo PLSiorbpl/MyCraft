@@ -26,6 +26,8 @@ void Movement::Input(GLFWwindow* window, camera &Camera) {
         Camera.Vel.z +=  Camera.Speed * Sin.y;
     }
 
+    Camera.Vel.y -= Camera.Gravity;
+
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && Camera.onGround) {
         Camera.Vel.y = Camera.JumpStrength;
         Camera.onGround = false;
@@ -33,9 +35,18 @@ void Movement::Input(GLFWwindow* window, camera &Camera) {
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
         Camera.Vel.y = Camera.JumpStrength;
     }
+
+    Camera.Vel.x = std::clamp(Camera.Vel.x, -0.1f, 0.1f);
+    Camera.Vel.z = std::clamp(Camera.Vel.z, -0.1f, 0.1f);
+    Camera.Vel.y = std::clamp(Camera.Vel.y, -0.2f, 0.2f);
 }
 
-void Movement::TestColisions(camera &Camera, std::map<std::pair<int, int>, Chunk>& World, glm::vec3 ChunkSize) {
+void Movement::TestColisions(camera &Camera, std::map<std::pair<int, int>, Chunk>& World, glm::vec3 ChunkSize, colisions &Colisions) {
+    // get unstuck from block
+    if (Colisions.isSolidAt(Camera.Position, World, ChunkSize)) {
+        Camera.Position.y += 1.0f;
+    }
+
     testPos = Camera.Position + glm::vec3(Camera.Vel.x, 0, 0);
     if (!Colisions.isSolidAround(testPos, World, ChunkSize)) {
         Camera.Position.x = testPos.x;
