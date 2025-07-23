@@ -1,10 +1,20 @@
 #pragma once
-#include "Block.hpp"
 #include <vector>
 #include <map>
+#include <cstdint>
 
 class Chunk {
 public:
+    struct Block {
+        int8_t id;
+        bool transparent;
+        bool solid;
+        uint8_t light;
+
+        Block(uint8_t id = 0, bool transparent = false, bool solid = false, uint8_t light = 0)
+            : id(id), transparent(transparent), solid(solid), light(light) {}
+    };
+
     std::vector<Block> blocks;
     int width, height, depth;
     int chunkX, chunkZ;

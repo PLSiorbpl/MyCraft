@@ -14,15 +14,15 @@
 #include <fstream>
 #include <sstream>
 #include <filesystem>
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 #include "FastNoiseLite.h"
+#define STB_IMAGE_IMPLEMENTATION
 #include "Utils/FPS.hpp"
 #include "Render/Camera.hpp"
 #include "Utils/Settings.hpp"
-#include "World/Block.hpp"
 #include "World/Chunk.hpp"
 #include "Player/Movement.hpp"
+#include "Shader_Utils/Shader.hpp"
+#include "Utils/Function.hpp"
 
 int CHUNK_WIDTH;
 int CHUNK_HEIGHT;
@@ -42,6 +42,8 @@ struct Game_Variables {
     float TickRate;
     float Tick_Timer = 0.0f;
     int V_Sync;
+    int Seed;
+    int FOV;
 };
 
 struct Entity {
@@ -50,7 +52,7 @@ struct Entity {
     float Speed;
 };
 
-void Get_World_Chunk(int Chunk_x, int Chunk_z, std::map<std::pair<int, int>, Chunk>& World) {
+void Get_World_Chunk(int Chunk_x, int Chunk_z, std::map<std::pair<int, int>, Chunk>& World, int Seed) {
     Chunk Chunk;
     Chunk.width = CHUNK_WIDTH;
     Chunk.height = CHUNK_HEIGHT;
@@ -58,11 +60,17 @@ void Get_World_Chunk(int Chunk_x, int Chunk_z, std::map<std::pair<int, int>, Chu
     Chunk.chunkX = Chunk_x;
     Chunk.chunkZ = Chunk_z;
     Chunk.blocks.resize(CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_DEPTH);
-    FastNoiseLite noise;
-    noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
 
-    const float baseFreq = 0.1f;
-    const float baseAmp = 0.30f;
+    FastNoiseLite terrainNoise;
+    terrainNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    terrainNoise.SetSeed(Seed);
+
+    FastNoiseLite biomeNoise;
+    biomeNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    biomeNoise.SetSeed(Seed + 1337);
+
+    const float baseFreq = 0.5f;
+    const float baseAmp = 0.2f;
     const int octaves = 4;
 
     for (int x = 0; x < CHUNK_WIDTH; ++x) {
@@ -70,19 +78,25 @@ void Get_World_Chunk(int Chunk_x, int Chunk_z, std::map<std::pair<int, int>, Chu
             float worldX = Chunk_x * CHUNK_WIDTH + x;
             float worldZ = Chunk_z * CHUNK_DEPTH + z;
 
-            // Leyered noise
+            float biomeFactor = biomeNoise.GetNoise(worldX * 0.003f, worldZ * 0.003f);
+            biomeFactor = biomeFactor * 0.5f + 0.5f;
+
             float total = 0.0f;
             float freq = baseFreq;
             float amp = baseAmp;
 
             for (int i = 0; i < octaves; ++i) {
-                total += noise.GetNoise(worldX * freq, worldZ * freq) * amp;
+                total += terrainNoise.GetNoise(worldX * freq, worldZ * freq) * amp;
                 freq *= 2.0f;
-                amp *= 0.5f;
+                amp *= 0.2f;
             }
 
             float height_f = total * 0.5f + 0.5f;
-            int height = static_cast<int>(height_f * CHUNK_HEIGHT * 0.8f);
+
+            height_f = height_f * (0.8f + biomeFactor * 1.2f);
+
+            int height = static_cast<int>(height_f * CHUNK_HEIGHT);
+
             for (int y = 0; y <= height && y < CHUNK_HEIGHT; ++y) {
                 if (y < height - 1)
                     Chunk.set(x, y, z, Chunk::BlockDefs.at(1)); // Stone
@@ -95,7 +109,8 @@ void Get_World_Chunk(int Chunk_x, int Chunk_z, std::map<std::pair<int, int>, Chu
     World[{Chunk_x, Chunk_z}] = std::move(Chunk);
 }
 
-void Generate_Chunks(const Entity& Player, int Render_Dist, std::map<std::pair<int, int>, Chunk>& World, camera &Camera) {
+
+void Generate_Chunks(const Entity& Player, int Render_Dist, std::map<std::pair<int, int>, Chunk>& World, camera &Camera, int Seed) {
     glm::ivec3 Start_Chunk = Player.Chunk;
 
     for (int dx = -Render_Dist; dx <= Render_Dist; ++dx) {
@@ -106,7 +121,7 @@ void Generate_Chunks(const Entity& Player, int Render_Dist, std::map<std::pair<i
             std::pair<int, int> key = {chunkX, chunkZ};
 
             if (World.find(key) == World.end()) {
-                Get_World_Chunk(chunkX, chunkZ, World);
+                Get_World_Chunk(chunkX, chunkZ, World, Seed);
             }
         }
     }
@@ -281,36 +296,6 @@ void Input_Handler(camera &Camera, GLFWwindow* window, float deltaTime, std::map
     movement.Damp(Camera);
 }
 
-void Load_Texture(unsigned int &Texture_ID) {
-    glGenTextures(1, &Texture_ID);
-    glBindTexture(GL_TEXTURE_2D, Texture_ID);
-    
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    int width, height, nrChannels;
-    unsigned char *data = stbi_load("MyCraft/Assets/Stone.png", &width, &height, &nrChannels, 4);
-    if (data) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    } else {
-        std::cout << "Failed to load texture (skill Issue)" << std::endl;
-    }
-    stbi_image_free(data);
-}
-
-std::string LoadShaderSource(const std::string& path) {
-    std::ifstream file(path);
-    if (!file.is_open())
-        throw std::runtime_error("Cant Open File: " + path);
-
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
-}
-
 class Game {
 private:
     SIZE_T ramUsed;
@@ -326,6 +311,7 @@ private:
     float DeltaTime;
     int width, height;
     colisions Colisions;
+    Fun fun;
 
 public:
     Settings_Loader Settings;
@@ -348,6 +334,8 @@ void Game::Init_Settings(const std::string Path) {
     CHUNK_DEPTH = Settings.GetInt("Chunk Depth");
     game.V_Sync = Settings.GetInt("V-Sync");
     game.TickRate = 1.0f / Settings.GetFloat("Tick Rate");
+    game.Seed = Settings.GetInt("Seed");
+    game.FOV = Settings.GetInt("FOV");
 }
 
 void Game::CleanUp() {
@@ -401,69 +389,10 @@ bool Game::Init_Window() {
 }
 
 void Game::Init_Shader() {
-    unsigned int TextureID;
-    Load_Texture(TextureID);
-    // Load Shaders
-    std::string vertexCode = LoadShaderSource("MyCraft/shaders/vertex.glsl");
-    std::string fragmentCode = LoadShaderSource("MyCraft/shaders/fragment.glsl");
+    Shader shader;
 
-    const char* vertexSrc = vertexCode.c_str();
-    const char* fragmentSrc = fragmentCode.c_str();
-
-    // Compilation of Shaders
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexSrc, nullptr);
-    glCompileShader(vertexShader);
-
-    GLuint FragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(FragmentShader, 1, &fragmentSrc, nullptr);
-    glCompileShader(FragmentShader);
-    
-    ShaderProgram = glCreateProgram();
-    glAttachShader(ShaderProgram, vertexShader);
-    glAttachShader(ShaderProgram, FragmentShader);
-    glLinkProgram(ShaderProgram);
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(FragmentShader);
-
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-    // Amount of VRAM Allocated in MB
-    glBufferData(GL_ARRAY_BUFFER, 1024 * 1024 * game.VRamAlloc, nullptr, GL_DYNAMIC_DRAW);
-
-    // aPos (location = 0)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    // atexture (location = 1)
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if(!success) {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, TextureID);
-
-    int texLoc = glGetUniformLocation(ShaderProgram, "tex");
-    glUseProgram(ShaderProgram);
-    glUniform1i(texLoc, 0); // GL_TEXTURE0 = 0
-
-} 
+    shader.Init_Shader(game.VRamAlloc, VAO, VBO, ShaderProgram);
+}
 
 void Tick_Update(camera &Camera, GLFWwindow* window, float &DeltaTime, std::map<std::pair<int, int>, Chunk> &World, Movement &movement, colisions &Colisions) {
     Input_Handler(Camera, window, DeltaTime, World, movement, Colisions);
@@ -494,9 +423,12 @@ void Game::MainLoop() {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // MVP
+            float aspectRatio = (float)width / (float)height;
+            float FOV = fun.ConvertHorizontalFovToVertical(game.FOV, aspectRatio);
+
             glm::mat4 model = glm::mat4(1.0f);
             glm::mat4 view = GetViewMatrix(Camera);
-            glm::mat4 proj = glm::perspective(glm::radians(50.0f), (float)width / (float)height, 0.1f, 600.0f);
+            glm::mat4 proj = glm::perspective(glm::radians(FOV), aspectRatio, 0.1f, 600.0f);
             glm::mat4 MVP = proj * view * model;
 
             GLuint mvpLoc = glGetUniformLocation(ShaderProgram, "MVP");
@@ -517,7 +449,7 @@ void Game::MainLoop() {
 
         // Generating Chunks
             if (game.ChunkUpdated) {
-                Generate_Chunks(Player, game.Render_Distance, World, Camera);
+                Generate_Chunks(Player, game.Render_Distance, World, Camera, game.Seed);
                 Remove_Chunks_Outside_Radius(Player.Chunk, game.Render_Distance, World, Camera, Player);
                 // Generating Mesh
                 vertecies.clear();

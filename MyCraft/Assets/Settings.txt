@@ -5,3 +5,5 @@ Chunk Height=128
 Chunk Depth=16
 V-Sync=1
 Tick Rate=60.0f
+Seed=0
+FOV=70
