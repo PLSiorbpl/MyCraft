@@ -93,12 +93,12 @@ void Get_World_Chunk(int Chunk_x, int Chunk_z, std::map<std::pair<int, int>, Chu
 
             float height_f = total * 0.5f + 0.5f;
 
-            height_f = height_f * (0.8f + biomeFactor * 1.2f);
+            height_f = height_f * (1.5f + biomeFactor * 0.5f);
 
             int height = static_cast<int>(height_f * CHUNK_HEIGHT);
 
             for (int y = 0; y <= height && y < CHUNK_HEIGHT; ++y) {
-                if (y < height - 1)
+                if ((Chunk_x+Chunk_z) % 2 == 1) // (y < height - 1)
                     Chunk.set(x, y, z, Chunk::BlockDefs.at(1)); // Stone
                 else
                     Chunk.set(x, y, z, Chunk::BlockDefs.at(2)); // Grass
@@ -108,7 +108,6 @@ void Get_World_Chunk(int Chunk_x, int Chunk_z, std::map<std::pair<int, int>, Chu
 
     World[{Chunk_x, Chunk_z}] = std::move(Chunk);
 }
-
 
 void Generate_Chunks(const Entity& Player, int Render_Dist, std::map<std::pair<int, int>, Chunk>& World, camera &Camera, int Seed) {
     glm::ivec3 Start_Chunk = Player.Chunk;
@@ -251,51 +250,6 @@ void GenerateMesh(const Chunk& chunk, std::vector<float>& outVertices, int chunk
     }
 }
 
-glm::mat4 GetViewMatrix(const camera& cam) {
-    glm::vec3 direction;
-    direction.x = cos(glm::radians(cam.Yaw)) * cos(glm::radians(cam.Pitch));
-    direction.y = sin(glm::radians(cam.Pitch));
-    direction.z = sin(glm::radians(cam.Yaw)) * cos(glm::radians(cam.Pitch));
-
-    glm::vec3 front = glm::normalize(direction);
-    glm::vec3 right = glm::normalize(glm::cross(front, glm::vec3(0,1,0)));
-    glm::vec3 up    = glm::normalize(glm::cross(right, front));
-
-    return glm::lookAt(cam.Position, cam.Position + front, up);
-}
-
-void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
-    static camera* cam = reinterpret_cast<camera*>(glfwGetWindowUserPointer(window));
-
-    if (cam->FirstMouse) {
-        cam->LastX = xpos;
-        cam->LastY = ypos;
-        cam->FirstMouse = false;
-    }
-
-    float xoffset = xpos - cam->LastX;
-    float yoffset = cam->LastY - ypos;
-
-    cam->LastX = xpos;
-    cam->LastY = ypos;
-
-    xoffset *= cam->Sensitivity;
-    yoffset *= cam->Sensitivity;
-
-    cam->Yaw   += xoffset;
-    cam->Pitch += yoffset;
-
-    // clamp Pitch
-    cam->Pitch = std::clamp(cam->Pitch, -89.0f, 89.0f);
-}
-
-void Input_Handler(camera &Camera, GLFWwindow* window, float deltaTime, std::map<std::pair<int, int>, Chunk>& World, Movement &movement, colisions &Colisions) {
-    movement.Init(Camera);
-    movement.Input(window, Camera);
-    movement.TestColisions(Camera, World, glm::vec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Colisions);
-    movement.Damp(Camera);
-}
-
 class Game {
 private:
     SIZE_T ramUsed;
@@ -312,6 +266,7 @@ private:
     int width, height;
     colisions Colisions;
     Fun fun;
+    Shader shader;
 
 public:
     Settings_Loader Settings;
@@ -381,7 +336,7 @@ bool Game::Init_Window() {
     glEnable(GL_DEPTH_TEST);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetWindowUserPointer(window, &Camera);
-    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetCursorPosCallback(window, movement.mouse_callback);
 
     game.Last_Chunk = glm::ivec3(999, 999, 999);
     
@@ -389,13 +344,12 @@ bool Game::Init_Window() {
 }
 
 void Game::Init_Shader() {
-    Shader shader;
-
     shader.Init_Shader(game.VRamAlloc, VAO, VBO, ShaderProgram);
+    // Soon more shaders
 }
 
 void Tick_Update(camera &Camera, GLFWwindow* window, float &DeltaTime, std::map<std::pair<int, int>, Chunk> &World, Movement &movement, colisions &Colisions) {
-    Input_Handler(Camera, window, DeltaTime, World, movement, Colisions);
+    movement.Init(Camera, window, World, glm::vec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Colisions);
 }
 
 void Game::MainLoop() {
@@ -427,7 +381,7 @@ void Game::MainLoop() {
             float FOV = fun.ConvertHorizontalFovToVertical(game.FOV, aspectRatio);
 
             glm::mat4 model = glm::mat4(1.0f);
-            glm::mat4 view = GetViewMatrix(Camera);
+            glm::mat4 view = movement.GetViewMatrix(Camera);
             glm::mat4 proj = glm::perspective(glm::radians(FOV), aspectRatio, 0.1f, 600.0f);
             glm::mat4 MVP = proj * view * model;
 

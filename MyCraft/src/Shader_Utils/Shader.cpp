@@ -10,7 +10,7 @@ void Shader::Load_Texture(unsigned int &Texture_ID) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     int width, height, nrChannels;
-    unsigned char *data = stbi_load("MyCraft/Assets/Stone.png", &width, &height, &nrChannels, 4);
+    unsigned char *data = stbi_load("MyCraft/Assets/Atlas.png", &width, &height, &nrChannels, 4);
     if (data) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);

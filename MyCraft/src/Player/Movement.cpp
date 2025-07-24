@@ -1,11 +1,15 @@
 #include "Movement.hpp"
 
-void Movement::Init(camera &Camera) {
+void Movement::Init(camera &Camera, GLFWwindow* window, std::map<std::pair<int, int>, Chunk>& World, glm::vec3 ChunkSize, colisions &Colisions) {
     direction = glm::vec3(0.0f);
     Cos.x = cos(glm::radians(Camera.Pitch));
     Cos.y = cos(glm::radians(Camera.Yaw));
     Sin.x = sin(glm::radians(Camera.Pitch));
     Sin.y = sin(glm::radians(Camera.Yaw));
+
+    Input(window, Camera);
+    TestColisions(Camera, World, ChunkSize, Colisions);
+    Damp(Camera);
 }
 
 void Movement::Input(GLFWwindow* window, camera &Camera) {
@@ -84,4 +88,41 @@ void Movement::Damp(camera &Camera) {
     };
     damp(Camera.Vel.x);
     damp(Camera.Vel.z);
+}
+
+void Movement::mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+    static camera* Camera = reinterpret_cast<camera*>(glfwGetWindowUserPointer(window));
+
+    if (Camera->FirstMouse) {
+        Camera->LastX = xpos;
+        Camera->LastY = ypos;
+        Camera->FirstMouse = false;
+    }
+
+    float xoffset = xpos - Camera->LastX;
+    float yoffset = Camera->LastY - ypos;
+
+    Camera->LastX = xpos;
+    Camera->LastY = ypos;
+
+    xoffset *= Camera->Sensitivity;
+    yoffset *= Camera->Sensitivity;
+
+    Camera->Yaw   += xoffset;
+    Camera->Pitch += yoffset;
+
+    Camera->Pitch = std::clamp(Camera->Pitch, -89.0f, 89.0f);
+}
+
+glm::mat4 Movement::GetViewMatrix(const camera& Camera) {
+    glm::vec3 direction;
+    direction.x = cos(glm::radians(Camera.Yaw)) * cos(glm::radians(Camera.Pitch));
+    direction.y = sin(glm::radians(Camera.Pitch));
+    direction.z = sin(glm::radians(Camera.Yaw)) * cos(glm::radians(Camera.Pitch));
+
+    glm::vec3 front = glm::normalize(direction);
+    glm::vec3 right = glm::normalize(glm::cross(front, glm::vec3(0,1,0)));
+    glm::vec3 up    = glm::normalize(glm::cross(right, front));
+
+    return glm::lookAt(Camera.Position, Camera.Position + front, up);
 }
