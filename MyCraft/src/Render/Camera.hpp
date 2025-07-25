@@ -15,6 +15,8 @@ public:
     bool onGround = false;
     float Gravity = 0.01f;
     float JumpStrength = 0.15f;
+    glm::ivec3 Chunk = glm::ivec3(0,0,0);
+    int RenderDistance;
 
     bool operator!=(const camera& other);
 };

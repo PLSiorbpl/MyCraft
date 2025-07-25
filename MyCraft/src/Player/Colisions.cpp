@@ -1,6 +1,6 @@
 #include "Colisions.hpp"
 
-bool colisions::isSolidAround(glm::vec3 pos, const std::map<std::pair<int, int>, Chunk>& World, glm::vec3 ChunkSize, float margin, float height) {
+bool colisions::isSolidAround(glm::vec3 pos, const std::map<std::pair<int, int>, Chunk>& World, glm::ivec3 ChunkSize, float margin, float height) {
 
     for (float dx : {-margin, margin}) {
         for (float dz : {-margin, margin}) {
@@ -14,7 +14,7 @@ bool colisions::isSolidAround(glm::vec3 pos, const std::map<std::pair<int, int>,
     }
     return false;
 }
-bool colisions::isSolidAt(glm::vec3 pos, const std::map<std::pair<int, int>, Chunk>& World, glm::vec3 ChunkSize) {
+bool colisions::isSolidAt(glm::vec3 pos, const std::map<std::pair<int, int>, Chunk>& World, glm::ivec3 ChunkSize) {
     int blockX = static_cast<int>(floor(pos.x));
     int blockY = static_cast<int>(floor(pos.y-1.8f));
     int blockZ = static_cast<int>(floor(pos.z));

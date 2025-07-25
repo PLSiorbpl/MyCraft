@@ -23,6 +23,9 @@
 #include "Player/Movement.hpp"
 #include "Shader_Utils/Shader.hpp"
 #include "Utils/Function.hpp"
+#include "World/Terrain.hpp"
+#include "World/Generation.hpp"
+#include "Render/Mesh.hpp"
 
 int CHUNK_WIDTH;
 int CHUNK_HEIGHT;
@@ -46,210 +49,6 @@ struct Game_Variables {
     int FOV;
 };
 
-struct Entity {
-    glm::vec3 Pos;
-    glm::ivec3 Chunk;
-    float Speed;
-};
-
-void Get_World_Chunk(int Chunk_x, int Chunk_z, std::map<std::pair<int, int>, Chunk>& World, int Seed) {
-    Chunk Chunk;
-    Chunk.width = CHUNK_WIDTH;
-    Chunk.height = CHUNK_HEIGHT;
-    Chunk.depth = CHUNK_DEPTH;
-    Chunk.chunkX = Chunk_x;
-    Chunk.chunkZ = Chunk_z;
-    Chunk.blocks.resize(CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_DEPTH);
-
-    FastNoiseLite terrainNoise;
-    terrainNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    terrainNoise.SetSeed(Seed);
-
-    FastNoiseLite biomeNoise;
-    biomeNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    biomeNoise.SetSeed(Seed + 1337);
-
-    const float baseFreq = 0.5f;
-    const float baseAmp = 0.2f;
-    const int octaves = 4;
-
-    for (int x = 0; x < CHUNK_WIDTH; ++x) {
-        for (int z = 0; z < CHUNK_DEPTH; ++z) {
-            float worldX = Chunk_x * CHUNK_WIDTH + x;
-            float worldZ = Chunk_z * CHUNK_DEPTH + z;
-
-            float biomeFactor = biomeNoise.GetNoise(worldX * 0.003f, worldZ * 0.003f);
-            biomeFactor = biomeFactor * 0.5f + 0.5f;
-
-            float total = 0.0f;
-            float freq = baseFreq;
-            float amp = baseAmp;
-
-            for (int i = 0; i < octaves; ++i) {
-                total += terrainNoise.GetNoise(worldX * freq, worldZ * freq) * amp;
-                freq *= 2.0f;
-                amp *= 0.2f;
-            }
-
-            float height_f = total * 0.5f + 0.5f;
-
-            height_f = height_f * (1.5f + biomeFactor * 0.5f);
-
-            int height = static_cast<int>(height_f * CHUNK_HEIGHT);
-
-            for (int y = 0; y <= height && y < CHUNK_HEIGHT; ++y) {
-                if ((Chunk_x+Chunk_z) % 2 == 1) // (y < height - 1)
-                    Chunk.set(x, y, z, Chunk::BlockDefs.at(1)); // Stone
-                else
-                    Chunk.set(x, y, z, Chunk::BlockDefs.at(2)); // Grass
-            }
-        }
-    }
-
-    World[{Chunk_x, Chunk_z}] = std::move(Chunk);
-}
-
-void Generate_Chunks(const Entity& Player, int Render_Dist, std::map<std::pair<int, int>, Chunk>& World, camera &Camera, int Seed) {
-    glm::ivec3 Start_Chunk = Player.Chunk;
-
-    for (int dx = -Render_Dist; dx <= Render_Dist; ++dx) {
-        for (int dz = -Render_Dist; dz <= Render_Dist; ++dz) {
-            int chunkX = Start_Chunk.x + dx;
-            int chunkZ = Start_Chunk.z + dz;
-
-            std::pair<int, int> key = {chunkX, chunkZ};
-
-            if (World.find(key) == World.end()) {
-                Get_World_Chunk(chunkX, chunkZ, World, Seed);
-            }
-        }
-    }
-}
-
-void Remove_Chunks_Outside_Radius(const glm::ivec3& PlayerChunk, int Render_Dist, std::map<std::pair<int, int>, Chunk>& World, camera &Camera, Entity &Player) {
-    // Keys to Delete
-    std::vector<std::pair<int,int>> toRemove;
-
-    for (const auto& [key, chunk] : World) {
-        int chunkX = key.first;
-        int chunkZ = key.second;
-
-        int dx = chunkX - PlayerChunk.x;
-        int dz = chunkZ - PlayerChunk.z;
-
-        int dist = std::max(std::abs(dx), std::abs(dz));
-
-        if (dist > Render_Dist) { //|| !IsChunkInFrontOfCamera(Player.Pos, Camera.Yaw, Camera.Pitch, chunkX, chunkZ)) {
-            toRemove.push_back(key);
-        }
-    }
-
-    // Delete chunks
-    for (const auto& key : toRemove) {
-        World.erase(key);
-    }
-}
-
-void AddCube(std::vector<float>& vertices, float wx, float wy, float wz, const Chunk& chunk, int Localx, int Localy, int Localz) {
-    float size = 1.0f;
-
-    glm::vec3 p000 = {wx,     wy,     wz};
-    glm::vec3 p001 = {wx,     wy,     wz+size};
-    glm::vec3 p010 = {wx,     wy+size, wz};
-    glm::vec3 p011 = {wx,     wy+size, wz+size};
-    glm::vec3 p100 = {wx+size, wy,     wz};
-    glm::vec3 p101 = {wx+size, wy,     wz+size};
-    glm::vec3 p110 = {wx+size, wy+size, wz};
-    glm::vec3 p111 = {wx+size, wy+size, wz+size};
-
-    int texX = 0;
-    int texY = 0;
-
-    if (chunk.get(Localx, Localy, Localz).id == 1) {
-        texX = 0;
-        texY = 0;
-    } else if (chunk.get(Localx, Localy, Localz).id == 2) {
-        texX = 1;
-        texY = 0;
-    } else {
-        texX = 0;
-        texY = 1;
-    }
-
-    float tileSize = 1.0f / 8.0f; // 0.125   8 textures in a row
-
-    float u = texX * tileSize;
-    float v = texY * tileSize;
-
-    glm::vec2 uv00 = {u, v};                         // left down
-    glm::vec2 uv10 = {u + tileSize, v};              // right up
-    glm::vec2 uv01 = {u, v + tileSize};              // left up
-    glm::vec2 uv11 = {u + tileSize, v + tileSize};   // right down
-
-    // push trójkąt z 3 parami: pozycja i UV
-    auto pushTri = [&](glm::vec3 a, glm::vec2 uva,
-                       glm::vec3 b, glm::vec2 uvb,
-                       glm::vec3 c, glm::vec2 uvc) {
-        for (int i = 0; i < 3; ++i) {
-            const glm::vec3& v = i == 0 ? a : (i == 1 ? b : c);
-            const glm::vec2& uv = i == 0 ? uva : (i == 1 ? uvb : uvc);
-            vertices.insert(vertices.end(), { v.x, v.y, v.z, uv.x, uv.y });
-        }
-    };
-
-    // FRONT (z+)
-    if (Localz + 1 >= CHUNK_DEPTH || chunk.get(Localx,Localy,Localz+1).id == 0) {
-        pushTri(p001, uv00, p101, uv10, p111, uv11);
-        pushTri(p001, uv00, p111, uv11, p011, uv01);
-    }
-
-    // BACK (z-)
-    if ((Localz - 1 < 0) || chunk.get(Localx,Localy,Localz-1).id == 0) {
-        pushTri(p100, uv00, p000, uv10, p010, uv11);
-        pushTri(p100, uv00, p010, uv11, p110, uv01);
-    }
-
-    // LEFT (x-)
-    if ((Localx - 1 < 0) || chunk.get(Localx-1,Localy,Localz).id == 0) {
-        pushTri(p000, uv00, p001, uv10, p011, uv11);
-        pushTri(p000, uv00, p011, uv11, p010, uv01);
-    }
-
-    // RIGHT (x+)
-    if (Localx + 1 >= CHUNK_WIDTH || chunk.get(Localx+1,Localy,Localz).id == 0) {
-        pushTri(p100, uv00, p101, uv10, p111, uv11);
-        pushTri(p100, uv00, p111, uv11, p110, uv01);
-    }
-
-    // TOP (y+)
-    if (Localy + 1 >= CHUNK_HEIGHT || chunk.get(Localx,Localy+1,Localz).id == 0) {
-        pushTri(p010, uv00, p011, uv10, p111, uv11);
-        pushTri(p010, uv00, p111, uv11, p110, uv01);
-    }
-
-    // BOTTOM (y-)
-    if ((Localy - 1 < 0) || chunk.get(Localx,Localy-1,Localz).id == 0) {
-        pushTri(p000, uv00, p100, uv10, p101, uv11);
-        pushTri(p000, uv00, p101, uv11, p001, uv01);
-    }
-}
-
-void GenerateMesh(const Chunk& chunk, std::vector<float>& outVertices, int chunkX, int chunkZ) {
-    for (int x = 0; x < CHUNK_WIDTH; ++x) {
-        for (int y = 0; y < CHUNK_HEIGHT; ++y) {
-            for (int z = 0; z < CHUNK_DEPTH; ++z) {
-                if (chunk.get(x, y, z).id != 0) { // 0 is Air
-                    float wx = chunkX * CHUNK_WIDTH + x;
-                    float wy = y;
-                    float wz = chunkZ * CHUNK_DEPTH + z;
-
-                    AddCube(outVertices, wx, wy, wz, chunk, x, y, z);
-                }
-            }
-        }
-    }
-}
-
 class Game {
 private:
     SIZE_T ramUsed;
@@ -259,7 +58,6 @@ private:
     Game_Variables game;
     GLuint VAO, VBO, ShaderProgram;
     std::vector<float> vertecies;
-    Entity Player;
     std::map<std::pair<int, int>, Chunk> World;
     Movement movement;
     float DeltaTime;
@@ -267,6 +65,7 @@ private:
     colisions Colisions;
     Fun fun;
     Shader shader;
+    Mesh mesh;
 
 public:
     Settings_Loader Settings;
@@ -282,7 +81,7 @@ public:
 void Game::Init_Settings(const std::string Path) {
     Settings.Load_Settings(Path);
 
-    game.Render_Distance = Settings.GetInt("Render Distance");
+    Camera.RenderDistance = Settings.GetInt("Render Distance");
     game.VRamAlloc = Settings.GetInt("VRam Alloc");
     CHUNK_WIDTH = Settings.GetInt("Chunk Width");
     CHUNK_HEIGHT = Settings.GetInt("Chunk Height");
@@ -349,10 +148,11 @@ void Game::Init_Shader() {
 }
 
 void Tick_Update(camera &Camera, GLFWwindow* window, float &DeltaTime, std::map<std::pair<int, int>, Chunk> &World, Movement &movement, colisions &Colisions) {
-    movement.Init(Camera, window, World, glm::vec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Colisions);
+    movement.Init(Camera, window, World, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Colisions);
 }
 
 void Game::MainLoop() {
+    ChunkGeneration GenerateChunk(game.Seed);
     glfwGetWindowSize(window, &width, &height);
     Fps.Init();
     while (!glfwWindowShouldClose(window)) {
@@ -388,27 +188,27 @@ void Game::MainLoop() {
             GLuint mvpLoc = glGetUniformLocation(ShaderProgram, "MVP");
             glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, &MVP[0][0]);
 
-        // Chunk Update
-            Player.Pos = Camera.Position;
-            Player.Chunk.x = static_cast<int>(std::floor(Camera.Position.x / CHUNK_WIDTH));
-            Player.Chunk.y = 0;
-            Player.Chunk.z = static_cast<int>(std::floor(Camera.Position.z / CHUNK_DEPTH));
+            Camera.Chunk.x = static_cast<int>(std::floor(Camera.Position.x / CHUNK_WIDTH));
+            Camera.Chunk.y = 0;
+            Camera.Chunk.z = static_cast<int>(std::floor(Camera.Position.z / CHUNK_DEPTH));
 
         // Update Logic
             game.ChunkUpdated = false;
-            if (Player.Chunk != game.Last_Chunk) {
+            if (Camera.Chunk != game.Last_Chunk) {
                 game.ChunkUpdated = true;
-                game.Last_Chunk = Player.Chunk;
+                game.Last_Chunk = Camera.Chunk;
             }
 
         // Generating Chunks
             if (game.ChunkUpdated) {
-                Generate_Chunks(Player, game.Render_Distance, World, Camera, game.Seed);
-                Remove_Chunks_Outside_Radius(Player.Chunk, game.Render_Distance, World, Camera, Player);
+                // Generate Chunks & Remove them if needed
+                GenerateChunk.GenerateChunks(Camera, World, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH));
+                GenerateChunk.RemoveChunks(Camera, World);
+
                 // Generating Mesh
                 vertecies.clear();
                 for (auto& [key, chunk] : World) {
-                    GenerateMesh(chunk, vertecies, key.first, key.second);
+                    mesh.GenerateMesh(chunk, vertecies, key.first, key.second, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Camera.RenderDistance);
                 }
             }
 

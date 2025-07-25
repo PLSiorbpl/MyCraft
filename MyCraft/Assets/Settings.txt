@@ -1,5 +1,5 @@
 Render Distance=6
-VRam Alloc=256
+VRam Alloc=196
 Chunk Width=16
 Chunk Height=128
 Chunk Depth=16
