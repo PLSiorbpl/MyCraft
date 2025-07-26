@@ -3,6 +3,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/glm.hpp>
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
 #include <iostream>
 #include <vector>
 #include <map>
@@ -15,6 +18,7 @@
 #include <sstream>
 #include <filesystem>
 #include "FastNoiseLite.h"
+#include <thread>
 #define STB_IMAGE_IMPLEMENTATION
 #include "Utils/FPS.hpp"
 #include "Render/Camera.hpp"
@@ -36,7 +40,6 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 struct Game_Variables {
-    int Render_Distance;
     int VRamAlloc; // In MB
     GLint sizeInBytes = 0;
     uint64_t Frame = 0;
@@ -47,12 +50,11 @@ struct Game_Variables {
     int V_Sync;
     int Seed;
     int FOV;
+    int FPS = 0;
 };
 
 class Game {
 private:
-    SIZE_T ramUsed;
-    PROCESS_MEMORY_COUNTERS meminfo;
     FPS Fps;
     camera Camera;
     Game_Variables game;
@@ -93,6 +95,9 @@ void Game::Init_Settings(const std::string Path) {
 }
 
 void Game::CleanUp() {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteProgram(ShaderProgram);
@@ -137,6 +142,13 @@ bool Game::Init_Window() {
     glfwSetWindowUserPointer(window, &Camera);
     glfwSetCursorPosCallback(window, movement.mouse_callback);
 
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
     game.Last_Chunk = glm::ivec3(999, 999, 999);
     
     return 0;
@@ -149,6 +161,52 @@ void Game::Init_Shader() {
 
 void Tick_Update(camera &Camera, GLFWwindow* window, float &DeltaTime, std::map<std::pair<int, int>, Chunk> &World, Movement &movement, colisions &Colisions) {
     movement.Init(Camera, window, World, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Colisions);
+}
+
+size_t calculateWorldMemory(const std::map<std::pair<int,int>, Chunk>& World) {
+    size_t total = 0;
+    const size_t nodeOverhead = sizeof(void*) * 3; // przybliżenie wskaźników w węźle mapy
+
+    for (const auto& [key, chunk] : World) {
+        total += sizeof(std::pair<const std::pair<int,int>, Chunk>) + nodeOverhead;
+        total += chunk.width * chunk.height * chunk.depth * sizeof(Chunk::Block);
+    }
+
+    return total;
+}
+
+void DebugInfo(Game_Variables &game, std::vector<float> &vertecies, std::map<std::pair<int, int>, Chunk> &World, camera &Camera) {
+    SIZE_T ramUsed;
+    PROCESS_MEMORY_COUNTERS meminfo;
+
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    ImGui::Begin("Debug");
+
+    glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &game.sizeInBytes);
+    GetProcessMemoryInfo(GetCurrentProcess(), &meminfo, sizeof(meminfo));
+    ramUsed = meminfo.WorkingSetSize;
+
+    ImGui::Text("FPS: %d", game.FPS);
+    ImGui::Text("Triangles: %d", vertecies.size() / 5);
+    ImGui::Text("Chunks: %d", (int)World.size());
+    ImGui::Text("Buffer Size: %dMB/%dMB", (vertecies.size() * sizeof(float))/1048576, game.sizeInBytes/1048576);
+    ImGui::Text("Render Distance: %d", Camera.RenderDistance);
+    ImGui::Text("Ram Used: %dMB", ramUsed / 1024 / 1024);
+    ImGui::Text("World Usage: %dMB", calculateWorldMemory(World) / (1024 * 1024));
+    GLenum err = glGetError();
+    ImGui::Text("OpenGL error: 0x%X", err);
+    
+    ImGui::Text("");
+    ImGui::Text("Camera:");
+    ImGui::Text("Position: X:%.1f Y:%.1f Z:%.1f", Camera.Position.x, Camera.Position.y, Camera.Position.z);
+    ImGui::Text("Chunk: X:%d Z:%d", Camera.Chunk.x, Camera.Chunk.z);
+    ImGui::Text("Sub Chunk Y: %d", static_cast<int>(std::floor(Camera.Position.y / 16.0f)));
+
+    ImGui::End();
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void Game::MainLoop() {
@@ -207,7 +265,7 @@ void Game::MainLoop() {
 
                 // Generating Mesh
                 vertecies.clear();
-                for (auto& [key, chunk] : World) {
+                for (auto& [key, chunk] : World) {                    
                     mesh.GenerateMesh(chunk, vertecies, key.first, key.second, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Camera.RenderDistance);
                 }
             }
@@ -219,20 +277,13 @@ void Game::MainLoop() {
 
                     glBindBuffer(GL_ARRAY_BUFFER, VBO);
                     glBufferSubData(GL_ARRAY_BUFFER, 0, vertecies.size() * sizeof(float), vertecies.data());
-
-                    glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &game.sizeInBytes);
-                    GetProcessMemoryInfo(GetCurrentProcess(), &meminfo, sizeof(meminfo));
-                    ramUsed = meminfo.WorkingSetSize;
-                    
-                    std::cout << "Sending: #" << game.Frame << " Info: verts=" << vertecies.size() << " chunks=" << World.size() << " Buffer size B: " 
-                        << (vertecies.size() * sizeof(float))/1048576 << "MB/"<< game.sizeInBytes/1048576 << "MB" << " Render Dist:" << game.Render_Distance << " Ram Used:" << ramUsed / 1024 / 1024 << "MB"
-                        << "\n";
                 }
-            glBindVertexArray(VAO);
-            glDrawArrays(GL_TRIANGLES, 0, vertecies.size() / 5);
+                glBindVertexArray(VAO);
+                glDrawArrays(GL_TRIANGLES, 0, vertecies.size() / 5);
             }
 
-            Fps.End();
+            DebugInfo(game, vertecies, World, Camera);
+            game.FPS = Fps.End();
         // Update Screen
             glfwSwapBuffers(window);
             glfwPollEvents();

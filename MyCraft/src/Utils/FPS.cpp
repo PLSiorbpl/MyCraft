@@ -1,7 +1,4 @@
 #include "FPS.hpp"
-#include <GLFW/glfw3.h>
-#include <iostream>
-
 
 void FPS::Init() {
     lastFrame = glfwGetTime();
@@ -10,7 +7,6 @@ void FPS::Init() {
     nbFrames = 0;
 }
 
-
 float FPS::Start() {
     float currentFrame = glfwGetTime();
     deltaTime = currentFrame - lastFrame;
@@ -18,16 +14,15 @@ float FPS::Start() {
     return deltaTime;
 }
 
-
-void FPS::End() {
+int FPS::End() {
     float currentTime = glfwGetTime();
     nbFrames++;
-    if (currentTime - lastTime >= 2.0f) {
-        std::cout << "FPS: " << nbFrames/2 << "\n";
+    if (currentTime - lastTime >= 1.0f) {
+        ToReturn = nbFrames;
         nbFrames = 0;
         lastTime = currentTime;
     }
+    return ToReturn;
 }
-
 
 float FPS::GetDeltaTime() const { return deltaTime; }

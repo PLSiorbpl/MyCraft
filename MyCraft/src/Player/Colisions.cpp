@@ -16,7 +16,7 @@ bool colisions::isSolidAround(glm::vec3 pos, const std::map<std::pair<int, int>,
 }
 bool colisions::isSolidAt(glm::vec3 pos, const std::map<std::pair<int, int>, Chunk>& World, glm::ivec3 ChunkSize) {
     int blockX = static_cast<int>(floor(pos.x));
-    int blockY = static_cast<int>(floor(pos.y-1.8f));
+    int blockY = static_cast<int>(floor(pos.y-1.7f));
     int blockZ = static_cast<int>(floor(pos.z));
 
     int chunkX = floor((float)blockX / ChunkSize.x);
