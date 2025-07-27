@@ -1,6 +1,7 @@
 #include "Mesh.hpp"
 
-void Mesh::GenerateMesh(const Chunk& chunk, std::vector<float>& vertices, int chunkX, int chunkZ, glm::ivec3 ChunkSize, int RenderDist) {
+void Mesh::GenerateMesh(const Chunk& chunk, std::vector<float>& vertices, int chunkX, int chunkZ, glm::ivec3 ChunkSize, int RenderDist, std::map<std::pair<int, int>, Chunk> &World) {
+    // Pre Allocation
     int maxChunks = (RenderDist * 2 + 1) * (RenderDist * 2 + 1);
     int maxBlocks = ChunkSize.x * ChunkSize.y * ChunkSize.z;
     vertices.reserve((maxBlocks * maxChunks) * 36);
@@ -17,14 +18,14 @@ void Mesh::GenerateMesh(const Chunk& chunk, std::vector<float>& vertices, int ch
                     const float wy = y;
                     const float wz = worldOffsetZ + z;
 
-                    CubeMesh(vertices, glm::vec3(wx, wy, wz), chunk, glm::ivec3(x, y, z), ChunkSize);
+                    CubeMesh(vertices, glm::vec3(wx, wy, wz), chunk, glm::ivec3(x, y, z), ChunkSize, World);
                 }
             }
         }
     }
 }
 
-void Mesh::CubeMesh(std::vector<float>& vertices, glm::vec3 w, const Chunk& chunk, glm::ivec3 Local, glm::ivec3 ChunkSize) {
+void Mesh::CubeMesh(std::vector<float>& vertices, glm::vec3 w, const Chunk& chunk, glm::ivec3 Local, glm::ivec3 ChunkSize, std::map<std::pair<int, int>, Chunk> &World) {
     float size = 1.0f;
 
     glm::vec3 p000 = {w.x,      w.y,      w.z};
@@ -51,7 +52,7 @@ void Mesh::CubeMesh(std::vector<float>& vertices, glm::vec3 w, const Chunk& chun
         texY = 1;
     }
 
-    float tileSize = 1.0f / 8.0f; // 0.125   8 textures in a row
+    const float tileSize = 1.0f / 8.0f; // 0.125   8 textures in a row
 
     float u = texX * tileSize;
     float v = texY * tileSize;
@@ -61,7 +62,6 @@ void Mesh::CubeMesh(std::vector<float>& vertices, glm::vec3 w, const Chunk& chun
     glm::vec2 uv01 = {u,  v + tileSize};           // left up
     glm::vec2 uv11 = {u + tileSize, v + tileSize}; // right down
 
-    // push trójkąt z 3 parami: pozycja i UV
     auto pushTri = [&](glm::vec3 a, glm::vec2 uva,
                        glm::vec3 b, glm::vec2 uvb,
                        glm::vec3 c, glm::vec2 uvc) {
@@ -73,25 +73,45 @@ void Mesh::CubeMesh(std::vector<float>& vertices, glm::vec3 w, const Chunk& chun
     };
 
     // FRONT (z+)
-    if (Local.z + 1 >= ChunkSize.z || chunk.get(Local.x, Local.y, Local.z+1).id == 0) {
+    if ((Local.z + 1 >= ChunkSize.z)) {
+        if (!IsBlockAt(World, w.x, w.y, w.z+1, ChunkSize)) {
+            pushTri(p001, uv00, p101, uv10, p111, uv11);
+            pushTri(p001, uv00, p111, uv11, p011, uv01);
+        }
+    } else if (chunk.get(Local.x, Local.y, Local.z+1).id == 0) {
         pushTri(p001, uv00, p101, uv10, p111, uv11);
         pushTri(p001, uv00, p111, uv11, p011, uv01);
     }
 
     // BACK (z-)
-    if ((Local.z - 1 < 0) || chunk.get(Local.x, Local.y, Local.z-1).id == 0) {
+    if ((Local.z - 1 < 0)) {
+        if (!IsBlockAt(World, w.x, w.y, w.z-1, ChunkSize)) {
+            pushTri(p100, uv00, p000, uv10, p010, uv11);
+            pushTri(p100, uv00, p010, uv11, p110, uv01);
+        }
+    } else if (chunk.get(Local.x, Local.y, Local.z-1).id == 0) {
         pushTri(p100, uv00, p000, uv10, p010, uv11);
         pushTri(p100, uv00, p010, uv11, p110, uv01);
     }
 
     // LEFT (x-)
-    if ((Local.x - 1 < 0) || chunk.get(Local.x-1, Local.y, Local.z).id == 0) {
+    if ((Local.x - 1 < 0)) {
+        if (!IsBlockAt(World, w.x-1, w.y, w.z, ChunkSize)) {
+            pushTri(p000, uv00, p001, uv10, p011, uv11);
+            pushTri(p000, uv00, p011, uv11, p010, uv01);
+        }
+    } else if (chunk.get(Local.x-1, Local.y, Local.z).id == 0) {
         pushTri(p000, uv00, p001, uv10, p011, uv11);
         pushTri(p000, uv00, p011, uv11, p010, uv01);
     }
 
     // RIGHT (x+)
-    if (Local.x + 1 >= ChunkSize.x || chunk.get(Local.x+1, Local.y, Local.z).id == 0) {
+    if ((Local.x + 1 >= ChunkSize.x)) {
+        if (!IsBlockAt(World, w.x+1, w.y, w.z, ChunkSize)) {
+            pushTri(p100, uv00, p101, uv10, p111, uv11);
+            pushTri(p100, uv00, p111, uv11, p110, uv01);
+        }
+    } else if (chunk.get(Local.x+1, Local.y, Local.z).id == 0) {
         pushTri(p100, uv00, p101, uv10, p111, uv11);
         pushTri(p100, uv00, p111, uv11, p110, uv01);
     }
@@ -107,4 +127,21 @@ void Mesh::CubeMesh(std::vector<float>& vertices, glm::vec3 w, const Chunk& chun
         pushTri(p000, uv00, p100, uv10, p101, uv11);
         pushTri(p000, uv00, p101, uv11, p001, uv01);
     }
+}
+
+bool Mesh::IsBlockAt(std::map<std::pair<int, int>, Chunk> &World, int WorldX, int y, int WorldZ, glm::ivec3 ChunkSize) {
+    int chunkX = WorldX / ChunkSize.x;
+    int chunkZ = WorldZ / ChunkSize.z;
+    if (WorldX < 0 && WorldX % ChunkSize.x != 0) chunkX--;
+    if (WorldZ < 0 && WorldZ % ChunkSize.z != 0) chunkZ--;
+
+    int localX = WorldX - chunkX * ChunkSize.x;
+    int localZ = WorldZ - chunkZ * ChunkSize.z;
+
+    auto it = World.find({chunkX, chunkZ});
+    if (it != World.end()) {
+        const Chunk& neighbor = it->second;
+        return neighbor.get(localX, y, localZ).id != 0;
+    }
+    return false;
 }

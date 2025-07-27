@@ -240,7 +240,7 @@ void Game::MainLoop() {
 
             glm::mat4 model = glm::mat4(1.0f);
             glm::mat4 view = movement.GetViewMatrix(Camera);
-            glm::mat4 proj = glm::perspective(glm::radians(FOV), aspectRatio, 0.1f, 600.0f);
+            glm::mat4 proj = glm::perspective(glm::radians(FOV), aspectRatio, 0.1f, 2000.0f);
             glm::mat4 MVP = proj * view * model;
 
             GLuint mvpLoc = glGetUniformLocation(ShaderProgram, "MVP");
@@ -266,7 +266,7 @@ void Game::MainLoop() {
                 // Generating Mesh
                 vertecies.clear();
                 for (auto& [key, chunk] : World) {                    
-                    mesh.GenerateMesh(chunk, vertecies, key.first, key.second, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Camera.RenderDistance);
+                    mesh.GenerateMesh(chunk, vertecies, key.first, key.second, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Camera.RenderDistance, World);
                 }
             }
 
