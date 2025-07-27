@@ -68,6 +68,7 @@ private:
     Fun fun;
     Shader shader;
     Mesh mesh;
+    int Alloc;
 
 public:
     Settings_Loader Settings;
@@ -175,7 +176,7 @@ size_t calculateWorldMemory(const std::map<std::pair<int,int>, Chunk>& World) {
     return total;
 }
 
-void DebugInfo(Game_Variables &game, std::vector<float> &vertecies, std::map<std::pair<int, int>, Chunk> &World, camera &Camera) {
+void DebugInfo(Game_Variables &game, std::vector<float> &vertecies, std::map<std::pair<int, int>, Chunk> &World, camera &Camera, int Alloc) {
     SIZE_T ramUsed;
     PROCESS_MEMORY_COUNTERS meminfo;
 
@@ -192,6 +193,7 @@ void DebugInfo(Game_Variables &game, std::vector<float> &vertecies, std::map<std
     ImGui::Text("Triangles: %d", vertecies.size() / 5);
     ImGui::Text("Chunks: %d", (int)World.size());
     ImGui::Text("Buffer Size: %dMB/%dMB", (vertecies.size() * sizeof(float))/1048576, game.sizeInBytes/1048576);
+    ImGui::Text("Tried to Alloc: %dMB", (Alloc / (1024 * 1024)));
     ImGui::Text("Render Distance: %d", Camera.RenderDistance);
     ImGui::Text("Ram Used: %dMB", ramUsed / 1024 / 1024);
     ImGui::Text("World Usage: %dMB", calculateWorldMemory(World) / (1024 * 1024));
@@ -218,7 +220,7 @@ void Game::MainLoop() {
             glfwSetWindowShouldClose(window, true);
             
         // Main Engine -------------------------------------------------------------------
-            
+
             DeltaTime = Fps.Start();
             game.Tick_Timer += DeltaTime;
 
@@ -264,7 +266,9 @@ void Game::MainLoop() {
                 GenerateChunk.RemoveChunks(Camera, World);
 
                 // Generating Mesh
+                Alloc = static_cast<int>((vertecies.size() * sizeof(float)) * 1.1f); // 10% more in case bigger mesh is created
                 vertecies.clear();
+                vertecies.reserve(Alloc);
                 for (auto& [key, chunk] : World) {                    
                     mesh.GenerateMesh(chunk, vertecies, key.first, key.second, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Camera.RenderDistance, World);
                 }
@@ -282,7 +286,7 @@ void Game::MainLoop() {
                 glDrawArrays(GL_TRIANGLES, 0, vertecies.size() / 5);
             }
 
-            DebugInfo(game, vertecies, World, Camera);
+            DebugInfo(game, vertecies, World, Camera, Alloc);
             game.FPS = Fps.End();
         // Update Screen
             glfwSwapBuffers(window);

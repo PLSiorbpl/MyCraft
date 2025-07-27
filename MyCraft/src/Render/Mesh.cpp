@@ -1,11 +1,6 @@
 #include "Mesh.hpp"
 
 void Mesh::GenerateMesh(const Chunk& chunk, std::vector<float>& vertices, int chunkX, int chunkZ, glm::ivec3 ChunkSize, int RenderDist, std::map<std::pair<int, int>, Chunk> &World) {
-    // Pre Allocation
-    int maxChunks = (RenderDist * 2 + 1) * (RenderDist * 2 + 1);
-    int maxBlocks = ChunkSize.x * ChunkSize.y * ChunkSize.z;
-    vertices.reserve((maxBlocks * maxChunks) * 36);
-
     const int worldOffsetX = chunkX * ChunkSize.x;
     const int worldOffsetZ = chunkZ * ChunkSize.z;
 
