@@ -143,5 +143,5 @@ bool Mesh::IsBlockAt(std::map<std::pair<int, int>, Chunk> &World, int WorldX, in
         const Chunk& neighbor = it->second;
         return neighbor.get(localX, y, localZ).id != 0;
     }
-    return false;
+    return true;
 }
