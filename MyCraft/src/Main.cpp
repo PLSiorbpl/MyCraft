@@ -160,23 +160,11 @@ void Game::Init_Shader() {
     // Soon more shaders
 }
 
-void Tick_Update(camera &Camera, GLFWwindow* window, float &DeltaTime, std::map<std::pair<int, int>, Chunk> &World, Movement &movement, colisions &Colisions) {
+void Tick_Update(camera &Camera, GLFWwindow* window, const float DeltaTime, const std::map<std::pair<int, int>, Chunk> &World, Movement &movement, colisions &Colisions) {
     movement.Init(Camera, window, World, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Colisions);
 }
 
-size_t calculateWorldMemory(const std::map<std::pair<int,int>, Chunk>& World) {
-    size_t total = 0;
-    const size_t nodeOverhead = sizeof(void*) * 3; // przybliżenie wskaźników w węźle mapy
-
-    for (const auto& [key, chunk] : World) {
-        total += sizeof(std::pair<const std::pair<int,int>, Chunk>) + nodeOverhead;
-        total += chunk.width * chunk.height * chunk.depth * sizeof(Chunk::Block);
-    }
-
-    return total;
-}
-
-void DebugInfo(Game_Variables &game, std::vector<float> &vertecies, std::map<std::pair<int, int>, Chunk> &World, camera &Camera, int Alloc) {
+void DebugInfo(Game_Variables &game, const std::vector<float> &vertecies, const std::map<std::pair<int, int>, Chunk> &World, const camera &Camera, const int Alloc, Fun &fun) {
     SIZE_T ramUsed;
     PROCESS_MEMORY_COUNTERS meminfo;
 
@@ -196,7 +184,7 @@ void DebugInfo(Game_Variables &game, std::vector<float> &vertecies, std::map<std
     ImGui::Text("Tried to Alloc: %dMB", (Alloc / (1024 * 1024)));
     ImGui::Text("Render Distance: %d", Camera.RenderDistance);
     ImGui::Text("Ram Used: %dMB", ramUsed / 1024 / 1024);
-    ImGui::Text("World Usage: %dMB", calculateWorldMemory(World) / (1024 * 1024));
+    ImGui::Text("World Usage: %dMB", fun.calculateWorldMemory(World) / (1024 * 1024));
     GLenum err = glGetError();
     ImGui::Text("OpenGL error: 0x%X", err);
     
@@ -218,7 +206,6 @@ void Game::MainLoop() {
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(window, true);
-            
         // Main Engine -------------------------------------------------------------------
 
             DeltaTime = Fps.Start();
@@ -269,7 +256,7 @@ void Game::MainLoop() {
                 Alloc = static_cast<int>((vertecies.size() * sizeof(float)) * 1.1f); // 10% more in case bigger mesh is created
                 vertecies.clear();
                 vertecies.reserve(Alloc);
-                for (auto& [key, chunk] : World) {                    
+                for (const auto& [key, chunk] : World) {                    
                     mesh.GenerateMesh(chunk, vertecies, key.first, key.second, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Camera.RenderDistance, World);
                 }
             }
@@ -277,7 +264,6 @@ void Game::MainLoop() {
         // Draw On Screen & send to GPU
             if (!vertecies.empty()) {
                 if (game.ChunkUpdated) {
-                    game.Frame += 1;
 
                     glBindBuffer(GL_ARRAY_BUFFER, VBO);
                     glBufferSubData(GL_ARRAY_BUFFER, 0, vertecies.size() * sizeof(float), vertecies.data());
@@ -286,7 +272,7 @@ void Game::MainLoop() {
                 glDrawArrays(GL_TRIANGLES, 0, vertecies.size() / 5);
             }
 
-            DebugInfo(game, vertecies, World, Camera, Alloc);
+            DebugInfo(game, vertecies, World, Camera, Alloc, fun);
             game.FPS = Fps.End();
         // Update Screen
             glfwSwapBuffers(window);

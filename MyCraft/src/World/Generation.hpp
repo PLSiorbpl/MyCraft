@@ -15,6 +15,6 @@ class ChunkGeneration {
     public:
     ChunkGeneration(int seed);
 
-    void GenerateChunks(camera &Camera, std::map<std::pair<int, int>, Chunk>& World, glm::ivec3 ChunkSize);
-    void RemoveChunks(camera &Camera, std::map<std::pair<int, int>, Chunk>& World);
+    void GenerateChunks(const camera &Camera, std::map<std::pair<int, int>, Chunk>& World, const glm::ivec3 ChunkSize);
+    void RemoveChunks(const camera &Camera, std::map<std::pair<int, int>, Chunk>& World);
 };

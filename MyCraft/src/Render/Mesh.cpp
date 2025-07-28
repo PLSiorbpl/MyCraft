@@ -1,6 +1,6 @@
 #include "Mesh.hpp"
 
-void Mesh::GenerateMesh(const Chunk& chunk, std::vector<float>& vertices, int chunkX, int chunkZ, glm::ivec3 ChunkSize, int RenderDist, std::map<std::pair<int, int>, Chunk> &World) {
+void Mesh::GenerateMesh(const Chunk& chunk, std::vector<float>& vertices, int chunkX, int chunkZ, const glm::ivec3 ChunkSize, int RenderDist, const std::map<std::pair<int, int>, Chunk> &World) {
     const int worldOffsetX = chunkX * ChunkSize.x;
     const int worldOffsetZ = chunkZ * ChunkSize.z;
 
@@ -20,7 +20,7 @@ void Mesh::GenerateMesh(const Chunk& chunk, std::vector<float>& vertices, int ch
     }
 }
 
-void Mesh::CubeMesh(std::vector<float>& vertices, glm::vec3 w, const Chunk& chunk, glm::ivec3 Local, glm::ivec3 ChunkSize, std::map<std::pair<int, int>, Chunk> &World) {
+void Mesh::CubeMesh(std::vector<float>& vertices, glm::vec3 w, const Chunk& chunk, glm::ivec3 Local, const glm::ivec3 ChunkSize, const std::map<std::pair<int, int>, Chunk> &World) {
     float size = 1.0f;
 
     glm::vec3 p000 = {w.x,      w.y,      w.z};
@@ -124,16 +124,14 @@ void Mesh::CubeMesh(std::vector<float>& vertices, glm::vec3 w, const Chunk& chun
     }
 }
 
-bool Mesh::IsBlockAt(std::map<std::pair<int, int>, Chunk> &World, int WorldX, int y, int WorldZ, glm::ivec3 ChunkSize) {
-    int chunkX = WorldX / ChunkSize.x;
-    int chunkZ = WorldZ / ChunkSize.z;
-    if (WorldX < 0 && WorldX % ChunkSize.x != 0) chunkX--;
-    if (WorldZ < 0 && WorldZ % ChunkSize.z != 0) chunkZ--;
+bool Mesh::IsBlockAt(const std::map<std::pair<int, int>, Chunk> &World, int WorldX, int y, int WorldZ, const glm::ivec3 ChunkSize) {
+    int chunkX = std::floor((float)WorldX / ChunkSize.x);
+    int chunkZ = std::floor((float)WorldZ / ChunkSize.z);
 
     int localX = WorldX - chunkX * ChunkSize.x;
     int localZ = WorldZ - chunkZ * ChunkSize.z;
 
-    auto it = World.find({chunkX, chunkZ});
+    const auto it = World.find({chunkX, chunkZ});
     if (it != World.end()) {
         const Chunk& neighbor = it->second;
         return neighbor.get(localX, y, localZ).id != 0;

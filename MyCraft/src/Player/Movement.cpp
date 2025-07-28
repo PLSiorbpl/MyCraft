@@ -1,6 +1,6 @@
 #include "Movement.hpp"
 
-void Movement::Init(camera &Camera, GLFWwindow* window, std::map<std::pair<int, int>, Chunk>& World, glm::ivec3 ChunkSize, colisions &Colisions) {
+void Movement::Init(camera &Camera, GLFWwindow* window, const std::map<std::pair<int, int>, Chunk>& World, const glm::ivec3 ChunkSize, colisions &Colisions) {
     direction = glm::vec3(0.0f);
     Cos.x = cos(glm::radians(Camera.Pitch));
     Cos.y = cos(glm::radians(Camera.Yaw));
@@ -45,7 +45,7 @@ void Movement::Input(GLFWwindow* window, camera &Camera) {
     Camera.Vel.y = std::clamp(Camera.Vel.y, -0.2f, 0.2f);
 }
 
-void Movement::TestColisions(camera &Camera, std::map<std::pair<int, int>, Chunk>& World, glm::ivec3 ChunkSize, colisions &Colisions) {
+void Movement::TestColisions(camera &Camera, const std::map<std::pair<int, int>, Chunk>& World, const glm::ivec3 ChunkSize, colisions &Colisions) {
     // get unstuck from block
     if (Colisions.isSolidAt(Camera.Position, World, ChunkSize)) {
         Camera.Position.y += 1.0f;

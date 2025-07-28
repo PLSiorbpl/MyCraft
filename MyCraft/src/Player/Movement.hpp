@@ -16,9 +16,9 @@ class Movement {
     glm::vec2 Sin;
     glm::vec3 testPos;
 
-    void Init(camera &Camera, GLFWwindow* window, std::map<std::pair<int, int>, Chunk>& World, glm::ivec3 ChunkSize, colisions &Colisions);
+    void Init(camera &Camera, GLFWwindow* window, const std::map<std::pair<int, int>, Chunk>& World, const glm::ivec3 ChunkSize, colisions &Colisions);
     void Input(GLFWwindow* window, camera &Camera);
-    void TestColisions(camera &Camera, std::map<std::pair<int, int>, Chunk>& World, glm::ivec3 ChunkSize, colisions &Colisions);
+    void TestColisions(camera &Camera, const std::map<std::pair<int, int>, Chunk>& World, const glm::ivec3 ChunkSize, colisions &Colisions);
     void Damp(camera &Camera);
 
     static void mouse_callback(GLFWwindow* window, double xpos, double ypos);
