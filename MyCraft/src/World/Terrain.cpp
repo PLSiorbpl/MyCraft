@@ -14,8 +14,8 @@ void TerrainGen::Generate_Terrain_Chunk(int Chunk_x, int Chunk_z, std::map<std::
             float worldX = Chunk_x * ChunkSize.x + x;
             float worldZ = Chunk_z * ChunkSize.z + z;
 
-            float biomeFactor = biomeNoise.GetNoise(worldX * BiomeFreq, worldZ * BiomeFreq);
-            biomeFactor = biomeFactor * 0.5f + 0.5f;
+            float biomeFactor = pow(BiomePower, biomeNoise.GetNoise(worldX * BiomeFreq, worldZ * BiomeFreq));
+            biomeFactor = biomeFactor;
 
             float baseHeight = 0.0f;
             float frequency = baseFreq;
@@ -27,12 +27,12 @@ void TerrainGen::Generate_Terrain_Chunk(int Chunk_x, int Chunk_z, std::map<std::
                 amplitude *= AddedAmp;
             }
 
-            float normalizedHeight = baseHeight * 0.5f + 0.5f;
+            float normalizedHeight = (baseHeight/octaves) * 0.5f + 0.5f;
             normalizedHeight *= (BiomeBase + biomeFactor * BiomeMult);
             int intHeight = static_cast<int>(normalizedHeight * ChunkSize.y);
 
             for (int y = 0; y <= intHeight && y < ChunkSize.y; ++y) {
-                if (abs((Chunk_x + Chunk_z)) % 2 == 1) {
+                if (y != intHeight) {
                     Chunk.set(x, y, z, Chunk::BlockDefs.at(1)); // Stone
                 } else {
                     Chunk.set(x, y, z, Chunk::BlockDefs.at(2)); // Grass

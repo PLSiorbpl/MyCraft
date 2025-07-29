@@ -17,14 +17,15 @@ private:
     float BiomeFreq = 0.03f;
     float BiomeMult = 0.5f;
     float BiomeBase = 1.5f;
+    int BiomePower = 4;
     FastNoiseLite terrainNoise;
     FastNoiseLite biomeNoise;
 
 public:
-    TerrainGen(int seed, float basefreq, float baseamp, int oct, float addfreq, float addamp, float biomefreq, float biomemult, float biomebase)
+    TerrainGen(int seed, float basefreq, float baseamp, int oct, float addfreq, float addamp, float biomefreq, float biomemult, float biomebase, int biomepower)
     : Seed(seed), baseFreq(basefreq), baseAmp(baseamp), octaves(oct),
       AddedFreq(addfreq), AddedAmp(addamp), BiomeFreq(biomefreq),
-      BiomeMult(biomemult), BiomeBase(biomebase)
+      BiomeMult(biomemult), BiomeBase(biomebase), BiomePower(biomepower)
     {
         terrainNoise.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);
         biomeNoise.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);

@@ -18,7 +18,7 @@ public:
     std::vector<Block> blocks;
     int width, height, depth;
     int chunkX, chunkZ;
-    static std::map<uint8_t, Block> BlockDefs;
+    static const std::map<uint8_t, Block> BlockDefs;
 
     Chunk() : width(0), height(0), depth(0), chunkX(0), chunkZ(0), blocks(0) {}
 

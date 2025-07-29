@@ -1,6 +1,6 @@
 #include "Camera.hpp"
 
-bool camera::operator!=(const camera& other) {
+bool camera::operator!=(const camera& other) const {
     return Position != other.Position ||
            Pitch != other.Pitch ||
            Yaw != other.Yaw ||

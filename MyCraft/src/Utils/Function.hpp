@@ -6,6 +6,6 @@
 class Fun {
     public:
     
-    float ConvertHorizontalFovToVertical(float fovX_deg, float aspectRatio);
+    float ConvertHorizontalFovToVertical(float fovX_deg, float aspectRatio) const;
     int calculateWorldMemory(const std::map<std::pair<int, int>, Chunk>& World);
 };

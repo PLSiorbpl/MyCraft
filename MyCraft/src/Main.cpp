@@ -61,7 +61,7 @@ struct Game_Variables {
     float biomefreq;
     float biomemult;
     float biomebase;
-    
+    int biomepower;
 };
 
 class Game {
@@ -103,6 +103,7 @@ void Game::Init_Settings(const std::string Path) {
     game.V_Sync = Settings.GetInt("V-Sync");
     game.TickRate = 1.0f / Settings.GetFloat("Tick Rate");
     game.FOV = Settings.GetInt("FOV");
+    Camera.Speed = Settings.GetFloat("Speed");
 
     game.Seed = Settings.GetInt("Seed");
     game.basefreq = Settings.GetFloat("Base Frequency");
@@ -113,6 +114,7 @@ void Game::Init_Settings(const std::string Path) {
     game.biomefreq = Settings.GetFloat("Biome Frequency");
     game.biomemult = Settings.GetFloat("Biome Multiplier");
     game.biomebase = Settings.GetFloat("Biome Add Amplitude");
+    game.biomepower = Settings.GetInt("Biome Power");
 }
 
 void Game::CleanUp() {
@@ -210,6 +212,9 @@ void DebugInfo(Game_Variables &game, const std::vector<float> &vertecies, const 
     
     ImGui::Text("");
     ImGui::Text("Camera:");
+    std::string Mode;
+    if (!Camera.Mode) Mode = "Survival"; else Mode = "Spectator";
+    ImGui::Text("Mode: %s", Mode.c_str());
     ImGui::Text("Position: X:%.1f Y:%.1f Z:%.1f", Camera.Position.x, Camera.Position.y, Camera.Position.z);
     ImGui::Text("Chunk: X:%d Z:%d", Camera.Chunk.x, Camera.Chunk.z);
     ImGui::Text("Sub Chunk Y: %d", static_cast<int>(std::floor(Camera.Position.y / 16.0f)));
@@ -220,7 +225,7 @@ void DebugInfo(Game_Variables &game, const std::vector<float> &vertecies, const 
 }
 
 void Game::MainLoop() {
-    ChunkGeneration GenerateChunk(game.Seed, game.basefreq, game.baseamp, game.oct, game.addfreq, game.addamp, game.biomefreq, game.biomemult, game.biomebase);
+    ChunkGeneration GenerateChunk(game.Seed, game.basefreq, game.baseamp, game.oct, game.addfreq, game.addamp, game.biomefreq, game.biomemult, game.biomebase, game.biomepower);
     glfwGetWindowSize(window, &width, &height);
     Fps.Init();
     while (!glfwWindowShouldClose(window)) {

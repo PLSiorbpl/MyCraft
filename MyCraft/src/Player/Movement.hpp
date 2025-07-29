@@ -15,9 +15,11 @@ class Movement {
     glm::vec2 Cos;
     glm::vec2 Sin;
     glm::vec3 testPos;
+    bool lastStateKey1 = false;
 
     void Init(camera &Camera, GLFWwindow* window, const std::map<std::pair<int, int>, Chunk>& World, const glm::ivec3 ChunkSize, colisions &Colisions);
     void Input(GLFWwindow* window, camera &Camera);
+    void Special_Keys(GLFWwindow* window, camera &Camera);
     void TestColisions(camera &Camera, const std::map<std::pair<int, int>, Chunk>& World, const glm::ivec3 ChunkSize, colisions &Colisions);
     void Damp(camera &Camera);
 

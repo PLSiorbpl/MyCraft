@@ -5,21 +5,24 @@ V-Sync=1
 
 # World Generation:
 Chunk Width=16
-Chunk Height=128
+Chunk Height=256
 Chunk Depth=16
 
+## Info: Biome Multiplier is kinda bad use Biome power instead (pow(power, height);)
 Seed=6969
 Base Frequency=0.05f
-Base Amplitude=0.5f
-Octave=3
-Add Frequency=3.0f
-Add Amplitude=0.5f
-Biome Frequency=0.5f
-Biome Multiplier=0.2f
-Biome Add Amplitude=1.2f
+Base Amplitude=0.1f
+Octave=4
+Add Frequency=4.0f
+Add Amplitude=0.9f
+Biome Frequency=0.2f
+Biome Multiplier=0.2f # Biome Power is better
+Biome Add Amplitude=0.85f
+Biome Power=6 # its Height^x
 
 # Game:
 Tick Rate=60.0f
 
 # Player:
 FOV=70
+Speed=0.1f

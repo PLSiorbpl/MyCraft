@@ -21,7 +21,7 @@ void Shader::Load_Texture(unsigned int &Texture_ID) {
 }
 
 std::string Shader::LoadShaderSource(const std::string& path) {
-    std::ifstream file(path);
+    const std::ifstream file(path);
     if (!file.is_open())
         throw std::runtime_error("Cant Open File: " + path);
 
@@ -34,8 +34,8 @@ void Shader::Init_Shader(int Vram, GLuint &VAO, GLuint &VBO, GLuint &ShaderProgr
     unsigned int TextureID;
     Load_Texture(TextureID);
 
-    std::string vertexCode = LoadShaderSource("MyCraft/shaders/vertex.glsl");
-    std::string fragmentCode = LoadShaderSource("MyCraft/shaders/fragment.glsl");
+    const std::string vertexCode = LoadShaderSource("MyCraft/shaders/vertex.glsl");
+    const std::string fragmentCode = LoadShaderSource("MyCraft/shaders/fragment.glsl");
 
     const char* vertexSrc = vertexCode.c_str();
     const char* fragmentSrc = fragmentCode.c_str();
@@ -88,7 +88,7 @@ void Shader::Init_Shader(int Vram, GLuint &VAO, GLuint &VBO, GLuint &ShaderProgr
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, TextureID);
 
-    int texLoc = glGetUniformLocation(ShaderProgram, "tex");
+    const int texLoc = glGetUniformLocation(ShaderProgram, "tex");
     glUseProgram(ShaderProgram);
     glUniform1i(texLoc, 0); // GL_TEXTURE0 = 0
 }

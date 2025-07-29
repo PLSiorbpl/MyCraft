@@ -1,9 +1,7 @@
 #include "Function.hpp"
 
-float Fun::ConvertHorizontalFovToVertical(float fovX_deg, float aspectRatio) {
-    float fovX_rad = glm::radians(fovX_deg);
-    float fovY_rad = 2.0f * atan(tan(fovX_rad / 2.0f) / aspectRatio);
-    return glm::degrees(fovY_rad);
+float Fun::ConvertHorizontalFovToVertical(float fovX_deg, float aspectRatio) const {
+    return glm::degrees(2.0f * atan(tan(glm::radians(fovX_deg) / 2.0f) / aspectRatio));
 }
 
 int Fun::calculateWorldMemory(const std::map<std::pair<int,int>, Chunk>& World) {

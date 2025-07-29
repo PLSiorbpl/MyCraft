@@ -8,6 +8,7 @@ void Movement::Init(camera &Camera, GLFWwindow* window, const std::map<std::pair
     Sin.y = sin(glm::radians(Camera.Yaw));
 
     Input(window, Camera);
+    Special_Keys(window, Camera);
     TestColisions(Camera, World, ChunkSize, Colisions);
     Damp(Camera);
 }
@@ -30,36 +31,46 @@ void Movement::Input(GLFWwindow* window, camera &Camera) {
         Camera.Vel.z +=  Camera.Speed * Sin.y;
     }
 
-    Camera.Vel.y -= Camera.Gravity;
-
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && Camera.onGround) {
         Camera.Vel.y = Camera.JumpStrength;
         Camera.onGround = false;
     }
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-        Camera.Vel.y = Camera.JumpStrength;
-    }
+
+    // Flying
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) Camera.Vel.y = Camera.JumpStrength;
+    // Down
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) Camera.Vel.y = -Camera.JumpStrength;
 
     Camera.Vel.x = std::clamp(Camera.Vel.x, -0.1f, 0.1f);
     Camera.Vel.z = std::clamp(Camera.Vel.z, -0.1f, 0.1f);
     Camera.Vel.y = std::clamp(Camera.Vel.y, -0.2f, 0.2f);
 }
 
+void Movement::Special_Keys(GLFWwindow* window, camera &Camera) {
+    bool currentState = glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS;
+
+    if (currentState && !lastStateKey1) Camera.Mode = !Camera.Mode;
+
+    lastStateKey1 = currentState;
+}
+
 void Movement::TestColisions(camera &Camera, const std::map<std::pair<int, int>, Chunk>& World, const glm::ivec3 ChunkSize, colisions &Colisions) {
     // get unstuck from block
-    if (Colisions.isSolidAt(Camera.Position, World, ChunkSize)) {
+    if (Colisions.isSolidAround(Camera.Position, World, ChunkSize) && !Camera.Mode) {
         Camera.Position.y += 1.0f;
     }
 
+    if (!Camera.Mode) Camera.Vel.y -= Camera.Gravity;
+
     testPos = Camera.Position + glm::vec3(Camera.Vel.x, 0, 0);
-    if (!Colisions.isSolidAround(testPos, World, ChunkSize)) {
+    if (!Colisions.isSolidAround(testPos, World, ChunkSize) || Camera.Mode) {
         Camera.Position.x = testPos.x;
-    } else {
+    } else if (Camera.Mode) {
         Camera.Vel.x = 0.0f;
     }
 
     testPos = Camera.Position + glm::vec3(0, Camera.Vel.y, 0);
-    if (!Colisions.isSolidAround(testPos, World, ChunkSize)) {
+    if (!Colisions.isSolidAround(testPos, World, ChunkSize) || Camera.Mode) {
         Camera.Position.y = testPos.y;
         Camera.onGround = false;
     } else {
@@ -70,11 +81,13 @@ void Movement::TestColisions(camera &Camera, const std::map<std::pair<int, int>,
     }
 
     testPos = Camera.Position + glm::vec3(0, 0, Camera.Vel.z);
-    if (!Colisions.isSolidAround(testPos, World, ChunkSize)) {
+    if (!Colisions.isSolidAround(testPos, World, ChunkSize) || Camera.Mode) {
         Camera.Position.z = testPos.z;
     } else {
         Camera.Vel.z = 0.0f;
     }
+
+    if (Camera.Mode) Camera.Vel.y = 0.0f;
 }
 
 void Movement::Damp(camera &Camera) {
@@ -120,9 +133,9 @@ glm::mat4 Movement::GetViewMatrix(const camera& Camera) {
     direction.y = sin(glm::radians(Camera.Pitch));
     direction.z = sin(glm::radians(Camera.Yaw)) * cos(glm::radians(Camera.Pitch));
 
-    glm::vec3 front = glm::normalize(direction);
-    glm::vec3 right = glm::normalize(glm::cross(front, glm::vec3(0,1,0)));
-    glm::vec3 up    = glm::normalize(glm::cross(right, front));
+    const glm::vec3 front = glm::normalize(direction);
+    const glm::vec3 right = glm::normalize(glm::cross(front, glm::vec3(0,1,0)));
+    const glm::vec3 up    = glm::normalize(glm::cross(right, front));
 
     return glm::lookAt(Camera.Position, Camera.Position + front, up);
 }
