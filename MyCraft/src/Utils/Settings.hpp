@@ -1,6 +1,9 @@
 #pragma once
 #include <string>
 #include <unordered_map>
+#include <fstream>
+#include <sstream>
+#include <iostream>
 
 class Settings_Loader {
 public:

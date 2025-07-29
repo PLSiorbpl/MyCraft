@@ -1,10 +1,10 @@
 #pragma once
-#include <map>
 #include "Chunk.hpp"
 #include "FastNoiseLite.h"
 #include <glm/glm.hpp>
-#include <iostream>
 #include <algorithm>
+#include <unordered_map>
+#include "World.hpp"
 
 class TerrainGen {
 private:
@@ -33,5 +33,5 @@ public:
         biomeNoise.SetSeed(seed + 420);
     }
 
-    void Generate_Terrain_Chunk(const int ChunkX, const int ChunkZ, std::map<std::pair<int, int>, Chunk>& World, const glm::ivec3 ChunkSize);
+    void Generate_Terrain_Chunk(const int ChunkX, const int ChunkZ, std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash> &World, const glm::ivec3 ChunkSize);
 };

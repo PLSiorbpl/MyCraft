@@ -8,7 +8,6 @@
 #include <backends/imgui_impl_opengl3.h>
 #include <iostream>
 #include <vector>
-#include <map>
 #include <tuple>
 #include <cmath>
 #include <algorithm>
@@ -18,7 +17,6 @@
 #include <sstream>
 #include <filesystem>
 #include "FastNoiseLite.h"
-#include <thread>
 #define STB_IMAGE_IMPLEMENTATION
 #include "Utils/FPS.hpp"
 #include "Render/Camera.hpp"
@@ -30,6 +28,7 @@
 #include "World/Terrain.hpp"
 #include "World/Generation.hpp"
 #include "Render/Mesh.hpp"
+#include "World/World.hpp"
 
 int CHUNK_WIDTH;
 int CHUNK_HEIGHT;
@@ -66,12 +65,12 @@ struct Game_Variables {
 
 class Game {
 private:
+    World_Map world_map;
     FPS Fps;
     camera Camera;
     Game_Variables game;
     GLuint VAO, VBO, ShaderProgram;
     std::vector<float> vertecies;
-    std::map<std::pair<int, int>, Chunk> World;
     Movement movement;
     float DeltaTime;
     int width, height;
@@ -182,11 +181,11 @@ void Game::Init_Shader() {
     // Soon more shaders
 }
 
-void Tick_Update(camera &Camera, GLFWwindow* window, const float DeltaTime, const std::map<std::pair<int, int>, Chunk> &World, Movement &movement, colisions &Colisions) {
+void Tick_Update(camera &Camera, GLFWwindow* window, const float DeltaTime, const std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash>& World, Movement &movement, colisions &Colisions) {
     movement.Init(Camera, window, World, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Colisions);
 }
 
-void DebugInfo(Game_Variables &game, const std::vector<float> &vertecies, const std::map<std::pair<int, int>, Chunk> &World, const camera &Camera, const int Alloc, Fun &fun) {
+void DebugInfo(Game_Variables &game, const std::vector<float> &vertecies, const std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash>& World, const camera &Camera, const int Alloc, Fun &fun) {
     SIZE_T ramUsed;
     PROCESS_MEMORY_COUNTERS meminfo;
 
@@ -240,7 +239,7 @@ void Game::MainLoop() {
             while (game.Tick_Timer >= game.TickRate) {
                 game.Tick_Timer -= game.TickRate;
                 if (!game.ChunkUpdated) {
-                    Tick_Update(Camera, window, DeltaTime, World, movement, Colisions);
+                    Tick_Update(Camera, window, DeltaTime, world_map.World, movement, Colisions);
                 }
             }
 
@@ -274,15 +273,15 @@ void Game::MainLoop() {
         // Generating Chunks
             if (game.ChunkUpdated) {
                 // Generate Chunks & Remove them if needed
-                GenerateChunk.GenerateChunks(Camera, World, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH));
-                GenerateChunk.RemoveChunks(Camera, World);
+                GenerateChunk.GenerateChunks(Camera, world_map.World, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH));
+                GenerateChunk.RemoveChunks(Camera, world_map.World);
 
                 // Generating Mesh
                 Alloc = static_cast<int>((vertecies.size() * sizeof(float)) * 1.1f); // 10% more in case bigger mesh is created
                 vertecies.clear();
                 vertecies.reserve(Alloc);
-                for (const auto& [key, chunk] : World) {                    
-                    mesh.GenerateMesh(chunk, vertecies, key.first, key.second, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Camera.RenderDistance, World);
+                for (const auto& [key, chunk] : world_map.World) {                    
+                    mesh.GenerateMesh(chunk, vertecies, key.first, key.second, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Camera.RenderDistance, world_map.World);
                 }
             }
 
@@ -297,7 +296,7 @@ void Game::MainLoop() {
                 glDrawArrays(GL_TRIANGLES, 0, vertecies.size() / 5);
             }
 
-            DebugInfo(game, vertecies, World, Camera, Alloc, fun);
+            DebugInfo(game, vertecies, world_map.World, Camera, Alloc, fun);
             game.FPS = Fps.End();
         // Update Screen
             glfwSwapBuffers(window);

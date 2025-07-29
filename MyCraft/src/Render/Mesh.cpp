@@ -1,6 +1,6 @@
 #include "Mesh.hpp"
 
-void Mesh::GenerateMesh(const Chunk& chunk, std::vector<float>& vertices, int chunkX, int chunkZ, const glm::ivec3 ChunkSize, int RenderDist, const std::map<std::pair<int, int>, Chunk> &World) {
+void Mesh::GenerateMesh(const Chunk& chunk, std::vector<float>& vertices, int chunkX, int chunkZ, const glm::ivec3 ChunkSize, int RenderDist, const std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash> &World) {
     const int worldOffsetX = chunkX * ChunkSize.x;
     const int worldOffsetZ = chunkZ * ChunkSize.z;
 
@@ -20,7 +20,7 @@ void Mesh::GenerateMesh(const Chunk& chunk, std::vector<float>& vertices, int ch
     }
 }
 
-void Mesh::CubeMesh(std::vector<float>& vertices, glm::vec3 w, const Chunk& chunk, glm::ivec3 Local, const glm::ivec3 ChunkSize, const std::map<std::pair<int, int>, Chunk> &World) {
+void Mesh::CubeMesh(std::vector<float>& vertices, glm::vec3 w, const Chunk& chunk, glm::ivec3 Local, const glm::ivec3 ChunkSize, const std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash> &World) {
     float size = 1.0f;
 
     glm::vec3 p000 = {w.x,      w.y,      w.z};
@@ -124,7 +124,7 @@ void Mesh::CubeMesh(std::vector<float>& vertices, glm::vec3 w, const Chunk& chun
     }
 }
 
-bool Mesh::IsBlockAt(const std::map<std::pair<int, int>, Chunk> &World, int WorldX, int y, int WorldZ, const glm::ivec3 ChunkSize) {
+bool Mesh::IsBlockAt(const std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash> &World, int WorldX, int y, int WorldZ, const glm::ivec3 ChunkSize) {
     int chunkX = std::floor((float)WorldX / ChunkSize.x);
     int chunkZ = std::floor((float)WorldZ / ChunkSize.z);
 

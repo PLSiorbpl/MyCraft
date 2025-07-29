@@ -1,11 +1,12 @@
 #pragma once
 #include <glm/glm.hpp>
-#include <map>
+#include <unordered_map>
 #include "World/Chunk.hpp"
+#include "World/World.hpp"
 
 class Fun {
     public:
     
     float ConvertHorizontalFovToVertical(float fovX_deg, float aspectRatio) const;
-    int calculateWorldMemory(const std::map<std::pair<int, int>, Chunk>& World);
+    int calculateWorldMemory(const std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash>& World);
 };

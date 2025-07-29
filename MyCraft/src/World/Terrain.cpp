@@ -1,6 +1,6 @@
 #include "Terrain.hpp"
 
-void TerrainGen::Generate_Terrain_Chunk(int Chunk_x, int Chunk_z, std::map<std::pair<int, int>, Chunk>& World, glm::ivec3 ChunkSize) {
+void TerrainGen::Generate_Terrain_Chunk(int Chunk_x, int Chunk_z, std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash> &World, glm::ivec3 ChunkSize) {
     Chunk Chunk;
     Chunk.width = ChunkSize.x;
     Chunk.height = ChunkSize.y;

@@ -19,7 +19,7 @@ set Obj=Include/obj
 set SUtils=%Utils%/FPS.cpp %Utils%/resource.o %Utils%/Settings.cpp %Utils%/Function.cpp
 
 :: World
-set SWorld=%World%/Chunk.cpp %World%/Terrain.cpp %World%/Generation.cpp
+set SWorld=%World%/Chunk.cpp %World%/Terrain.cpp %World%/Generation.cpp %World%/World.cpp
 
 :: Render
 set SRender=%Render%/Camera.cpp %Render%/Mesh.cpp

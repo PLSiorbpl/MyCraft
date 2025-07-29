@@ -1,6 +1,6 @@
 #include "Movement.hpp"
 
-void Movement::Init(camera &Camera, GLFWwindow* window, const std::map<std::pair<int, int>, Chunk>& World, const glm::ivec3 ChunkSize, colisions &Colisions) {
+void Movement::Init(camera &Camera, GLFWwindow* window, const std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash> &World, const glm::ivec3 ChunkSize, colisions &Colisions) {
     direction = glm::vec3(0.0f);
     Cos.x = cos(glm::radians(Camera.Pitch));
     Cos.y = cos(glm::radians(Camera.Yaw));
@@ -54,7 +54,7 @@ void Movement::Special_Keys(GLFWwindow* window, camera &Camera) {
     lastStateKey1 = currentState;
 }
 
-void Movement::TestColisions(camera &Camera, const std::map<std::pair<int, int>, Chunk>& World, const glm::ivec3 ChunkSize, colisions &Colisions) {
+void Movement::TestColisions(camera &Camera, const std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash> &World, const glm::ivec3 ChunkSize, colisions &Colisions) {
     // get unstuck from block
     if (Colisions.isSolidAround(Camera.Position, World, ChunkSize) && !Camera.Mode) {
         Camera.Position.y += 1.0f;
