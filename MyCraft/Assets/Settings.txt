@@ -1,13 +1,22 @@
 # Graphics:
-Render Distance=16
-VRam Alloc=1024
+Render Distance=12
+VRam Alloc=128
 V-Sync=1
 
 # World Generation:
 Chunk Width=16
 Chunk Height=128
 Chunk Depth=16
+
 Seed=6969
+Base Frequency=0.05f
+Base Amplitude=0.5f
+Octave=3
+Add Frequency=3.0f
+Add Amplitude=0.5f
+Biome Frequency=0.5f
+Biome Multiplier=0.2f
+Biome Add Amplitude=1.2f
 
 # Game:
 Tick Rate=60.0f

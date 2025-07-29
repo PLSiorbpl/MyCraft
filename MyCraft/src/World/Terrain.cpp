@@ -14,7 +14,7 @@ void TerrainGen::Generate_Terrain_Chunk(int Chunk_x, int Chunk_z, std::map<std::
             float worldX = Chunk_x * ChunkSize.x + x;
             float worldZ = Chunk_z * ChunkSize.z + z;
 
-            float biomeFactor = biomeNoise.GetNoise(worldX * 0.003f, worldZ * 0.003f);
+            float biomeFactor = biomeNoise.GetNoise(worldX * BiomeFreq, worldZ * BiomeFreq);
             biomeFactor = biomeFactor * 0.5f + 0.5f;
 
             float baseHeight = 0.0f;
@@ -23,12 +23,12 @@ void TerrainGen::Generate_Terrain_Chunk(int Chunk_x, int Chunk_z, std::map<std::
 
             for (int i = 0; i < octaves; ++i) {
                 baseHeight += terrainNoise.GetNoise(worldX * frequency, worldZ * frequency) * amplitude;
-                frequency *= 2.0f;
-                amplitude *= 0.2f;
+                frequency *= AddedFreq;
+                amplitude *= AddedAmp;
             }
 
             float normalizedHeight = baseHeight * 0.5f + 0.5f;
-            normalizedHeight *= (1.5f + biomeFactor * 0.5f);
+            normalizedHeight *= (BiomeBase + biomeFactor * BiomeMult);
             int intHeight = static_cast<int>(normalizedHeight * ChunkSize.y);
 
             for (int y = 0; y <= intHeight && y < ChunkSize.y; ++y) {
@@ -42,12 +42,4 @@ void TerrainGen::Generate_Terrain_Chunk(int Chunk_x, int Chunk_z, std::map<std::
     }
 
     World[{Chunk_x, Chunk_z}] = std::move(Chunk);
-}
-
-TerrainGen::TerrainGen(int seed) : Seed(seed) {
-    terrainNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    terrainNoise.SetSeed(seed);
-
-    biomeNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    biomeNoise.SetSeed(seed + 1337);
 }

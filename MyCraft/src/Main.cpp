@@ -48,9 +48,20 @@ struct Game_Variables {
     float TickRate;
     float Tick_Timer = 0.0f;
     int V_Sync;
-    int Seed;
     int FOV;
     int FPS = 0;
+
+    // Terrain Generation:
+    int Seed;
+    float basefreq;
+    float baseamp;
+    int oct;
+    float addfreq;
+    float addamp;
+    float biomefreq;
+    float biomemult;
+    float biomebase;
+    
 };
 
 class Game {
@@ -91,8 +102,17 @@ void Game::Init_Settings(const std::string Path) {
     CHUNK_DEPTH = Settings.GetInt("Chunk Depth");
     game.V_Sync = Settings.GetInt("V-Sync");
     game.TickRate = 1.0f / Settings.GetFloat("Tick Rate");
-    game.Seed = Settings.GetInt("Seed");
     game.FOV = Settings.GetInt("FOV");
+
+    game.Seed = Settings.GetInt("Seed");
+    game.basefreq = Settings.GetFloat("Base Frequency");
+    game.baseamp = Settings.GetFloat("Base Amplitude");
+    game.oct = Settings.GetInt("Octave");
+    game.addfreq = Settings.GetFloat("Add Frequency");
+    game.addamp = Settings.GetFloat("Add Amplitude");
+    game.biomefreq = Settings.GetFloat("Biome Frequency");
+    game.biomemult = Settings.GetFloat("Biome Multiplier");
+    game.biomebase = Settings.GetFloat("Biome Add Amplitude");
 }
 
 void Game::CleanUp() {
@@ -200,7 +220,7 @@ void DebugInfo(Game_Variables &game, const std::vector<float> &vertecies, const 
 }
 
 void Game::MainLoop() {
-    ChunkGeneration GenerateChunk(game.Seed);
+    ChunkGeneration GenerateChunk(game.Seed, game.basefreq, game.baseamp, game.oct, game.addfreq, game.addamp, game.biomefreq, game.biomemult, game.biomebase);
     glfwGetWindowSize(window, &width, &height);
     Fps.Init();
     while (!glfwWindowShouldClose(window)) {

@@ -13,7 +13,7 @@ class ChunkGeneration {
     TerrainGen Terrain;
 
     public:
-    ChunkGeneration(int seed);
+    ChunkGeneration(int seed, float basefreq, float baseamp, int oct, float addfreq, float addamp, float biomefreq, float biomemult, float biomebase);
 
     void GenerateChunks(const camera &Camera, std::map<std::pair<int, int>, Chunk>& World, const glm::ivec3 ChunkSize);
     void RemoveChunks(const camera &Camera, std::map<std::pair<int, int>, Chunk>& World);
