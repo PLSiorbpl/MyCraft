@@ -33,5 +33,5 @@ public:
         biomeNoise.SetSeed(seed + 420);
     }
 
-    void Generate_Terrain_Chunk(const int ChunkX, const int ChunkZ, std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash> &World, const glm::ivec3 ChunkSize);
+    void Generate_Terrain_Chunk(const int ChunkX, const int ChunkZ, const glm::ivec3 ChunkSize);
 };

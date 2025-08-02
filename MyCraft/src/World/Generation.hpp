@@ -15,6 +15,6 @@ class ChunkGeneration {
     public:
     ChunkGeneration(int seed, float basefreq, float baseamp, int oct, float addfreq, float addamp, float biomefreq, float biomemult, float biomebase, int biomepower);
 
-    void GenerateChunks(const camera &Camera, std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash>& World, const glm::ivec3 ChunkSize);
-    void RemoveChunks(const camera &Camera, std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash>& World);
+    void GenerateChunks(const camera &Camera, const glm::ivec3 ChunkSize);
+    void RemoveChunks(const camera &Camera);
 };

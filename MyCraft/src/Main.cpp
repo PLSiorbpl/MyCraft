@@ -65,7 +65,6 @@ struct Game_Variables {
 
 class Game {
 private:
-    World_Map world_map;
     FPS Fps;
     camera Camera;
     Game_Variables game;
@@ -181,11 +180,12 @@ void Game::Init_Shader() {
     // Soon more shaders
 }
 
-void Tick_Update(camera &Camera, GLFWwindow* window, const float DeltaTime, const std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash>& World, Movement &movement, colisions &Colisions) {
-    movement.Init(Camera, window, World, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Colisions);
+void Tick_Update(camera &Camera, GLFWwindow* window, const float DeltaTime, Movement &movement, colisions &Colisions) {
+    movement.Init(Camera, window, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Colisions);
 }
 
-void DebugInfo(Game_Variables &game, const std::vector<float> &vertecies, const std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash>& World, const camera &Camera, const int Alloc, Fun &fun) {
+void DebugInfo(Game_Variables &game, const std::vector<float> &vertecies, const camera &Camera, const int Alloc, Fun &fun) {
+    const auto& World = World_Map::World;
     SIZE_T ramUsed;
     PROCESS_MEMORY_COUNTERS meminfo;
 
@@ -239,7 +239,7 @@ void Game::MainLoop() {
             while (game.Tick_Timer >= game.TickRate) {
                 game.Tick_Timer -= game.TickRate;
                 if (!game.ChunkUpdated) {
-                    Tick_Update(Camera, window, DeltaTime, world_map.World, movement, Colisions);
+                    Tick_Update(Camera, window, DeltaTime, movement, Colisions);
                 }
             }
 
@@ -273,15 +273,15 @@ void Game::MainLoop() {
         // Generating Chunks
             if (game.ChunkUpdated) {
                 // Generate Chunks & Remove them if needed
-                GenerateChunk.GenerateChunks(Camera, world_map.World, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH));
-                GenerateChunk.RemoveChunks(Camera, world_map.World);
+                GenerateChunk.GenerateChunks(Camera, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH));
+                GenerateChunk.RemoveChunks(Camera);
 
                 // Generating Mesh
                 Alloc = static_cast<int>((vertecies.size() * sizeof(float)) * 1.1f); // 10% more in case bigger mesh is created
                 vertecies.clear();
                 vertecies.reserve(Alloc);
-                for (const auto& [key, chunk] : world_map.World) {                    
-                    mesh.GenerateMesh(chunk, vertecies, key.first, key.second, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Camera.RenderDistance, world_map.World);
+                for (const auto& [key, chunk] : World_Map::World) {
+                    mesh.GenerateMesh(chunk, vertecies, key.first, key.second, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Camera.RenderDistance);
                 }
             }
 
@@ -296,7 +296,7 @@ void Game::MainLoop() {
                 glDrawArrays(GL_TRIANGLES, 0, vertecies.size() / 5);
             }
 
-            DebugInfo(game, vertecies, world_map.World, Camera, Alloc, fun);
+            DebugInfo(game, vertecies, Camera, Alloc, fun);
             game.FPS = Fps.End();
         // Update Screen
             glfwSwapBuffers(window);

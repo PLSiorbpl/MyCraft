@@ -17,7 +17,7 @@ public:
     float JumpStrength = 0.15f; // 0.15f;
     glm::ivec3 Chunk = glm::ivec3(0,0,0);
     int RenderDistance;
-    bool Mode = true;
+    bool Mode = false;
 
     bool operator!=(const camera& other) const;
 };

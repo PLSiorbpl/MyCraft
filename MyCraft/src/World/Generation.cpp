@@ -1,6 +1,7 @@
 #include "Generation.hpp"
 
-void ChunkGeneration::GenerateChunks(const camera &Camera, std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash> &World, const glm::ivec3 ChunkSize) {
+void ChunkGeneration::GenerateChunks(const camera &Camera, const glm::ivec3 ChunkSize) {
+    const auto& World = World_Map::World;
     for (int dx = -Camera.RenderDistance; dx <= Camera.RenderDistance; ++dx) {
         for (int dz = -Camera.RenderDistance; dz <= Camera.RenderDistance; ++dz) {
             int chunkX = Camera.Chunk.x + dx;
@@ -9,13 +10,14 @@ void ChunkGeneration::GenerateChunks(const camera &Camera, std::unordered_map<st
             std::pair<int, int> key = {chunkX, chunkZ};
 
             if (World.find(key) == World.end()) {
-                Terrain.Generate_Terrain_Chunk(chunkX, chunkZ, World, ChunkSize);
+                Terrain.Generate_Terrain_Chunk(chunkX, chunkZ, ChunkSize);
             }
         }
     }
 }
 
-void ChunkGeneration::RemoveChunks(const camera& Camera, std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash> &World) {
+void ChunkGeneration::RemoveChunks(const camera& Camera) {
+    auto& World = World_Map::World;
     std::vector<std::pair<int,int>> toRemove;
 
     for (const auto& [key, chunk] : World) {

@@ -18,10 +18,10 @@ class Movement {
     glm::vec3 testPos;
     bool lastStateKey1 = false;
 
-    void Init(camera &Camera, GLFWwindow* window, const std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash>& World, const glm::ivec3 ChunkSize, colisions &Colisions);
+    void Init(camera &Camera, GLFWwindow* window, const glm::ivec3 ChunkSize, colisions &Colisions);
     void Input(GLFWwindow* window, camera &Camera);
     void Special_Keys(GLFWwindow* window, camera &Camera);
-    void TestColisions(camera &Camera, const std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash>& World, const glm::ivec3 ChunkSize, colisions &Colisions);
+    void TestColisions(camera &Camera, const glm::ivec3 ChunkSize, colisions &Colisions);
     void Damp(camera &Camera);
 
     static void mouse_callback(GLFWwindow* window, double xpos, double ypos);
