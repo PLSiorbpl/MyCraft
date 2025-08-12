@@ -22,6 +22,9 @@ Source_Files = ["src/Main.cpp", "Include/ImGui/imgui_demo.cpp", "Include/ImGui/i
 def Print_Red(text):
     print(f"\033[91m{text}\033[0m")
 
+def Print_Green(text):
+    print(f"\033[92m{text}\033[0m")
+
 def Get_Files(File_List):
     global Error
     if File_List:
@@ -31,7 +34,7 @@ def Get_Files(File_List):
             if os.path.exists(Path):
                 To_Compile_Files.append(Path)
             else:
-                print(f"Error: {Path} Does not Exist!")
+                Print_Red(f"Error: {Path} Does not Exist!")
                 Error = True
     return To_Compile_Files
 
@@ -91,34 +94,34 @@ def Compile(Files):
     for File in Files:
         obj_file = os.path.join(Base, PreCompiled, os.path.splitext(os.path.basename(File))[0] + ".o")
         cmd_Command = [Compiler] + Source_Includes + ["-c", File, "-o", obj_file] + [Optimization] + Flags
-        print("Compiling:", " ".join(cmd_Command))
         result = subprocess.run(cmd_Command, capture_output=True, text=True)
         if result.returncode == 0:
-            print(f"Object {File} was compiled to {obj_file} with {Optimization} flag")
+            Print_Green(f"Object {File} was compiled to {obj_file} with {Optimization} flag")
         else:
-            print("Compilation Error:")
-            print(result.stderr)
+            Print_Red("Compilation Error:")
+            Print_Red(result.stderr)
 
 def Link():
     obj_dir = os.path.join(Base, PreCompiled)
     objects = [os.path.join(obj_dir, f) for f in os.listdir(obj_dir) if f.endswith(".o")]
     if not objects:
-        print("Nothing to Link")
+        Print_Red("Nothing to Link")
         return
     
     output_exe = os.path.join(Base, Destination)  # na Windows, na Linuxie byłoby "MyCraft"
     cmd = [Compiler] + objects + [Optimization] + Flags + ["-o", output_exe]
+    small_cmd = [Compiler] + objects + ["-o", output_exe]
     
-    print("Linking:", " ".join(cmd))
+    print("Linking:", " ".join(small_cmd))
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode == 0:
-        print(f"Sukces! Utworzono {output_exe}")
+        Print_Green(f"Created: {output_exe}")
         subprocess.run([output_exe])
     else:
         Print_Red("Linking Error:")
         Print_Red(result.stderr)
 
-Clean = False#(True if (input("Do you want to clean?") == "1") else False)
+Clean = (True if (input("Do you want to clean?") == "1") else False)
 Files = Get_All_Files(Clean)
 Compile(Files)
 Link()
