@@ -1,0 +1,14 @@
+{
+    "name": "MyCraft Theme",
+    "type": "dark",
+    "colors": {},
+    "tokenColors": [
+        {
+            "scope": "keyword.control.end.mycraft",
+            "settings": {
+                "foreground": "#FFD700",
+                "fontStyle": "bold"
+            }
+        }
+    ]
+}

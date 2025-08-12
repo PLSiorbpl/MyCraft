@@ -1,0 +1,35 @@
+{
+    "name": "mycraft-syntax",
+    "displayName": "MyCraft Syntax Highlighting",
+    "description": "Custom syntax highlighting for MyCraft config files",
+    "version": "1.0.0",
+    "publisher": "PLSiorbpl",
+    "engines": {
+        "vscode": "^1.50.0"
+    },
+    "categories": ["Programming Languages"],
+    "contributes": {
+        "languages": [
+            {
+                "id": "mycraft",
+                "aliases": ["MyCraft", "mycraft"],
+                "extensions": [".myc", ".mc", ".MyC", "MC"],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "mycraft",
+                "scopeName": "source.mycraft",
+                "path": "./syntaxes/mycraft.tmLanguage.json"
+            }
+        ],
+        "themes": [
+            {
+                "label": "MyCraft Theme",
+                "uiTheme": "vs-dark",
+                "path": "./themes/mycraft-color-theme.json"
+            }
+        ]
+    }
+}

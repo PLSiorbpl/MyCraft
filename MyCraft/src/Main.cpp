@@ -307,7 +307,7 @@ void Game::MainLoop() {
 int main() {
     Game main;
 
-    main.Init_Settings("MyCraft/Assets/Settings.txt");
+    main.Init_Settings("MyCraft/Assets/Settings.myc");
     if (main.Init_Window()) return -1;
     
     main.Init_Shader();

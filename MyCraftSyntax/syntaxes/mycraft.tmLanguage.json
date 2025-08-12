@@ -1,0 +1,91 @@
+{
+  "scopeName": "source.mycraft",
+  "name": "MyCraft",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#assignment" },
+    { "include": "#function" },
+    { "include": "#types" },
+    { "include": "#class" },
+    { "include": "#function-call" },
+    { "include": "#array" },
+    { "include": "#brackets" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        { "name": "entity.name.type.class.mycraft", "match": "//\\s*(Graphics:|World Generation:|Game:|Player:)" },
+        { "name": "comment.line.double-slash.mycraft", "match": "//.*$" }
+      ]
+    },
+    "assignment": {
+      "patterns": [
+        {
+          "begin": "([A-Za-z][A-Za-z0-9-]*(?:\\s+[A-Za-z0-9-]+)*)\\s*(=)\\s*",
+          "beginCaptures": {
+            "1": { "name": "variable.other.mycraft" },
+            "2": { "name": "keyword.operator.assignment.mycraft" }
+          },
+          "end": "(?=$|//)",
+          "patterns": [
+            { "name": "constant.numeric.float.mycraft", "match": "\\b[0-9]+\\.[0-9]+f\\b" },
+            { "name": "constant.numeric.integer.mycraft", "match": "\\b[0-9]+\\b" },
+            { "name": "string.quoted.double.mycraft", "match": "\".*?\"" }
+          ]
+        }
+      ]
+    },
+    "function": {
+      "patterns": [
+        { "name": "entity.name.function.mycraft", "match": "(?<=\\=\\s*)[0-9]+" }
+      ]
+    },
+    "class": {
+      "patterns": [
+        { "name": "entity.name.type.class.mycraft", "match": "\\b(Link|Compile)\\b" }
+      ]
+    },
+    "types": {
+      "patterns": [
+        { "name": "storage.type.mycraft", "match": "\\b(Folder|Script_Folders|Script|Flag|Object|Compiler|Include2|Include1)\\b" }
+      ]
+    },
+    "function-call": {
+      "patterns": [
+        {
+          "begin": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*\\(",
+          "beginCaptures": {
+            "1": { "name": "variable.other.mycraft" }
+          },
+          "end": "\\)",
+          "patterns": [
+            { "name": "variable.parameter.mycraft", "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b" },
+            { "name": "punctuation.separator.comma.mycraft", "match": "," },
+            { "name": "text.whitespace.mycraft", "match": "\\s+" }
+          ]
+        }
+      ]
+    },
+    "array": {
+      "patterns": [
+        {
+          "begin": "\\[",
+          "beginCaptures": { "0": { "name": "punctuation.section.brackets.begin.mycraft" } },
+          "end": "\\]",
+          "endCaptures": { "0": { "name": "punctuation.section.brackets.end.mycraft" } },
+          "patterns": [
+            { "name": "string.quoted.other.mycraft", "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b" },
+            { "name": "punctuation.separator.comma.mycraft", "match": "," },
+            { "name": "text.whitespace.mycraft", "match": "\\s+" }
+          ]
+        }
+      ]
+    },
+    "brackets": {
+      "patterns": [
+        { "name": "punctuation.section.block.begin.mycraft", "match": "\\{" },
+        { "name": "punctuation.section.block.end.mycraft", "match": "\\}" }
+      ]
+    }
+  }
+}

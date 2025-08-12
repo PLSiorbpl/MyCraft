@@ -5,6 +5,16 @@
 
 - Still WIP but you can Help!! [GitHub](https://github.com/PLSiorbpl/MyCraft)
 
+## 🎮 Controls
+- ⬆️ To move forward use **"W"** Key
+- ➡️ To move Right use **"D"** Key
+- ⬅️ To move Left use **"A"** Key
+- ⬇️ To move Back use **"S"** Key
+- ⤴️ To Jump use **"SPACE"** Key
+- 🔄 To Switch to Specator/Creative mode use **"1"**
+- ⬆️ To move Up use **"E"** Key
+- ⬇️ To move Down use **"CTRL"** Key
+
 ## ✨ Features!!
 - 🔲 Infinite World Generation
 - 🧱 Customizable Terrain (/MyCraft/Assets/Settings.txt)
