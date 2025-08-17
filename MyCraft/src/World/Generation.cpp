@@ -35,7 +35,11 @@ void ChunkGeneration::RemoveChunks(const camera& Camera) {
     }
 
     for (const auto& key : toRemove) {
-        World.erase(key);
+        auto it = World.find(key);
+        if (it != World.end()) {
+            it->second.RemoveData();
+            World.erase(it);
+        }
     }
 }
 

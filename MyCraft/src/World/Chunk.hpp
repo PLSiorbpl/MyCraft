@@ -3,6 +3,9 @@
 #include <map>
 #include <cstdint>
 
+typedef unsigned int GLuint;
+typedef int GLsizei;
+
 class Chunk {
 public:
     struct Block {
@@ -15,10 +18,19 @@ public:
             : id(id), transparent(transparent), solid(solid), light(light) {}
     };
 
+    // World Stuff
     std::vector<Block> blocks;
     int width, height, depth;
     int chunkX, chunkZ;
     static const std::map<uint8_t, Block> BlockDefs;
+
+    // Mesh Stuff
+    size_t Alloc = 0;
+    std::vector<float> Mesh;
+    bool DirtyFlag = true;
+    GLuint vao = 0;
+    GLuint vbo = 0;
+    GLsizei indexCount = 0;
 
     Chunk() : width(0), height(0), depth(0), chunkX(0), chunkZ(0), blocks(0) {}
 
@@ -37,4 +49,10 @@ public:
     void setID(int x, int y, int z, uint8_t id) {
         blocks.at(index(x, y, z)).id = id;
     }
+
+    void Allocate();
+
+    void SendData();
+
+    void RemoveData();
 };

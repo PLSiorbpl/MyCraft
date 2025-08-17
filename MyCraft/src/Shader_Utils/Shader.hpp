@@ -9,7 +9,7 @@
 class Shader {
     public:
 
-    void Init_Shader(int Vram, GLuint &VAO, GLuint &VBO, GLuint &ShaderProgram);
+    void Init_Shader(GLuint &VAO, GLuint &VBO, GLuint &ShaderProgram);
 
     //void Set_Vec3();
 

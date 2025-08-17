@@ -1,5 +1,6 @@
 import os
 import subprocess
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 # Settings
 Compiler = "g++"
@@ -60,7 +61,7 @@ def Get_All_Files(Clean):
     return To_Compile_fr
 
 def Set_Last_Modified(File, Clean):
-    File = File.replace("\\", "/")  # normalizacja ścieżki
+    File = File.replace("\\", "/")
     To_Compile = []
     IsFileChanged = os.path.getmtime(File)
     updated = False
@@ -90,16 +91,42 @@ def Set_Last_Modified(File, Clean):
 
     return To_Compile
 
-def Compile(Files):
-    for File in Files:
-        obj_file = os.path.join(Base, PreCompiled, os.path.splitext(os.path.basename(File))[0] + ".o")
-        cmd_Command = [Compiler] + Source_Includes + ["-c", File, "-o", obj_file] + [Optimization] + Flags
-        result = subprocess.run(cmd_Command, capture_output=True, text=True)
-        if result.returncode == 0:
-            Print_Green(f"Object {File} was compiled to {obj_file} with {Optimization} flag")
-        else:
-            Print_Red("Compilation Error:")
-            Print_Red(result.stderr)
+def Compile_File(File):
+    obj_file = os.path.join(Base, PreCompiled, os.path.splitext(os.path.basename(File))[0] + ".o")
+    cmd_Command = [Compiler] + Source_Includes + ["-c", File, "-o", obj_file] + [Optimization] + Flags
+    result = subprocess.run(cmd_Command, capture_output=True, text=True)
+    if result.returncode == 0:
+        Print_Green(f"Object {File} was compiled to {obj_file} with {Optimization} flag")
+    else:
+        Print_Red(f"Compilation Error in {File}:")
+        Print_Red(result.stderr)
+    return result.returncode
+
+def Compile(Files, jobs):
+    results = []
+    with ProcessPoolExecutor(max_workers=jobs) as executor:
+        future_to_file = {executor.submit(Compile_File, File): File for File in Files}
+        for future in as_completed(future_to_file):
+            file = future_to_file[future]
+            try:
+                result = future.result()
+                results.append((file, result))
+            except Exception as exc:
+                Print_Red(f"{file} generated an exception: {exc}")
+                results.append((file, 1))
+    return results
+
+
+#def Compile(Files):
+#    for File in Files:
+#        obj_file = os.path.join(Base, PreCompiled, os.path.splitext(os.path.basename(File))[0] + ".o")
+#        cmd_Command = [Compiler] + Source_Includes + ["-c", File, "-o", obj_file] + [Optimization] + Flags
+#        result = subprocess.run(cmd_Command, capture_output=True, text=True)
+#        if result.returncode == 0:
+#            Print_Green(f"Object {File} was compiled to {obj_file} with {Optimization} flag")
+#        else:
+#            Print_Red("Compilation Error:")
+#            Print_Red(result.stderr)
 
 def Link():
     obj_dir = os.path.join(Base, PreCompiled)
@@ -121,7 +148,14 @@ def Link():
         Print_Red("Linking Error:")
         Print_Red(result.stderr)
 
-Clean = (True if (input("Do you want to clean?") == "1") else False)
-Files = Get_All_Files(Clean)
-Compile(Files)
-Link()
+def main():
+    print(f"Max Cores: {os.cpu_count()}")
+    Clean = True#(True if (input("Do you want to clean?") == "1") else False)
+    Input_ = os.cpu_count()#int(input("How many Cores?"))
+    Threaded = (Input_ if Input_ <= os.cpu_count() else 1)
+    Files = Get_All_Files(Clean)
+    Compile(Files, Threaded)
+    Link()
+
+if __name__ == "__main__":
+    main()

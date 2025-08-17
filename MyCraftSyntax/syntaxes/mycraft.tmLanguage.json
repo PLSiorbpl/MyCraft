@@ -30,7 +30,8 @@
           "patterns": [
             { "name": "constant.numeric.float.mycraft", "match": "\\b[0-9]+\\.[0-9]+f\\b" },
             { "name": "constant.numeric.integer.mycraft", "match": "\\b[0-9]+\\b" },
-            { "name": "string.quoted.double.mycraft", "match": "\".*?\"" }
+            { "name": "string.quoted.double.mycraft", "match": "\".*?\"" },
+            { "name": "constant.language.boolean.mycraft", "match": "\\b(true|false)\\b"}
           ]
         }
       ]

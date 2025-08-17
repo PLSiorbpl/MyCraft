@@ -30,7 +30,7 @@ std::string Shader::LoadShaderSource(const std::string& path) {
     return buffer.str();
 }
 
-void Shader::Init_Shader(int Vram, GLuint &VAO, GLuint &VBO, GLuint &ShaderProgram) {
+void Shader::Init_Shader(GLuint &VAO, GLuint &VBO, GLuint &ShaderProgram) {
     unsigned int TextureID;
     Load_Texture(TextureID);
 
@@ -57,25 +57,25 @@ void Shader::Init_Shader(int Vram, GLuint &VAO, GLuint &VBO, GLuint &ShaderProgr
     glDeleteShader(vertexShader);
     glDeleteShader(FragmentShader);
 
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-    glBufferData(GL_ARRAY_BUFFER, 1024 * 1024 * Vram, nullptr, GL_DYNAMIC_DRAW);
-
-    // aPos (location = 0)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    // atexture (location = 1)
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+    //glGenVertexArrays(1, &VAO);
+    //glGenBuffers(1, &VBO);
+//
+    //glBindVertexArray(VAO);
+//
+    //glBindBuffer(GL_ARRAY_BUFFER, VBO);
+//
+    //glBufferData(GL_ARRAY_BUFFER, 1024 * 1024 * Vram, nullptr, GL_DYNAMIC_DRAW);
+//
+    //// aPos (location = 0)
+    //glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    //glEnableVertexAttribArray(0);
+//
+    //// atexture (location = 1)
+    //glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    //glEnableVertexAttribArray(1);
+//
+    //glBindBuffer(GL_ARRAY_BUFFER, 0);
+    //glBindVertexArray(0);
 
     int success;
     char infoLog[512];
