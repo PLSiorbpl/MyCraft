@@ -8,14 +8,14 @@ uniform mat4 View;
 uniform mat4 Proj;
 
 out vec2 TexCoord;
-out vec3 fragPos;
+out vec3 FragPos;
 out vec3 Normal;
 
 void main() {
     mat4 MVP = (Proj * View * Model);
 
     TexCoord = aTexCoord;
-    fragPos = aPos;//vec3(Model * vec4(aPos, 1.0));
+    FragPos = aPos;//vec3(Model * vec4(aPos, 1.0));
     Normal = mat3(transpose(inverse(Model))) * aNormal;
     gl_Position = MVP * vec4(aPos, 1.0);
 }

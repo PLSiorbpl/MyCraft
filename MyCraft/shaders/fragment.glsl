@@ -14,7 +14,7 @@ void main() {
     float smoothness = 1.0 - roughness;
 
     // Sun
-    vec3 SunDir = normalize(vec3(-0.5f, -1.0f, 0.0f));
+    vec3 SunDir = normalize(vec3(0.7f, -1.0f, 0.7f));
     vec3 lightColor = vec3(1,1,0.8);
     lightColor = pow(lightColor, vec3(2.2));
 
@@ -29,12 +29,11 @@ void main() {
 
     // Lighting
     vec3 reflectionDirection = reflect(-lightDir, WorldNormal);
-    float shininess = (1+smoothness) * 32;
+    float shininess = mix(8.0, 128.0, smoothness);
 
-    float DiffuseLight = clamp(dot(lightDir, WorldNormal), 0.0, 1.0);
-    float SpecularLight = clamp(smoothness*pow(dot(reflectionDirection, viewDir), shininess), 0, 1);
-    //float facing = max(pow(dot(WorldNormal, viewDir), 100), 0.0);
-    //SpecularLight *= facing;
+
+    float DiffuseLight = clamp(roughness * dot(lightDir, WorldNormal), 0.0, 1.0);
+    float SpecularLight = max(pow(dot(reflectionDirection, viewDir), shininess),0.0);
     float AmbientLight = 0.2;
 
     float LightBritness = DiffuseLight + SpecularLight + AmbientLight;
@@ -43,7 +42,7 @@ void main() {
     outputColor *= lightColor;
 
     // Output Color
-    //FragColor = vec4(pow(outputColor, vec3(1/2.2)), baseColor.a);
+    FragColor = vec4(pow(outputColor, vec3(1/2.2)), baseColor.a);
     //FragColor = vec4(vec3(SpecularLight), 1.0);
-    FragColor = vec4(viewDir, 1.0);
+    //FragColor = vec4(normalize(viewDir), 1.0);
 }
