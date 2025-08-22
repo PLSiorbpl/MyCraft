@@ -57,32 +57,20 @@ void Shader::Init_Shader(GLuint &VAO, GLuint &VBO, GLuint &ShaderProgram) {
     glDeleteShader(vertexShader);
     glDeleteShader(FragmentShader);
 
-    //glGenVertexArrays(1, &VAO);
-    //glGenBuffers(1, &VBO);
-//
-    //glBindVertexArray(VAO);
-//
-    //glBindBuffer(GL_ARRAY_BUFFER, VBO);
-//
-    //glBufferData(GL_ARRAY_BUFFER, 1024 * 1024 * Vram, nullptr, GL_DYNAMIC_DRAW);
-//
-    //// aPos (location = 0)
-    //glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    //glEnableVertexAttribArray(0);
-//
-    //// atexture (location = 1)
-    //glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    //glEnableVertexAttribArray(1);
-//
-    //glBindBuffer(GL_ARRAY_BUFFER, 0);
-    //glBindVertexArray(0);
+    int Vsuccess;
+    char VinfoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &Vsuccess);
+    if(!Vsuccess) {
+        glGetShaderInfoLog(vertexShader, 512, NULL, VinfoLog);
+        std::cerr << "VERTEX COMPILATION ERROR\n" << VinfoLog << std::endl;
+    }
 
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if(!success) {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+    int Fsuccess;
+    char FinfoLog[512];
+    glGetShaderiv(FragmentShader, GL_COMPILE_STATUS, &Fsuccess);
+    if(!Fsuccess) {
+        glGetShaderInfoLog(FragmentShader, 512, NULL, FinfoLog);
+        std::cerr << "FRAGMENT COMPILATION ERROR\n" << FinfoLog << std::endl;
     }
 
     glActiveTexture(GL_TEXTURE0);

@@ -273,10 +273,18 @@ void Game::MainLoop() {
             glm::mat4 model = glm::mat4(1.0f);
             glm::mat4 view = movement.GetViewMatrix(Camera);
             glm::mat4 proj = glm::perspective(glm::radians(FOV), aspectRatio, 0.1f, 2000.0f);
-            glm::mat4 MVP = proj * view * model;
 
-            GLuint mvpLoc = glGetUniformLocation(ShaderProgram, "MVP");
-            glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, &MVP[0][0]);
+            GLuint ViewPosLoc = glGetUniformLocation(ShaderProgram, "viewPos");
+            glUniform3f(ViewPosLoc, Camera.Position.x, Camera.Position.y, Camera.Position.z);
+
+            GLuint ModelLoc = glGetUniformLocation(ShaderProgram, "Model");
+            glUniformMatrix4fv(ModelLoc, 1, GL_FALSE, &model[0][0]);
+
+            GLuint ViewLoc = glGetUniformLocation(ShaderProgram, "View");
+            glUniformMatrix4fv(ViewLoc, 1, GL_FALSE, &view[0][0]);
+
+            GLuint ProjLoc = glGetUniformLocation(ShaderProgram, "Proj");
+            glUniformMatrix4fv(ProjLoc, 1, GL_FALSE, &proj[0][0]);
 
             Camera.Chunk.x = static_cast<int>(std::floor(Camera.Position.x / CHUNK_WIDTH));
             Camera.Chunk.y = 0;

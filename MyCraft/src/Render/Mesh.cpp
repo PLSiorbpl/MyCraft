@@ -59,68 +59,70 @@ void Mesh::CubeMesh(std::vector<float>& vertices, glm::vec3 w, const Chunk& chun
 
     auto pushTri = [&](glm::vec3 a, glm::vec2 uva,
                        glm::vec3 b, glm::vec2 uvb,
-                       glm::vec3 c, glm::vec2 uvc) {
+                       glm::vec3 c, glm::vec2 uvc,
+                       glm::vec3 Normal) {
         for (int i = 0; i < 3; ++i) {
             const glm::vec3& v = i == 0 ? a : (i == 1 ? b : c);
             const glm::vec2& uv = i == 0 ? uva : (i == 1 ? uvb : uvc);
-            vertices.insert(vertices.end(), { v.x, v.y, v.z, uv.x, uv.y });
+            const glm::vec3& n = Normal;
+            vertices.insert(vertices.end(), { v.x, v.y, v.z, uv.x, uv.y, n.x, n.y, n.z });
         }
     };
 
     // FRONT (z+)
     if ((Local.z + 1 >= ChunkSize.z)) {
         if (!IsBlockAt(w.x, w.y, w.z+1, ChunkSize)) {
-            pushTri(p001, uv00, p101, uv10, p111, uv11);
-            pushTri(p001, uv00, p111, uv11, p011, uv01);
+            pushTri(p001, uv00, p101, uv10, p111, uv11, glm::vec3(0, 0, 1));
+            pushTri(p001, uv00, p111, uv11, p011, uv01, glm::vec3(0, 0, 1));
         }
     } else if (chunk.get(Local.x, Local.y, Local.z+1).id == 0) {
-        pushTri(p001, uv00, p101, uv10, p111, uv11);
-        pushTri(p001, uv00, p111, uv11, p011, uv01);
+        pushTri(p001, uv00, p101, uv10, p111, uv11, glm::vec3(0, 0, 1));
+        pushTri(p001, uv00, p111, uv11, p011, uv01, glm::vec3(0, 0, 1));
     }
 
     // BACK (z-)
     if ((Local.z - 1 < 0)) {
         if (!IsBlockAt(w.x, w.y, w.z-1, ChunkSize)) {
-            pushTri(p100, uv00, p000, uv10, p010, uv11);
-            pushTri(p100, uv00, p010, uv11, p110, uv01);
+            pushTri(p100, uv00, p000, uv10, p010, uv11, glm::vec3(0, 0, -1));
+            pushTri(p100, uv00, p010, uv11, p110, uv01, glm::vec3(0, 0, -1));
         }
     } else if (chunk.get(Local.x, Local.y, Local.z-1).id == 0) {
-        pushTri(p100, uv00, p000, uv10, p010, uv11);
-        pushTri(p100, uv00, p010, uv11, p110, uv01);
+        pushTri(p100, uv00, p000, uv10, p010, uv11, glm::vec3(0, 0, -1));
+        pushTri(p100, uv00, p010, uv11, p110, uv01, glm::vec3(0, 0, -1));
     }
 
     // LEFT (x-)
     if ((Local.x - 1 < 0)) {
         if (!IsBlockAt(w.x-1, w.y, w.z, ChunkSize)) {
-            pushTri(p000, uv00, p001, uv10, p011, uv11);
-            pushTri(p000, uv00, p011, uv11, p010, uv01);
+            pushTri(p000, uv00, p001, uv10, p011, uv11, glm::vec3(-1, 0, 0));
+            pushTri(p000, uv00, p011, uv11, p010, uv01, glm::vec3(-1, 0, 0));
         }
     } else if (chunk.get(Local.x-1, Local.y, Local.z).id == 0) {
-        pushTri(p000, uv00, p001, uv10, p011, uv11);
-        pushTri(p000, uv00, p011, uv11, p010, uv01);
+        pushTri(p000, uv00, p001, uv10, p011, uv11, glm::vec3(-1, 0, 0));
+        pushTri(p000, uv00, p011, uv11, p010, uv01, glm::vec3(-1, 0, 0));
     }
 
     // RIGHT (x+)
     if ((Local.x + 1 >= ChunkSize.x)) {
         if (!IsBlockAt(w.x+1, w.y, w.z, ChunkSize)) {
-            pushTri(p100, uv00, p101, uv10, p111, uv11);
-            pushTri(p100, uv00, p111, uv11, p110, uv01);
+            pushTri(p100, uv00, p101, uv10, p111, uv11, glm::vec3(1, 0, 0));
+            pushTri(p100, uv00, p111, uv11, p110, uv01, glm::vec3(1, 0, 0));
         }
     } else if (chunk.get(Local.x+1, Local.y, Local.z).id == 0) {
-        pushTri(p100, uv00, p101, uv10, p111, uv11);
-        pushTri(p100, uv00, p111, uv11, p110, uv01);
+        pushTri(p100, uv00, p101, uv10, p111, uv11, glm::vec3(1, 0, 0));
+        pushTri(p100, uv00, p111, uv11, p110, uv01, glm::vec3(1, 0, 0));
     }
 
     // TOP (y+)
     if (Local.y + 1 >= ChunkSize.y || chunk.get(Local.x, Local.y+1, Local.z).id == 0) {
-        pushTri(p010, uv00, p011, uv10, p111, uv11);
-        pushTri(p010, uv00, p111, uv11, p110, uv01);
+        pushTri(p010, uv00, p011, uv10, p111, uv11, glm::vec3(0, 1, 0));
+        pushTri(p010, uv00, p111, uv11, p110, uv01, glm::vec3(0, 1, 0));
     }
 
     // BOTTOM (y-)
     if ((Local.y - 1 < 0) || chunk.get(Local.x, Local.y-1, Local.z).id == 0) {
-        pushTri(p000, uv00, p100, uv10, p101, uv11);
-        pushTri(p000, uv00, p101, uv11, p001, uv01);
+        pushTri(p000, uv00, p100, uv10, p101, uv11, glm::vec3(0, -1, 0));
+        pushTri(p000, uv00, p101, uv11, p001, uv01, glm::vec3(0, -1, 0));
     }
 }
 
