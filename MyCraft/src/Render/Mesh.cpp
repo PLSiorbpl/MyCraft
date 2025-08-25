@@ -20,54 +20,58 @@ void Mesh::GenerateMesh(const Chunk& chunk, std::vector<float>& vertices, int ch
     }
 }
 
-void Mesh::CubeMesh(std::vector<float>& vertices, glm::vec3 w, const Chunk& chunk, glm::ivec3 Local, const glm::ivec3 ChunkSize) {
-    float size = 1.0f;
+void Mesh::CubeMesh(std::vector<float>& vertices, const glm::vec3 w, const Chunk& chunk, const glm::ivec3 Local, const glm::ivec3 ChunkSize) {
+    const float size = 1.0f;
 
-    glm::vec3 p000 = {w.x,      w.y,      w.z};
-    glm::vec3 p001 = {w.x,      w.y,      w.z+size};
-    glm::vec3 p010 = {w.x,      w.y+size, w.z};
-    glm::vec3 p011 = {w.x,      w.y+size, w.z+size};
-    glm::vec3 p100 = {w.x+size, w.y,      w.z};
-    glm::vec3 p101 = {w.x+size, w.y,      w.z+size};
-    glm::vec3 p110 = {w.x+size, w.y+size, w.z};
-    glm::vec3 p111 = {w.x+size, w.y+size, w.z+size};
-
-    int texX = 0;
-    int texY = 0;
+    const glm::vec3 p000 = {w.x,      w.y,      w.z};
+    const glm::vec3 p001 = {w.x,      w.y,      w.z+size};
+    const glm::vec3 p010 = {w.x,      w.y+size, w.z};
+    const glm::vec3 p011 = {w.x,      w.y+size, w.z+size};
+    const glm::vec3 p100 = {w.x+size, w.y,      w.z};
+    const glm::vec3 p101 = {w.x+size, w.y,      w.z+size};
+    const glm::vec3 p110 = {w.x+size, w.y+size, w.z};
+    const glm::vec3 p111 = {w.x+size, w.y+size, w.z+size};
 
     const Chunk::Block& block = chunk.get(Local.x, Local.y, Local.z);
-    if (block.id == 1) {
-        texX = 0;
-        texY = 0;
-    } else if (block.id == 2) {
-        texX = 1;
-        texY = 0;
-    } else {
-        texX = 0;
-        texY = 1;
+
+    // UV mapping
+    glm::ivec2 texCoord(0, 0);
+    switch (block.id) {
+        case 1: texCoord = {0, 0}; break; // stone
+        case 2: texCoord = {1, 0}; break; // grass
+        case 3: texCoord = {2, 0}; break; // dirt
+        case 4: texCoord = {3, 0}; break; // Blacha
+        default: texCoord = {4, 4}; break; // Nothing
     }
 
-    const float tileSize = 1.0f / 8.0f; // 0.125   8 textures in a row
+    static const float tileSize = 1.0f / 8.0f; // 0.125   8 textures in a row
 
-    float u = texX * tileSize;
-    float v = texY * tileSize;
+    const float u = texCoord.x * tileSize;
+    const float v = texCoord.y * tileSize;
 
-    glm::vec2 uv00 = {u,  v};                      // left down
-    glm::vec2 uv10 = {u + tileSize, v};            // right up
-    glm::vec2 uv01 = {u,  v + tileSize};           // left up
-    glm::vec2 uv11 = {u + tileSize, v + tileSize}; // right down
-
-    auto pushTri = [&](glm::vec3 a, glm::vec2 uva,
-                       glm::vec3 b, glm::vec2 uvb,
-                       glm::vec3 c, glm::vec2 uvc,
-                       glm::vec3 Normal) {
+    const glm::vec2 uv00 = {u,  v};                      // left down
+    const glm::vec2 uv10 = {u + tileSize, v};            // right up
+    const glm::vec2 uv01 = {u,  v + tileSize};           // left up
+    const glm::vec2 uv11 = {u + tileSize, v + tileSize}; // right down
+    
+    auto pushTri = [&](const glm::vec3& a, const glm::vec2& uva,
+                   const glm::vec3& b, const glm::vec2& uvb,
+                   const glm::vec3& c, const glm::vec2& uvc,
+                   const glm::vec3& n) {
+        const glm::vec3 pts[3] = {a,b,c};
+        const glm::vec2 uvs[3] = {uva,uvb,uvc};
         for (int i = 0; i < 3; ++i) {
-            const glm::vec3& v = i == 0 ? a : (i == 1 ? b : c);
-            const glm::vec2& uv = i == 0 ? uva : (i == 1 ? uvb : uvc);
-            const glm::vec3& n = Normal;
-            vertices.insert(vertices.end(), { v.x, v.y, v.z, uv.x, uv.y, n.x, n.y, n.z });
+            vertices.push_back(pts[i].x);
+            vertices.push_back(pts[i].y);
+            vertices.push_back(pts[i].z);
+            vertices.push_back(uvs[i].x);
+            vertices.push_back(uvs[i].y);
+            vertices.push_back(n.x);
+            vertices.push_back(n.y);
+            vertices.push_back(n.z);
         }
     };
+
 
     // FRONT (z+)
     if ((Local.z + 1 >= ChunkSize.z)) {
@@ -128,11 +132,11 @@ void Mesh::CubeMesh(std::vector<float>& vertices, glm::vec3 w, const Chunk& chun
 
 bool Mesh::IsBlockAt(int WorldX, int y, int WorldZ, const glm::ivec3 ChunkSize) {
     const auto& World = World_Map::World;
-    int chunkX = std::floor((float)WorldX / ChunkSize.x);
-    int chunkZ = std::floor((float)WorldZ / ChunkSize.z);
+    const int chunkX = std::floor((float)WorldX / ChunkSize.x);
+    const int chunkZ = std::floor((float)WorldZ / ChunkSize.z);
 
-    int localX = WorldX - chunkX * ChunkSize.x;
-    int localZ = WorldZ - chunkZ * ChunkSize.z;
+    const int localX = WorldX - chunkX * ChunkSize.x;
+    const int localZ = WorldZ - chunkZ * ChunkSize.z;
 
     const auto it = World.find({chunkX, chunkZ});
     if (it != World.end()) {

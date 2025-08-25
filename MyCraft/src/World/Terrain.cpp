@@ -12,11 +12,10 @@ void TerrainGen::Generate_Terrain_Chunk(int Chunk_x, int Chunk_z, glm::ivec3 Chu
 
     for (int x = 0; x < ChunkSize.x; ++x) {
         for (int z = 0; z < ChunkSize.z; ++z) {
-            float worldX = Chunk_x * ChunkSize.x + x;
-            float worldZ = Chunk_z * ChunkSize.z + z;
+            const float worldX = Chunk_x * ChunkSize.x + x;
+            const float worldZ = Chunk_z * ChunkSize.z + z;
 
-            float biomeFactor = pow(BiomePower, biomeNoise.GetNoise(worldX * BiomeFreq, worldZ * BiomeFreq));
-            biomeFactor = biomeFactor;
+            const float biomeFactor = pow(BiomePower, biomeNoise.GetNoise(worldX * BiomeFreq, worldZ * BiomeFreq));
 
             float baseHeight = 0.0f;
             float frequency = baseFreq;
@@ -30,13 +29,15 @@ void TerrainGen::Generate_Terrain_Chunk(int Chunk_x, int Chunk_z, glm::ivec3 Chu
 
             float normalizedHeight = (baseHeight/octaves) * 0.5f + 0.5f;
             normalizedHeight *= (BiomeBase + biomeFactor * BiomeMult);
-            int intHeight = static_cast<int>(normalizedHeight * ChunkSize.y);
+            const int intHeight = static_cast<int>(normalizedHeight * ChunkSize.y);
 
             for (int y = 0; y <= intHeight && y < ChunkSize.y; ++y) {
-                if (y != intHeight) {
-                    Chunk.set(x, y, z, Chunk::BlockDefs.at(1)); // Stone
-                } else {
+                if (y == intHeight) {
                     Chunk.set(x, y, z, Chunk::BlockDefs.at(2)); // Grass
+                } else if (y >= intHeight - 3) {
+                    Chunk.set(x, y, z, Chunk::BlockDefs.at(3)); // Dirt
+                } else {
+                    Chunk.set(x, y, z, Chunk::BlockDefs.at(1)); // Stone
                 }
             }
         }

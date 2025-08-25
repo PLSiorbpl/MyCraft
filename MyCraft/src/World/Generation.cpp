@@ -4,10 +4,10 @@ void ChunkGeneration::GenerateChunks(const camera &Camera, const glm::ivec3 Chun
     const auto& World = World_Map::World;
     for (int dx = -Camera.RenderDistance; dx <= Camera.RenderDistance; ++dx) {
         for (int dz = -Camera.RenderDistance; dz <= Camera.RenderDistance; ++dz) {
-            int chunkX = Camera.Chunk.x + dx;
-            int chunkZ = Camera.Chunk.z + dz;
+            const int chunkX = Camera.Chunk.x + dx;
+            const int chunkZ = Camera.Chunk.z + dz;
 
-            std::pair<int, int> key = {chunkX, chunkZ};
+            const std::pair<int, int> key = {chunkX, chunkZ};
 
             if (World.find(key) == World.end()) {
                 Terrain.Generate_Terrain_Chunk(chunkX, chunkZ, ChunkSize);
@@ -21,13 +21,13 @@ void ChunkGeneration::RemoveChunks(const camera& Camera) {
     std::vector<std::pair<int,int>> toRemove;
 
     for (const auto& [key, chunk] : World) {
-        int chunkX = key.first;
-        int chunkZ = key.second;
+        const int chunkX = key.first;
+        const int chunkZ = key.second;
 
-        int dx = chunkX - Camera.Chunk.x;
-        int dz = chunkZ - Camera.Chunk.z;
+        const int dx = chunkX - Camera.Chunk.x;
+        const int dz = chunkZ - Camera.Chunk.z;
 
-        int dist = std::max(std::abs(dx), std::abs(dz));
+        const int dist = std::max(std::abs(dx), std::abs(dz));
 
         if (dist > Camera.RenderDistance) {
             toRemove.push_back(key);

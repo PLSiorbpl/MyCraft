@@ -267,12 +267,12 @@ void Game::MainLoop() {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // MVP
-            float aspectRatio = (float)width / (float)height;
-            float FOV = fun.ConvertHorizontalFovToVertical(game.FOV, aspectRatio);
+            const float aspectRatio = (float)width / (float)height;
+            const float FOV = fun.ConvertHorizontalFovToVertical(game.FOV, aspectRatio);
 
-            glm::mat4 model = glm::mat4(1.0f);
-            glm::mat4 view = movement.GetViewMatrix(Camera);
-            glm::mat4 proj = glm::perspective(glm::radians(FOV), aspectRatio, 0.1f, 2000.0f);
+            const glm::mat4 model = glm::mat4(1.0f);
+            const glm::mat4 view = movement.GetViewMatrix(Camera);
+            const glm::mat4 proj = glm::perspective(glm::radians(FOV), aspectRatio, 0.1f, 2000.0f);
 
             GLuint ViewPosLoc = glGetUniformLocation(ShaderProgram, "viewPos");
             glUniform3f(ViewPosLoc, Camera.Position.x, Camera.Position.y, Camera.Position.z);

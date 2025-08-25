@@ -14,21 +14,27 @@ void Movement::Init(camera &Camera, GLFWwindow* window, const glm::ivec3 ChunkSi
 }
 
 void Movement::Input(GLFWwindow* window, camera &Camera) {
+    float Speed = Camera.Speed;
+    float SpeedLimit = 0.1f;
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        Speed += Camera.SprintSpeed;
+        SpeedLimit = 0.13f;
+    }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        Camera.Vel.x += -Camera.Speed * Sin.y;
-        Camera.Vel.z +=  Camera.Speed * Cos.y;
+        Camera.Vel.x += -Speed * Sin.y;
+        Camera.Vel.z +=  Speed * Cos.y;
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        Camera.Vel.x +=  Camera.Speed * Sin.y;
-        Camera.Vel.z += -Camera.Speed * Cos.y;
+        Camera.Vel.x +=  Speed * Sin.y;
+        Camera.Vel.z += -Speed * Cos.y;
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        Camera.Vel.x += -Camera.Speed * Cos.y;
-        Camera.Vel.z += -Camera.Speed * Sin.y;
+        Camera.Vel.x += -Speed * Cos.y;
+        Camera.Vel.z += -Speed * Sin.y;
     }
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        Camera.Vel.x +=  Camera.Speed * Cos.y;
-        Camera.Vel.z +=  Camera.Speed * Sin.y;
+        Camera.Vel.x +=  Speed * Cos.y;
+        Camera.Vel.z +=  Speed * Sin.y;
     }
 
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && Camera.onGround) {
@@ -41,8 +47,8 @@ void Movement::Input(GLFWwindow* window, camera &Camera) {
     // Down
     if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) Camera.Vel.y = -Camera.JumpStrength;
 
-    Camera.Vel.x = std::clamp(Camera.Vel.x, -0.1f, 0.1f);
-    Camera.Vel.z = std::clamp(Camera.Vel.z, -0.1f, 0.1f);
+    Camera.Vel.x = std::clamp(Camera.Vel.x, -SpeedLimit, SpeedLimit);
+    Camera.Vel.z = std::clamp(Camera.Vel.z, -SpeedLimit, SpeedLimit);
     Camera.Vel.y = std::clamp(Camera.Vel.y, -0.2f, 0.2f);
 }
 

@@ -4,8 +4,10 @@
 
 const std::map<uint8_t, Chunk::Block> Chunk::BlockDefs = {
     { 0, Block(0, false, false) }, // Air
-    { 1, Block(1, false, true)  }, // Stone
-    { 2, Block(2, false,  true)  }, // Grass
+    { 1, Block(1, false, true) }, // Stone
+    { 2, Block(2, false,  true) }, // Grass
+    { 3, Block(3, false,  true) }, // Dirt
+    { 4, Block(4, false, true) } // Blacha
 };
 
 void Chunk::Allocate() {
@@ -27,16 +29,17 @@ void Chunk::SendData() {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, Mesh.size() * sizeof(float), Mesh.data(), GL_STATIC_DRAW);
 
+    const int stride = 8 * sizeof(float);
     // aPos (location = 0)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
     glEnableVertexAttribArray(0);
 
     // atexture (location = 1)
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     // aNormal (location = 2)
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)(5 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
