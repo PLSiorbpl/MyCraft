@@ -17,7 +17,7 @@ void main() {
     vec3 lightColor = vec3(1.0,1.0,0.8);
 
     // Base Texture
-    vec4 baseColor = texture(tex, TexCoord);
+    vec4 baseColor = texture(tex, vec2(TexCoord.x, TexCoord.y));
     vec3 outputColor = pow(baseColor.rgb, vec3(2.2));
 
 

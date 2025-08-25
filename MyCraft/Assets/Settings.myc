@@ -1,5 +1,5 @@
 // Graphics:
-Render Distance=32
+Render Distance=16
 Out Of Vram=1 // 1 - Dont Exit Program and change RenderDist by -1 | 0 - Exit Program (Crash)
 V-Sync=1
 // if Updates are set to 0 it will Update Mesh/World in 1 Frame

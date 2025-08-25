@@ -19,6 +19,20 @@ void Mesh::GenerateMesh(const Chunk& chunk, std::vector<float>& vertices, int ch
         }
     }
 }
+// 0 - Top | 1 - Right | 2 - Left | 3 - Bottom
+auto getUVs = [](const glm::ivec2 BaseCoord, const float Side) {
+    static const float tileSize = 1.0f / 8.0f; // 0.125 8 textures in a row
+
+    const float u = BaseCoord.x * tileSize;
+    const float v = (BaseCoord.y + Side) * tileSize;
+
+    const glm::vec2 uv00 = {u,  v + tileSize};
+    const glm::vec2 uv01 = {u + tileSize, v + tileSize};
+    const glm::vec2 uv10 = {u,  v};
+    const glm::vec2 uv11 = {u + tileSize, v};
+
+    return std::array<glm::vec2, 4>{uv00, uv10, uv01, uv11};
+};
 
 void Mesh::CubeMesh(std::vector<float>& vertices, const glm::vec3 w, const Chunk& chunk, const glm::ivec3 Local, const glm::ivec3 ChunkSize) {
     const float size = 1.0f;
@@ -43,16 +57,6 @@ void Mesh::CubeMesh(std::vector<float>& vertices, const glm::vec3 w, const Chunk
         case 4: texCoord = {3, 0}; break; // Blacha
         default: texCoord = {4, 4}; break; // Nothing
     }
-
-    static const float tileSize = 1.0f / 8.0f; // 0.125   8 textures in a row
-
-    const float u = texCoord.x * tileSize;
-    const float v = texCoord.y * tileSize;
-
-    const glm::vec2 uv00 = {u,  v};                      // left down
-    const glm::vec2 uv10 = {u + tileSize, v};            // right up
-    const glm::vec2 uv01 = {u,  v + tileSize};           // left up
-    const glm::vec2 uv11 = {u + tileSize, v + tileSize}; // right down
     
     auto pushTri = [&](const glm::vec3& a, const glm::vec2& uva,
                    const glm::vec3& b, const glm::vec2& uvb,
@@ -72,61 +76,70 @@ void Mesh::CubeMesh(std::vector<float>& vertices, const glm::vec3 w, const Chunk
         }
     };
 
-
     // FRONT (z+)
     if ((Local.z + 1 >= ChunkSize.z)) {
         if (!IsBlockAt(w.x, w.y, w.z+1, ChunkSize)) {
-            pushTri(p001, uv00, p101, uv10, p111, uv11, glm::vec3(0, 0, 1));
-            pushTri(p001, uv00, p111, uv11, p011, uv01, glm::vec3(0, 0, 1));
+            const auto uv = getUVs(texCoord, 1);
+            pushTri(p001, uv[0], p101, uv[2], p111, uv[3], glm::vec3(0, 0, 1));
+            pushTri(p001, uv[0], p111, uv[3], p011, uv[1], glm::vec3(0, 0, 1));
         }
     } else if (chunk.get(Local.x, Local.y, Local.z+1).id == 0) {
-        pushTri(p001, uv00, p101, uv10, p111, uv11, glm::vec3(0, 0, 1));
-        pushTri(p001, uv00, p111, uv11, p011, uv01, glm::vec3(0, 0, 1));
+        const auto uv = getUVs(texCoord, 1);
+        pushTri(p001, uv[0], p101, uv[2], p111, uv[3], glm::vec3(0, 0, 1));
+        pushTri(p001, uv[0], p111, uv[3], p011, uv[1], glm::vec3(0, 0, 1));
     }
 
     // BACK (z-)
     if ((Local.z - 1 < 0)) {
+        const auto uv = getUVs(texCoord, 1);
         if (!IsBlockAt(w.x, w.y, w.z-1, ChunkSize)) {
-            pushTri(p100, uv00, p000, uv10, p010, uv11, glm::vec3(0, 0, -1));
-            pushTri(p100, uv00, p010, uv11, p110, uv01, glm::vec3(0, 0, -1));
+            pushTri(p100, uv[0], p000, uv[2], p010, uv[3], glm::vec3(0, 0, -1));
+            pushTri(p100, uv[0], p010, uv[3], p110, uv[1], glm::vec3(0, 0, -1));
         }
     } else if (chunk.get(Local.x, Local.y, Local.z-1).id == 0) {
-        pushTri(p100, uv00, p000, uv10, p010, uv11, glm::vec3(0, 0, -1));
-        pushTri(p100, uv00, p010, uv11, p110, uv01, glm::vec3(0, 0, -1));
+        const auto uv = getUVs(texCoord, 1);
+        pushTri(p100, uv[0], p000, uv[2], p010, uv[3], glm::vec3(0, 0, -1));
+        pushTri(p100, uv[0], p010, uv[3], p110, uv[1], glm::vec3(0, 0, -1));
     }
 
     // LEFT (x-)
     if ((Local.x - 1 < 0)) {
+        const auto uv = getUVs(texCoord, 1);
         if (!IsBlockAt(w.x-1, w.y, w.z, ChunkSize)) {
-            pushTri(p000, uv00, p001, uv10, p011, uv11, glm::vec3(-1, 0, 0));
-            pushTri(p000, uv00, p011, uv11, p010, uv01, glm::vec3(-1, 0, 0));
+            pushTri(p000, uv[0], p001, uv[2], p011, uv[3], glm::vec3(-1, 0, 0));
+            pushTri(p000, uv[0], p011, uv[3], p010, uv[1], glm::vec3(-1, 0, 0));
         }
     } else if (chunk.get(Local.x-1, Local.y, Local.z).id == 0) {
-        pushTri(p000, uv00, p001, uv10, p011, uv11, glm::vec3(-1, 0, 0));
-        pushTri(p000, uv00, p011, uv11, p010, uv01, glm::vec3(-1, 0, 0));
+        const auto uv = getUVs(texCoord, 1);
+        pushTri(p000, uv[0], p001, uv[2], p011, uv[3], glm::vec3(-1, 0, 0));
+        pushTri(p000, uv[0], p011, uv[3], p010, uv[1], glm::vec3(-1, 0, 0));
     }
 
     // RIGHT (x+)
     if ((Local.x + 1 >= ChunkSize.x)) {
+        const auto uv = getUVs(texCoord, 1);
         if (!IsBlockAt(w.x+1, w.y, w.z, ChunkSize)) {
-            pushTri(p100, uv00, p101, uv10, p111, uv11, glm::vec3(1, 0, 0));
-            pushTri(p100, uv00, p111, uv11, p110, uv01, glm::vec3(1, 0, 0));
+            pushTri(p100, uv[0], p101, uv[2], p111, uv[3], glm::vec3(1, 0, 0));
+            pushTri(p100, uv[0], p111, uv[3], p110, uv[1], glm::vec3(1, 0, 0));
         }
     } else if (chunk.get(Local.x+1, Local.y, Local.z).id == 0) {
-        pushTri(p100, uv00, p101, uv10, p111, uv11, glm::vec3(1, 0, 0));
-        pushTri(p100, uv00, p111, uv11, p110, uv01, glm::vec3(1, 0, 0));
+        const auto uv = getUVs(texCoord, 1);
+        pushTri(p100, uv[0], p101, uv[2], p111, uv[3], glm::vec3(1, 0, 0));
+        pushTri(p100, uv[0], p111, uv[3], p110, uv[1], glm::vec3(1, 0, 0));
     }
 
     // TOP (y+)
     if (Local.y + 1 >= ChunkSize.y || chunk.get(Local.x, Local.y+1, Local.z).id == 0) {
-        pushTri(p010, uv00, p011, uv10, p111, uv11, glm::vec3(0, 1, 0));
-        pushTri(p010, uv00, p111, uv11, p110, uv01, glm::vec3(0, 1, 0));
+        const auto uv = getUVs(texCoord, 0);
+        pushTri(p010, uv[0], p011, uv[2], p111, uv[3], glm::vec3(0, 1, 0));
+        pushTri(p010, uv[0], p111, uv[3], p110, uv[1], glm::vec3(0, 1, 0));
     }
 
     // BOTTOM (y-)
     if ((Local.y - 1 < 0) || chunk.get(Local.x, Local.y-1, Local.z).id == 0) {
-        pushTri(p000, uv00, p100, uv10, p101, uv11, glm::vec3(0, -1, 0));
-        pushTri(p000, uv00, p101, uv11, p001, uv01, glm::vec3(0, -1, 0));
+        const auto uv = getUVs(texCoord, 0);
+        pushTri(p000, uv[0], p100, uv[2], p101, uv[3], glm::vec3(0, -1, 0));
+        pushTri(p000, uv[0], p101, uv[3], p001, uv[1], glm::vec3(0, -1, 0));
     }
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <vector>
+#include <array>
 #include <unordered_map>
 #include "World/Chunk.hpp"
 #include "Camera.hpp"
