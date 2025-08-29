@@ -49,7 +49,7 @@ void Movement::Input(GLFWwindow* window, camera &Camera) {
 
     Camera.Vel.x = std::clamp(Camera.Vel.x, -SpeedLimit, SpeedLimit);
     Camera.Vel.z = std::clamp(Camera.Vel.z, -SpeedLimit, SpeedLimit);
-    Camera.Vel.y = std::clamp(Camera.Vel.y, -0.2f, 0.2f);
+    Camera.Vel.y = std::clamp(Camera.Vel.y, -0.5f, 0.2f);
 }
 
 void Movement::Special_Keys(GLFWwindow* window, camera &Camera) {

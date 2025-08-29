@@ -1,6 +1,6 @@
 #include "Mesh.hpp"
 
-void Mesh::GenerateMesh(const Chunk& chunk, std::vector<float>& vertices, int chunkX, int chunkZ, const glm::ivec3 ChunkSize, int RenderDist) {
+void Mesh::GenerateMesh(const Chunk& chunk, std::vector<float>& vertices, const int chunkX, const int chunkZ, const glm::ivec3 ChunkSize, const int RenderDist) {
     const int worldOffsetX = chunkX * ChunkSize.x;
     const int worldOffsetZ = chunkZ * ChunkSize.z;
 
@@ -37,13 +37,13 @@ auto getUVs = [](const glm::ivec2 BaseCoord, const float Side) {
 void Mesh::CubeMesh(std::vector<float>& vertices, const glm::vec3 w, const Chunk& chunk, const glm::ivec3 Local, const glm::ivec3 ChunkSize) {
     const float size = 1.0f;
 
-    const glm::vec3 p000 = {w.x,      w.y,      w.z};
+    const glm::vec3 p000 = {w.x,      w.y,      w.z     };
     const glm::vec3 p001 = {w.x,      w.y,      w.z+size};
-    const glm::vec3 p010 = {w.x,      w.y+size, w.z};
+    const glm::vec3 p010 = {w.x,      w.y+size, w.z     };
     const glm::vec3 p011 = {w.x,      w.y+size, w.z+size};
-    const glm::vec3 p100 = {w.x+size, w.y,      w.z};
+    const glm::vec3 p100 = {w.x+size, w.y,      w.z     };
     const glm::vec3 p101 = {w.x+size, w.y,      w.z+size};
-    const glm::vec3 p110 = {w.x+size, w.y+size, w.z};
+    const glm::vec3 p110 = {w.x+size, w.y+size, w.z     };
     const glm::vec3 p111 = {w.x+size, w.y+size, w.z+size};
 
     const Chunk::Block& block = chunk.get(Local.x, Local.y, Local.z);

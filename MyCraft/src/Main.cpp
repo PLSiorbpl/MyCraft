@@ -10,6 +10,7 @@
 #include <vector>
 #include <tuple>
 #include <cmath>
+#include <cinttypes>
 #include <algorithm>
 #include <windows.h>
 #include <psapi.h>
@@ -30,9 +31,10 @@
 #include "Render/Mesh.hpp"
 #include "World/World.hpp"
 
-int CHUNK_WIDTH;
-int CHUNK_HEIGHT;
-int CHUNK_DEPTH;
+//int CHUNK_WIDTH;
+//int CHUNK_HEIGHT;
+//int CHUNK_DEPTH;
+glm::ivec3 Chunk_Size;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -71,7 +73,7 @@ private:
     FPS Fps;
     camera Camera;
     Game_Variables game;
-    GLuint VAO, VBO, ShaderProgram;
+    GLuint ShaderProgram;
     size_t Mesh_Size;
     Movement movement;
     float DeltaTime;
@@ -98,9 +100,9 @@ void Game::Init_Settings(const std::string Path) {
 
     Camera.RenderDistance = Settings.GetInt("Render Distance");
     game.VramHandle = Settings.GetInt("Out Of Vram");
-    CHUNK_WIDTH = Settings.GetInt("Chunk Width");
-    CHUNK_HEIGHT = Settings.GetInt("Chunk Height");
-    CHUNK_DEPTH = Settings.GetInt("Chunk Depth");
+    Chunk_Size.x = Settings.GetInt("Chunk Width");
+    Chunk_Size.y = Settings.GetInt("Chunk Height");
+    Chunk_Size.z = Settings.GetInt("Chunk Depth");
     game.V_Sync = Settings.GetInt("V-Sync");
     game.TickRate = 1.0f / Settings.GetFloat("Tick Rate");
     game.FOV = Settings.GetInt("FOV");
@@ -121,11 +123,12 @@ void Game::Init_Settings(const std::string Path) {
 }
 
 void Game::CleanUp() {
+    for (auto& [key, chunk] : World_Map::World) {
+        chunk.RemoveData();
+    }
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
     glDeleteProgram(ShaderProgram);
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -181,12 +184,12 @@ bool Game::Init_Window() {
 }
 
 void Game::Init_Shader() {
-    shader.Init_Shader(VAO, VBO, ShaderProgram);
+    shader.Init_Shader(ShaderProgram);
     // Soon more shaders
 }
 
 void Tick_Update(camera &Camera, GLFWwindow* window, const float DeltaTime, Movement &movement, colisions &Colisions) {
-    movement.Init(Camera, window, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Colisions);
+    movement.Init(Camera, window, Chunk_Size, Colisions);
 }
 
 void DebugInfo(Game_Variables &game, const size_t Mesh_Size, const camera &Camera, const size_t Alloc, Fun &fun, const GLenum &err) {
@@ -209,7 +212,7 @@ void DebugInfo(Game_Variables &game, const size_t Mesh_Size, const camera &Camer
     ImGui::Text("Tried to Alloc: %dMB", (Alloc / (1024 * 1024)));
     ImGui::Text("Render Distance: %d", Camera.RenderDistance);
     ImGui::Text("Ram Used: %dMB", ramUsed / 1024 / 1024);
-    ImGui::Text("World Usage: %dMB", fun.calculateWorldMemory(World) / (1024 * 1024));
+    ImGui::Text("World Usage: %zuMB", fun.calculateWorldMemory(World, Chunk_Size) / (1024 * 1024));
     ImGui::Text("OpenGL error: 0x%X", err);
     
     ImGui::Text("");
@@ -233,6 +236,8 @@ void Game::MainLoop() {
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(window, true);
+
+            glUseProgram(ShaderProgram);
         // Main Engine -------------------------------------------------------------------
 
             DeltaTime = Fps.Start();
@@ -252,7 +257,7 @@ void Game::MainLoop() {
                     if (chunk.DirtyFlag) {
                         if (game.Updates <= game.Mesh_Updates) {
                             chunk.Allocate();
-                            mesh.GenerateMesh(chunk, chunk.Mesh, key.first, key.second, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Camera.RenderDistance);
+                            mesh.GenerateMesh(chunk, chunk.Mesh, key.first, key.second, Chunk_Size, Camera.RenderDistance);
                             chunk.SendData();
                             game.Updates += 1;
                         } else {
@@ -262,7 +267,7 @@ void Game::MainLoop() {
                 }
             }
 
-        // Clearing
+        // Clearing Screen
             glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -274,21 +279,14 @@ void Game::MainLoop() {
             const glm::mat4 view = movement.GetViewMatrix(Camera);
             const glm::mat4 proj = glm::perspective(glm::radians(FOV), aspectRatio, 0.1f, 2000.0f);
 
-            GLuint ViewPosLoc = glGetUniformLocation(ShaderProgram, "viewPos");
-            glUniform3f(ViewPosLoc, Camera.Position.x, Camera.Position.y, Camera.Position.z);
+            shader.Set_Vec3(ShaderProgram, "ViewPos", Camera.Position);
+            shader.Set_Mat4(ShaderProgram, "Model", model);
+            shader.Set_Mat4(ShaderProgram, "View", view);
+            shader.Set_Mat4(ShaderProgram, "Proj", proj);
 
-            GLuint ModelLoc = glGetUniformLocation(ShaderProgram, "Model");
-            glUniformMatrix4fv(ModelLoc, 1, GL_FALSE, &model[0][0]);
-
-            GLuint ViewLoc = glGetUniformLocation(ShaderProgram, "View");
-            glUniformMatrix4fv(ViewLoc, 1, GL_FALSE, &view[0][0]);
-
-            GLuint ProjLoc = glGetUniformLocation(ShaderProgram, "Proj");
-            glUniformMatrix4fv(ProjLoc, 1, GL_FALSE, &proj[0][0]);
-
-            Camera.Chunk.x = static_cast<int>(std::floor(Camera.Position.x / CHUNK_WIDTH));
+            Camera.Chunk.x = static_cast<int>(std::floor(Camera.Position.x / Chunk_Size.x));
             Camera.Chunk.y = 0;
-            Camera.Chunk.z = static_cast<int>(std::floor(Camera.Position.z / CHUNK_DEPTH));
+            Camera.Chunk.z = static_cast<int>(std::floor(Camera.Position.z / Chunk_Size.z));
 
         // Update Logic
             game.ChunkUpdated = false;
@@ -301,7 +299,7 @@ void Game::MainLoop() {
             if (game.ChunkUpdated) {
                 if (game.World_Updates == 0) {
                     // Generate Chunks & Remove them if needed
-                    GenerateChunk.GenerateChunks(Camera, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH));
+                    GenerateChunk.GenerateChunks(Camera, Chunk_Size);
                 }
                 
                 // Delete chunks and Mesh
@@ -312,7 +310,7 @@ void Game::MainLoop() {
                     for (auto& [key, chunk] : World_Map::World) {
                         if (chunk.DirtyFlag) {
                             chunk.Allocate();
-                            mesh.GenerateMesh(chunk, chunk.Mesh, key.first, key.second, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH), Camera.RenderDistance);
+                            mesh.GenerateMesh(chunk, chunk.Mesh, key.first, key.second, Chunk_Size, Camera.RenderDistance);
                             chunk.SendData();
                         }
                     }
@@ -320,7 +318,6 @@ void Game::MainLoop() {
             }
 
         // Draw On Screen
-            glUseProgram(ShaderProgram);
             Alloc = 0;
             Mesh_Size = 0;
             for (const auto& [key, chunk] : World_Map::World) {

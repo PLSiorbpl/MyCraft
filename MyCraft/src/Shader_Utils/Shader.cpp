@@ -1,24 +1,27 @@
 #include "Shader.hpp"
 
-void Shader::Load_Texture(unsigned int &Texture_ID) {
+void Shader::Load_Texture(unsigned int &Texture_ID, GLenum TextureUnit) {
     glGenTextures(1, &Texture_ID);
     glBindTexture(GL_TEXTURE_2D, Texture_ID);
     //stbi_set_flip_vertically_on_load(true);
     
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     int width, height, nrChannels;
     unsigned char *data = stbi_load("MyCraft/Assets/Atlas.png", &width, &height, &nrChannels, 4);
     if (data) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
+        //glGenerateMipmap(GL_TEXTURE_2D);
     } else {
         std::cout << "Failed to load texture (skill Issue)" << std::endl;
     }
     stbi_image_free(data);
+
+    glActiveTexture(TextureUnit);
+    glBindTexture(GL_TEXTURE_2D, Texture_ID);
 }
 
 std::string Shader::LoadShaderSource(const std::string& path) {
@@ -31,54 +34,64 @@ std::string Shader::LoadShaderSource(const std::string& path) {
     return buffer.str();
 }
 
-void Shader::Init_Shader(GLuint &VAO, GLuint &VBO, GLuint &ShaderProgram) {
-    unsigned int TextureID;
-    Load_Texture(TextureID);
-
-    const std::string vertexCode = LoadShaderSource("MyCraft/shaders/vertex.glsl");
-    const std::string fragmentCode = LoadShaderSource("MyCraft/shaders/fragment.glsl");
-
-    const char* vertexSrc = vertexCode.c_str();
-    const char* fragmentSrc = fragmentCode.c_str();
-
-    // Compilation of Shaders
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexSrc, nullptr);
-    glCompileShader(vertexShader);
-
-    GLuint FragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(FragmentShader, 1, &fragmentSrc, nullptr);
-    glCompileShader(FragmentShader);
+GLuint Shader::Create_Shader(const std::string& vertex, const std::string& fragment) {
+    //---------------
+    // Compiling
+    //---------------
+    std::string vertexStr = LoadShaderSource(vertex);
+    const char* vertexSrc = vertexStr.c_str();
     
-    ShaderProgram = glCreateProgram();
+    std::string fragmentStr = LoadShaderSource(fragment);
+    const char* fragmentSrc = fragmentStr.c_str();
+
+
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+
+    glShaderSource(vertexShader, 1, &vertexSrc, nullptr);
+    glShaderSource(fragmentShader, 1, &fragmentSrc, nullptr);
+
+    glCompileShader(vertexShader);
+    glCompileShader(fragmentShader);
+
+    //---------------
+    // Linking
+    //---------------
+    GLuint ShaderProgram = glCreateProgram();
     glAttachShader(ShaderProgram, vertexShader);
-    glAttachShader(ShaderProgram, FragmentShader);
+    glAttachShader(ShaderProgram, fragmentShader);
     glLinkProgram(ShaderProgram);
 
+    //---------------
+    // Error
+    //---------------
+    int Success;
+    char infoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &Success);
+    if(!Success) {
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        std::cerr << "VERTEX COMPILATION ERROR\n" << infoLog << std::endl;
+    }
+
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &Success);
+    if(!Success) {
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        std::cerr << "VERTEX COMPILATION ERROR\n" << infoLog << std::endl;
+    }
+
     glDeleteShader(vertexShader);
-    glDeleteShader(FragmentShader);
+    glDeleteShader(fragmentShader);
 
-    int Vsuccess;
-    char VinfoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &Vsuccess);
-    if(!Vsuccess) {
-        glGetShaderInfoLog(vertexShader, 512, NULL, VinfoLog);
-        std::cerr << "VERTEX COMPILATION ERROR\n" << VinfoLog << std::endl;
-    }
+    return ShaderProgram;
+}
 
-    int Fsuccess;
-    char FinfoLog[512];
-    glGetShaderiv(FragmentShader, GL_COMPILE_STATUS, &Fsuccess);
-    if(!Fsuccess) {
-        glGetShaderInfoLog(FragmentShader, 512, NULL, FinfoLog);
-        std::cerr << "FRAGMENT COMPILATION ERROR\n" << FinfoLog << std::endl;
-    }
+void Shader::Init_Shader(GLuint &ShaderProgram) {
+    unsigned int TextureID;
+    Load_Texture(TextureID, GL_TEXTURE0);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, TextureID);
+    ShaderProgram = Create_Shader("MyCraft/shaders/vertex.glsl", "MyCraft/shaders/fragment.glsl");
 
-    const int texLoc = glGetUniformLocation(ShaderProgram, "tex");
     glUseProgram(ShaderProgram);
-    glUniform1i(texLoc, 0); // GL_TEXTURE0 = 0
+    Set_Int(ShaderProgram, "BaseTexture", 0);
 }
 

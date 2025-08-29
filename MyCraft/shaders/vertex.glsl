@@ -7,6 +7,7 @@ uniform mat4 Model;
 uniform mat4 View;
 uniform mat4 Proj;
 
+// Remember out name (out vec3 FragPos;) needs to be same in Fragment (in vec3 FragPos;)
 out vec2 TexCoord;
 out vec3 FragPos;
 out vec3 Normal;
@@ -15,7 +16,7 @@ void main() {
     mat4 MVP = (Proj * View * Model);
 
     TexCoord = aTexCoord;
-    FragPos = aPos;//vec3(Model * vec4(aPos, 1.0));
+    FragPos = aPos;
     Normal = mat3(transpose(inverse(Model))) * aNormal;
     gl_Position = MVP * vec4(aPos, 1.0);
 }

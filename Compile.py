@@ -26,6 +26,7 @@ def Print_Red(text):
 def Print_Green(text):
     print(f"\033[92m{text}\033[0m")
 
+# Getting Files
 def Get_Files(File_List):
     global Error
     if File_List:
@@ -45,10 +46,11 @@ def Get_Files_From_Folder(Folder_List):
         List_Of_Files = []
         List_Of_Something = os.listdir(Folder_List)
         for Item in List_Of_Something:
-            if Item.endswith((".cpp", ".c", ".hpp", ".h")):
+            if Item.endswith((".cpp", ".c")):
                 List_Of_Files.append(os.path.join(Folder_List, Item))
         return List_Of_Files
 
+# Prepare To Compile Files
 def Get_All_Files(Clean):
     To_Compile_fr = []
     All_Files = Get_Files(Source_Files)
@@ -75,15 +77,15 @@ def Set_Last_Modified(File, Clean):
                 Time = Line.split("=")
                 if (len(Time) > 1 and float(Time[1].strip()) != IsFileChanged) or Clean:
                     Lines[i] = f"{File}={IsFileChanged}\n"
-                    if not File.replace(".hpp", ".cpp") in To_Compile:
-                        To_Compile.append(File.replace(".hpp", ".cpp"))
+                    if not File in To_Compile:
+                        To_Compile.append(File)
                 updated = True
                 break
 
         if not updated:
             Lines.append(f"{File}={IsFileChanged}\n")
-            if not File.replace(".hpp", ".cpp") in To_Compile:
-                To_Compile.append(File.replace(".hpp", ".cpp"))
+            if not File in To_Compile:
+                To_Compile.append(File)
 
         f.seek(0)
         f.truncate()
@@ -91,6 +93,7 @@ def Set_Last_Modified(File, Clean):
 
     return To_Compile
 
+# Compile Files
 def Compile_File(File):
     obj_file = os.path.join(Base, PreCompiled, os.path.splitext(os.path.basename(File))[0] + ".o")
     cmd_Command = [Compiler] + Source_Includes + ["-c", File, "-o", obj_file] + [Optimization] + Flags
@@ -116,18 +119,6 @@ def Compile(Files, jobs):
                 results.append((file, 1))
     return results
 
-
-#def Compile(Files):
-#    for File in Files:
-#        obj_file = os.path.join(Base, PreCompiled, os.path.splitext(os.path.basename(File))[0] + ".o")
-#        cmd_Command = [Compiler] + Source_Includes + ["-c", File, "-o", obj_file] + [Optimization] + Flags
-#        result = subprocess.run(cmd_Command, capture_output=True, text=True)
-#        if result.returncode == 0:
-#            Print_Green(f"Object {File} was compiled to {obj_file} with {Optimization} flag")
-#        else:
-#            Print_Red("Compilation Error:")
-#            Print_Red(result.stderr)
-
 def Link():
     obj_dir = os.path.join(Base, PreCompiled)
     objects = [os.path.join(obj_dir, f) for f in os.listdir(obj_dir) if f.endswith(".o")]
@@ -150,11 +141,10 @@ def Link():
 
 def main():
     print(f"Max Cores: {os.cpu_count()}")
-    Clean = True#(True if (input("Do you want to clean?") == "1") else False)
-    Input_ = os.cpu_count()#int(input("How many Cores?"))
-    Threaded = (Input_ if Input_ <= os.cpu_count() else 1)
+    print("1 - Yes | 0 - No")
+    Clean = (True if (input("ReCompile All?") == "1") else False)
     Files = Get_All_Files(Clean)
-    Compile(Files, Threaded)
+    Compile(Files, os.cpu_count())
     Link()
 
 if __name__ == "__main__":
