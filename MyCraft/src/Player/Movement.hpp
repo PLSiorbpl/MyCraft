@@ -8,8 +8,11 @@
 #include "World/Chunk.hpp"
 #include "Colisions.hpp"
 #include "World/World.hpp"
+#include "Breaking.hpp"
 
 class Movement {
+    private:
+    Terrain_Action TAction;
     public:
     //colisions Colisions;
     glm::vec3 direction;
@@ -19,7 +22,7 @@ class Movement {
     bool lastStateKey1 = false;
 
     void Init(camera &Camera, GLFWwindow* window, const glm::ivec3 ChunkSize, colisions &Colisions);
-    void Input(GLFWwindow* window, camera &Camera);
+    void Input(GLFWwindow* window, camera &Camera, glm::ivec3 ChunkSize);
     void Special_Keys(GLFWwindow* window, camera &Camera);
     void TestColisions(camera &Camera, const glm::ivec3 ChunkSize, colisions &Colisions);
     void Damp(camera &Camera);

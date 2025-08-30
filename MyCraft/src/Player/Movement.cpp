@@ -7,13 +7,13 @@ void Movement::Init(camera &Camera, GLFWwindow* window, const glm::ivec3 ChunkSi
     Sin.x = sin(glm::radians(Camera.Pitch));
     Sin.y = sin(glm::radians(Camera.Yaw));
 
-    Input(window, Camera);
+    Input(window, Camera, ChunkSize);
     Special_Keys(window, Camera);
     TestColisions(Camera, ChunkSize, Colisions);
     Damp(Camera);
 }
 
-void Movement::Input(GLFWwindow* window, camera &Camera) {
+void Movement::Input(GLFWwindow* window, camera &Camera, glm::ivec3 ChunkSize) {
     float Speed = Camera.Speed;
     float SpeedLimit = 0.1f;
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
@@ -46,6 +46,13 @@ void Movement::Input(GLFWwindow* window, camera &Camera) {
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) Camera.Vel.y = Camera.JumpStrength;
     // Down
     if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) Camera.Vel.y = -Camera.JumpStrength;
+
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
+        TAction.RayCastBlock(Camera, ChunkSize, false, 5);
+    }
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) {
+        TAction.RayCastBlock(Camera, ChunkSize, true, 0);
+    }
 
     Camera.Vel.x = std::clamp(Camera.Vel.x, -SpeedLimit, SpeedLimit);
     Camera.Vel.z = std::clamp(Camera.Vel.z, -SpeedLimit, SpeedLimit);

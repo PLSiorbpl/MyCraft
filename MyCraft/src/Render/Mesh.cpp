@@ -55,6 +55,7 @@ void Mesh::CubeMesh(std::vector<float>& vertices, const glm::vec3 w, const Chunk
         case 2: texCoord = {1, 0}; break; // grass
         case 3: texCoord = {2, 0}; break; // dirt
         case 4: texCoord = {3, 0}; break; // Blacha
+        case 5: texCoord = {4, 0}; break; // Wool
         default: texCoord = {4, 4}; break; // Nothing
     }
     
