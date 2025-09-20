@@ -15,7 +15,8 @@ void TerrainGen::Generate_Terrain_Chunk(int Chunk_x, int Chunk_z, glm::ivec3 Chu
             const float worldX = Chunk_x * ChunkSize.x + x;
             const float worldZ = Chunk_z * ChunkSize.z + z;
 
-            const float biomeFactor = pow(BiomePower, biomeNoise.GetNoise(worldX * BiomeFreq, worldZ * BiomeFreq));
+            float Noise_Biome = (biomeNoise.GetNoise(worldX * BiomeFreq, worldZ * BiomeFreq)+1)*0.5;
+            const float biomeFactor = pow(Noise_Biome, BiomePower);
 
             float baseHeight = 0.0f;
             float frequency = baseFreq;

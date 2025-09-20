@@ -104,6 +104,7 @@ void Game::Init_Settings(const std::string Path) {
     game.TickRate = 1.0f / Settings.GetFloat("Tick Rate");
     game.FOV = Settings.GetInt("FOV");
     Camera.Speed = Settings.GetFloat("Speed");
+    Camera.SprintSpeed = Settings.GetFloat("Sprint Speed");
 
     game.Seed = Settings.GetInt("Seed");
     game.basefreq = Settings.GetFloat("Base Frequency");

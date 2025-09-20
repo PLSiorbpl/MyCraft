@@ -105,26 +105,26 @@ void Mesh::CubeMesh(std::vector<float>& vertices, const glm::vec3 w, const Chunk
 
     // LEFT (x-)
     if ((Local.x - 1 < 0)) {
-        const auto uv = getUVs(texCoord, 1);
+        const auto uv = getUVs(texCoord, 2);
         if (!IsBlockAt(w.x-1, w.y, w.z, ChunkSize)) {
             pushTri(p000, uv[0], p001, uv[2], p011, uv[3], glm::vec3(-1, 0, 0));
             pushTri(p000, uv[0], p011, uv[3], p010, uv[1], glm::vec3(-1, 0, 0));
         }
     } else if (chunk.get(Local.x-1, Local.y, Local.z).id == 0) {
-        const auto uv = getUVs(texCoord, 1);
+        const auto uv = getUVs(texCoord, 2);
         pushTri(p000, uv[0], p001, uv[2], p011, uv[3], glm::vec3(-1, 0, 0));
         pushTri(p000, uv[0], p011, uv[3], p010, uv[1], glm::vec3(-1, 0, 0));
     }
 
     // RIGHT (x+)
     if ((Local.x + 1 >= ChunkSize.x)) {
-        const auto uv = getUVs(texCoord, 1);
+        const auto uv = getUVs(texCoord, 2);
         if (!IsBlockAt(w.x+1, w.y, w.z, ChunkSize)) {
             pushTri(p100, uv[0], p101, uv[2], p111, uv[3], glm::vec3(1, 0, 0));
             pushTri(p100, uv[0], p111, uv[3], p110, uv[1], glm::vec3(1, 0, 0));
         }
     } else if (chunk.get(Local.x+1, Local.y, Local.z).id == 0) {
-        const auto uv = getUVs(texCoord, 1);
+        const auto uv = getUVs(texCoord, 2);
         pushTri(p100, uv[0], p101, uv[2], p111, uv[3], glm::vec3(1, 0, 0));
         pushTri(p100, uv[0], p111, uv[3], p110, uv[1], glm::vec3(1, 0, 0));
     }
@@ -138,7 +138,7 @@ void Mesh::CubeMesh(std::vector<float>& vertices, const glm::vec3 w, const Chunk
 
     // BOTTOM (y-)
     if ((Local.y - 1 < 0) || chunk.get(Local.x, Local.y-1, Local.z).id == 0) {
-        const auto uv = getUVs(texCoord, 0);
+        const auto uv = getUVs(texCoord, 3);
         pushTri(p000, uv[0], p100, uv[2], p101, uv[3], glm::vec3(0, -1, 0));
         pushTri(p000, uv[0], p101, uv[3], p001, uv[1], glm::vec3(0, -1, 0));
     }

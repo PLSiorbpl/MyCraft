@@ -11,59 +11,60 @@ void Movement::Init(camera &Camera, GLFWwindow* window, const glm::ivec3 ChunkSi
     Special_Keys(window, Camera);
     TestColisions(Camera, ChunkSize, Colisions);
     Damp(Camera);
+
+    if (Camera.Place_CoolDown > 0) Camera.Place_CoolDown -= 1;
 }
 
 void Movement::Input(GLFWwindow* window, camera &Camera, glm::ivec3 ChunkSize) {
-    float Speed = Camera.Speed;
-    float SpeedLimit = 0.1f;
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        Speed += Camera.SprintSpeed;
-        SpeedLimit = 0.13f;
-    }
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        Camera.Vel.x += -Speed * Sin.y;
-        Camera.Vel.z +=  Speed * Cos.y;
-    }
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        Camera.Vel.x +=  Speed * Sin.y;
-        Camera.Vel.z += -Speed * Cos.y;
-    }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        Camera.Vel.x += -Speed * Cos.y;
-        Camera.Vel.z += -Speed * Sin.y;
-    }
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        Camera.Vel.x +=  Speed * Cos.y;
-        Camera.Vel.z +=  Speed * Sin.y;
+    //// Slipperiness
+    //float slipperiness = 0.6f;
+    //if (Camera.onGround) {
+    //    Camera.Vel.x *= slipperiness;
+    //    Camera.Vel.z *= slipperiness;
+    //} else {
+    //    // in air in Minecraft 0.91f
+    //    Camera.Vel.x *= 0.91f;
+    //    Camera.Vel.z *= 0.91f;
+    //}
+    glm::vec2 moveVec(0.0f, 0.0f);
+    float speed = Camera.Speed;
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) speed += Camera.SprintSpeed;
+
+    // (x -> right, z -> forward) -> Sin/Cons
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) moveVec += glm::vec2(-Sin.y,  Cos.y);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) moveVec += glm::vec2( Sin.y, -Cos.y);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) moveVec += glm::vec2(-Cos.y, -Sin.y);
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) moveVec += glm::vec2( Cos.y,  Sin.y);
+
+    // Normalize Lenght
+    float len = glm::length(moveVec);
+    if (len > 1e-5f) {
+        moveVec /= len; // Lenght = 1
+        Camera.Vel.x = moveVec.x * speed;
+        Camera.Vel.z = moveVec.y * speed;
+    } else {
+        Camera.Vel.x = 0.0f;
+        Camera.Vel.z = 0.0f;
     }
 
+    // Jump
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && Camera.onGround) {
         Camera.Vel.y = Camera.JumpStrength;
         Camera.onGround = false;
     }
-
-    // Flying
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) Camera.Vel.y = Camera.JumpStrength;
-    // Down
     if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) Camera.Vel.y = -Camera.JumpStrength;
 
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
-        TAction.RayCastBlock(Camera, ChunkSize, false, 5);
-    }
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) {
-        TAction.RayCastBlock(Camera, ChunkSize, true, 0);
-    }
+    // Mouse Actions
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) TAction.RayCastBlock(Camera, ChunkSize, false, 5);
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) TAction.RayCastBlock(Camera, ChunkSize, true, 0);
 
-    Camera.Vel.x = std::clamp(Camera.Vel.x, -SpeedLimit, SpeedLimit);
-    Camera.Vel.z = std::clamp(Camera.Vel.z, -SpeedLimit, SpeedLimit);
     Camera.Vel.y = std::clamp(Camera.Vel.y, -0.5f, 0.2f);
 }
 
 void Movement::Special_Keys(GLFWwindow* window, camera &Camera) {
     bool currentState = glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS;
-
     if (currentState && !lastStateKey1) Camera.Mode = !Camera.Mode;
-
     lastStateKey1 = currentState;
 }
 
