@@ -1,5 +1,5 @@
 // Graphics:
-Render Distance=24
+Render Distance=16
 Out Of Vram=1 // 1 - Dont Exit Program and change RenderDist by -1 | 0 - Exit Program (Crash)
 V-Sync=1
 // if Updates are set to 0 it will Update Mesh/World in 1 Frame
@@ -13,13 +13,13 @@ Chunk Depth=16
 
 // Info: Biome Multiplier is kinda bad use Biome power instead (pow(power, height);)
 Seed=6969
-Base Frequency=0.05f
-Base Amplitude=0.2f
+Base Frequency=0.02f
+Base Amplitude=0.4f
 Octave=4
 Add Frequency=3.5f
 Add Amplitude=0.9f
 
-Biome Frequency=0.2f
+Biome Frequency=0.18f
 Biome Multiplier=1.0f // Biome Power is better
 Biome Add Amplitude=0.85f
 Biome Power=6 // its Height^x

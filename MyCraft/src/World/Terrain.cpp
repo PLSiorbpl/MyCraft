@@ -19,8 +19,8 @@ void TerrainGen::Generate_Terrain_Chunk(int Chunk_x, int Chunk_z, glm::ivec3 Chu
             const float biomeFactor = pow(Noise_Biome, BiomePower);
 
             float baseHeight = 0.0f;
-            float frequency = baseFreq;
-            float amplitude = baseAmp;
+            float frequency = glm::mix(baseFreq, baseFreq*2.0f, Noise_Biome);//baseFreq;
+            float amplitude = glm::mix(baseAmp, baseAmp*1.9f, Noise_Biome);//baseAmp;
 
             for (int i = 0; i < octaves; ++i) {
                 baseHeight += terrainNoise.GetNoise(worldX * frequency, worldZ * frequency) * amplitude;
@@ -30,7 +30,7 @@ void TerrainGen::Generate_Terrain_Chunk(int Chunk_x, int Chunk_z, glm::ivec3 Chu
 
             float normalizedHeight = (baseHeight/octaves) * 0.5f + 0.5f;
             normalizedHeight *= (BiomeBase + biomeFactor * BiomeMult);
-            const int intHeight = static_cast<int>(normalizedHeight * ChunkSize.y);
+            const int intHeight = std::max(0, static_cast<int>(normalizedHeight * ChunkSize.y) - 24);
 
             for (int y = 0; y <= intHeight && y < ChunkSize.y; ++y) {
                 if (y == intHeight) {
