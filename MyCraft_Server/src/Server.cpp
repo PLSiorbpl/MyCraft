@@ -73,6 +73,7 @@ class Server {
 int main() {
     try {
         short port;
+        std::cout << "Gibe port";
         std::cin >> port;
         asio::io_context io;
         Server server(io, port);

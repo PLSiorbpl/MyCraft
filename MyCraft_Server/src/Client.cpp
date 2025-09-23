@@ -7,11 +7,14 @@
 using asio::ip::tcp;
 
 int main() {
+    std::string ip;
+    std::cout << "Gibe ip";
+    std::cin >> ip;
     try {
         asio::io_context io;
         tcp::socket socket(io);
 
-        socket.connect(tcp::endpoint(asio::ip::make_address("192.168.0.20"), 25565)); // LocalHost rn
+        socket.connect(tcp::endpoint(asio::ip::make_address(ip), 25565)); // LocalHost rn
         std::cout << "Connected to server.\n";
 
         glm::vec3 Pos;
