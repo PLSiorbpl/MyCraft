@@ -1,51 +1,82 @@
 #include <iostream>
 #include <asio.hpp>
+#include <deque>
+#include <glm/glm.hpp>
+
 
 using asio::ip::tcp;
 
-void TryConnect(asio::io_context &io, tcp::acceptor &acceptor, tcp::socket &socket) {
-    std::cout << "Waiting for client...\n";
-    acceptor.accept(socket);  // Waits for Client
-    std::cout << "Client connected!\n";
-}
+struct Client {
+    tcp::socket socket;
+    std::vector<char> buffer;
+    glm::vec3 Pos;
 
-void MainLoop() {
-    asio::io_context io;
+    Client(asio::io_context& io) : socket(io), buffer(1024) {}
+};
 
-    tcp::acceptor acceptor(io, tcp::endpoint(tcp::v4(), 25565));
-    std::cout << "Server running on port 25565...\n";
+class Server {
+    private:
+    tcp::acceptor acceptor;
+    asio::io_context& io;
+    short port;
+    std::deque<Client> Players;
 
-    tcp::socket socket(io);
+    public:
+        Server(asio::io_context& io, short port) : acceptor(io, tcp::endpoint(tcp::v4(), port)), io(io), port(port) {}
 
-    TryConnect(io, acceptor, socket);
+        void TryConnect() {
+            Players.emplace_back(io);
+            Client& player = Players.back();
 
-    while (true) {
-            float pos[3]; // x, y, z
-            asio::error_code ec;
-
-            // Reciving
-            size_t len = asio::read(socket, asio::buffer(pos, sizeof(pos)), ec);
-            if (ec) {
-                std::cout << "Client disconnected.\n";
-                socket.close();
-                socket = tcp::socket(io);
-                TryConnect(io, acceptor, socket);
-                continue;
-            }
-
-            std::cout << "Got pos: " << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
-
-            // Sending Back
-            asio::write(socket, asio::buffer(pos, sizeof(pos)), ec);
-            if (ec) {
-                socket.close();
-                socket = tcp::socket(io);
-                TryConnect(io, acceptor, socket);
-                continue;
-            }
+            acceptor.async_accept(player.socket, 
+                [this, &player](std::error_code er) {
+                    if (!er) {
+                        std::cout << "New Client Connected \n";
+                        Client_Loop(player);
+                    } else {
+                        std::cout << "Accept Failed \n";
+                        Players.pop_back();
+                    }
+                    // Wait for New Client
+                    TryConnect();
+                }
+            );
         }
-}
+
+        void Client_Loop(Client& Player) {
+            Player.socket.async_read_some(asio::buffer(&Player.Pos, sizeof(Player.Pos)),
+                [this, &Player](std::error_code er, std::size_t len) {
+                    if (!er) {
+                        std::cout << "Got " << Player.Pos.x << " " <<
+                        Player.Pos.y << " " << Player.Pos.z << "\n";
+
+                        Player.socket.async_write_some(asio::buffer(&Player.Pos, sizeof(Player.Pos)),
+                            [this, &Player](std::error_code er, std::size_t len) {
+                                if (!er) {
+                                    std::cout << "Send Pos \n";
+                                } else {
+                                    std::cout << "Send failed: " << er.message() << "\n";
+                                }
+                            }
+                        );
+                        Client_Loop(Player);
+
+                    } else {
+                        // Handle Disconect
+                        std::cout << "Client Disconected \n";
+                    }
+                }
+            );
+        }
+};
 
 int main() {
-    MainLoop();
+    try {
+        asio::io_context io;
+        Server server(io, 25565);
+        server.TryConnect();
+        io.run();
+    } catch (std::exception& e) {
+        std::cerr << "Exception: " << e.what() << "\n";
+    }
 }
