@@ -72,8 +72,10 @@ class Server {
 
 int main() {
     try {
+        short port;
+        std::cin >> port;
         asio::io_context io;
-        Server server(io, 25565);
+        Server server(io, port);
         server.TryConnect();
         io.run();
     } catch (std::exception& e) {
