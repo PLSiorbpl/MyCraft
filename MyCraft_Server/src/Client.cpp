@@ -8,13 +8,19 @@ using asio::ip::tcp;
 
 int main() {
     std::string ip;
+    short port;
     std::cout << "Gibe ip";
     std::cin >> ip;
+    std::cout << "Gibe port";
+    std::cin >> port;
     try {
         asio::io_context io;
         tcp::socket socket(io);
 
-        socket.connect(tcp::endpoint(asio::ip::make_address(ip), 25565)); // LocalHost rn
+        tcp::resolver resolver(io);
+        auto results = resolver.resolve(ip, std::to_string(port));
+        asio::connect(socket, results);
+        //socket.connect(tcp::endpoint(asio::ip::make_address(ip), port)); // LocalHost rn
         std::cout << "Connected to server.\n";
 
         glm::vec3 Pos;
