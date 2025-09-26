@@ -8,42 +8,53 @@ using asio::ip::tcp;
 
 int main() {
     std::string ip;
+    std::string Name;
     short port;
-    std::cout << "Gibe ip";
+    std::cout << "Ip Address: ";
     std::cin >> ip;
-    std::cout << "Gibe port";
+    std::cout << "Port: ";
     std::cin >> port;
     try {
         asio::io_context io;
         tcp::socket socket(io);
-
         tcp::resolver resolver(io);
-        auto results = resolver.resolve(ip, std::to_string(port));
-        asio::connect(socket, results);
-        //socket.connect(tcp::endpoint(asio::ip::make_address(ip), port)); // LocalHost rn
-        std::cout << "Connected to server.\n";
+        auto endpoints = resolver.resolve(ip, std::to_string(port));
+        asio::connect(socket, endpoints);
 
-        glm::vec3 Pos;
+        std::cout << "Enter Name: ";
+        std::cin >> Name;
+        if (Name.empty()) return 0;
+        asio::write(socket, asio::buffer(Name));
+        std::cout << "Connected to server\n";
+
+        char ReciveMesg[1024];
+        
+        std::thread receive_thread([&]() {
+            asio::error_code ec;
+            while (true) {
+                size_t len = socket.read_some(asio::buffer(ReciveMesg), ec);
+                if (ec) {
+                    std::cout << "Disconnected from server\n";
+                    break;
+                }
+                    std::cout << std::string(ReciveMesg, len) << "\n> ";
+                    std::cout.flush();
+            }
+        });
 
         while (true) {
-            // symulacja ruchu
-            Pos += glm::vec3(1.0f, 0.5f, 2.5f);
-
+            std::string Message;
+            std::cout << "> ";
+            std::getline(std::cin, Message);
+        
             asio::error_code ec;
-
-            // wyślij pozycję
-            asio::write(socket, asio::buffer(&Pos, sizeof(Pos)), ec);
-            if (ec) break;
-
-            // odbierz echo
-            glm::vec3 RecvPos;
-            size_t len = socket.read_some(asio::buffer(&RecvPos, sizeof(RecvPos)), ec);
-            if (ec) break;
-
-            std::cout << "Server says pos: " << RecvPos.x << " " << RecvPos.y << " " << RecvPos.z << "\n";
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            asio::write(socket, asio::buffer(Message), ec);
+            if (ec) {
+                std::cout << "Disconnected from server\n";
+            }
         }
+
+        receive_thread.join();
     }
     catch (std::exception& e) {
         std::cerr << "Exception: " << e.what() << "\n";
