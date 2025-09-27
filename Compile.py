@@ -16,7 +16,7 @@ Destination = "../Mycraft.exe"
 # Paths
 Base = "MyCraft/"
 PreCompiled = "src/PreCompiled"
-Source_Folders = ["src/Player", "src/Render", "src/Shader_Utils", "src/Utils", "src/World"]
+Source_Folders = ["src/Player", "src/Render", "src/Shader_Utils", "src/Utils", "src/World", "src/GUI"]
 Source_Files = ["src/Main.cpp", "Include/ImGui/imgui_demo.cpp", "Include/ImGui/imgui_draw.cpp", "Include/ImGui/backends/imgui_impl_glfw.cpp",
                  "Include/ImGui/backends/imgui_impl_opengl3.cpp", "Include/ImGui/imgui_tables.cpp", "Include/ImGui/imgui_widgets.cpp", "Include/ImGui/imgui.cpp"]
 

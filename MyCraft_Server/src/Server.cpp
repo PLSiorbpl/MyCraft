@@ -1,10 +1,20 @@
 #include <iostream>
 #include <asio.hpp>
 #include <deque>
+#include <thread>
 #include <glm/glm.hpp>
+#include <chrono>
 
 
 using asio::ip::tcp;
+
+void print_slow(const std::string& text, int ms_delay) {
+    for (char c : text) {
+        std::cout << c << std::flush;
+        std::this_thread::sleep_for(std::chrono::milliseconds(ms_delay));
+    }
+    std::cout << "\n";
+}
 
 struct Client {
     tcp::socket socket;
@@ -34,7 +44,7 @@ class Server {
                     if (!er) {
                         Client_Loop(player);
                     } else {
-                        std::cout << "Server: Accept Failed \n";
+                        print_slow("Server: Accept Failed", 25);
                         Players.pop_back();
                     }
                     // Wait for New Client
@@ -55,13 +65,13 @@ class Server {
                             // Set Name
                             Player->Name = std::string(Player->buf, len);
                             std::string Welcome = "Server: " + Player->Name + " Joined!";
-                            std::cout << Welcome << "\n";
+                            print_slow(Welcome, 25);
                             BroadCast(Player, Welcome);
                             Client_Loop(Player);
                         }
                     } else {
                         std::string Leave = "Server: " + Player->Name + " Left";
-                        std::cout << Leave << "\n";
+                        print_slow(Leave, 25);
                         BroadCast(Player, Leave);
                         std::error_code ec;
                         Player->socket.close(ec);
@@ -100,8 +110,36 @@ class Server {
 int main() {
     try {
         short port;
-        std::cout << "Port: ";
+        print_slow("|========================================================================================================================================|", 1);
+        std::cout << " /$$      /$$            /$$$$$$                      /$$$$$$   /$$           /$$$$$$\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::cout << "| $$$    /$$$           /$$__  $$                    /$$__  $$ | $$          /$$__  $$\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+        std::cout << "| $$$$  /$$$$ /$$   /$$| $$  \\__/  /$$$$$$  /$$$$$$ | $$  \\__//$$$$$$       | $$  \\__/  /$$$$$$   /$$$$$$  /$$    /$$ /$$$$$$   /$$$$$$\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::cout << "| $$ $$/$$ $$| $$  | $$| $$       /$$__  $$|____  $$| $$$$   |_  $$_//$$$$$$|  $$$$$$  /$$__  $$ /$$__  $$|  $$  /$$//$$__  $$ /$$__  $$\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+        std::cout << "| $$  $$$| $$| $$  | $$| $$      | $$  \\__/ /$$$$$$$| $$_/     | $$ |______/ \\____  $$| $$$$$$$$| $$  \\__/ \\  $$/$$/| $$$$$$$$| $$  \\__/\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::cout << "| $$\\  $ | $$| $$  | $$| $$    $$| $$      /$$__  $$| $$       | $$ /$$      /$$  \\ $$| $$_____/| $$        \\  $$$/ | $$_____/| $$\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+        std::cout << "| $$ \\/  | $$|  $$$$$$$|  $$$$$$/| $$     |  $$$$$$$| $$       |  $$$$/     |  $$$$$$/|  $$$$$$$| $$         \\  $/  |  $$$$$$$| $$\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::cout << "|__/     |__/ \\____  $$ \\______/ |__/      \\_______/|__/        \\___/        \\______/  \\_______/|__/          \\_/    \\_______/|__/\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(25));
+        std::cout << "              /$$  | $$\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(25));
+        std::cout << "             |  $$$$$$/\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(25));
+        std::cout << "              \\______/\n";
+        print_slow("|========================================================================================================================================|\n", 1);
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        print_slow("Enter Port: ", 50);
         std::cin >> port;
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        print_slow("\nReady to accept players!\n", 50);
+        print_slow("|=====================================================================|\n", 1);
         asio::io_context io;
         Server server(io, port);
         server.TryConnect();

@@ -30,6 +30,7 @@
 #include "World/Generation.hpp"
 #include "Render/Mesh.hpp"
 #include "World/World.hpp"
+#include "GUI/Gui.hpp"
 
 glm::ivec3 Chunk_Size;
 
@@ -80,6 +81,7 @@ private:
     Shader shader;
     Mesh mesh;
     size_t Alloc;
+    Gui gui;
 
 public:
     Settings_Loader Settings;
@@ -95,29 +97,29 @@ public:
 void Game::Init_Settings(const std::string Path) {
     Settings.Load_Settings(Path);
 
-    Camera.RenderDistance = Settings.GetInt("Render Distance");
-    game.VramHandle = Settings.GetInt("Out Of Vram");
-    Chunk_Size.x = Settings.GetInt("Chunk Width");
-    Chunk_Size.y = Settings.GetInt("Chunk Height");
-    Chunk_Size.z = Settings.GetInt("Chunk Depth");
-    game.V_Sync = Settings.GetInt("V-Sync");
-    game.TickRate = 1.0f / Settings.GetFloat("Tick Rate");
-    game.FOV = Settings.GetInt("FOV");
-    Camera.Speed = Settings.GetFloat("Speed");
-    Camera.SprintSpeed = Settings.GetFloat("Sprint Speed");
+    Camera.RenderDistance = Settings.Get<int>("Render Distance", 0);
+    game.VramHandle = Settings.Get<int>("Out Of Vram", 0);
+    Chunk_Size.x = Settings.Get<int>("Chunk Width", 0);
+    Chunk_Size.y = Settings.Get<int>("Chunk Height", 0);
+    Chunk_Size.z = Settings.Get<int>("Chunk Depth", 0);
+    game.V_Sync = Settings.Get<int>("V-Sync", 0);
+    game.TickRate = 1.0f / Settings.Get<float>("Tick Rate", 0.0f);
+    game.FOV = Settings.Get<int>("FOV", 0);
+    Camera.Speed = Settings.Get<float>("Speed", 0.0f);
+    Camera.SprintSpeed = Settings.Get<float>("Sprint Speed", 0.0f);
 
-    game.Seed = Settings.GetInt("Seed");
-    game.basefreq = Settings.GetFloat("Base Frequency");
-    game.baseamp = Settings.GetFloat("Base Amplitude");
-    game.oct = Settings.GetInt("Octave");
-    game.addfreq = Settings.GetFloat("Add Frequency");
-    game.addamp = Settings.GetFloat("Add Amplitude");
-    game.biomefreq = Settings.GetFloat("Biome Frequency");
-    game.biomemult = Settings.GetFloat("Biome Multiplier");
-    game.biomebase = Settings.GetFloat("Biome Add Amplitude");
-    game.biomepower = Settings.GetInt("Biome Power");
-    game.Mesh_Updates = Settings.GetInt("Mesh Updates");
-    game.World_Updates = Settings.GetInt("World Updates");
+    game.Seed = Settings.Get<int>("Seed", 0);
+    game.basefreq = Settings.Get<float>("Base Frequency", 0.0f);
+    game.baseamp = Settings.Get<float>("Base Amplitude", 0.0f);
+    game.oct = Settings.Get<int>("Octave", 0);
+    game.addfreq = Settings.Get<float>("Add Frequency", 0.0f);
+    game.addamp = Settings.Get<float>("Add Amplitude", 0.0f);
+    game.biomefreq = Settings.Get<float>("Biome Frequency", 0.0f);
+    game.biomemult = Settings.Get<float>("Biome Multiplier", 0.0f);
+    game.biomebase = Settings.Get<float>("Biome Add Amplitude", 0.0f);
+    game.biomepower = Settings.Get<int>("Biome Power", 0);
+    game.Mesh_Updates = Settings.Get<int>("Mesh Updates", 0);
+    game.World_Updates = Settings.Get<int>("World Updates", 0);
 }
 
 void Game::CleanUp() {
@@ -344,10 +346,14 @@ void Game::MainLoop() {
                 Alloc += chunk.Alloc;
                 Mesh_Size += chunk.Mesh.size();
             }
+        //-------------------------
+        // GUI - My Own GUI Engine
+        //-------------------------
+            gui.addWidget<Label>(10,10,"Hello");
 
-            //-------------------------
-            // Out Of VRam Error
-            //-------------------------
+        //-------------------------
+        // Out Of VRam Error
+        //-------------------------
             GLenum err = glGetError();
             if (err == GL_OUT_OF_MEMORY) {
                 if (game.VramHandle == 1) {
