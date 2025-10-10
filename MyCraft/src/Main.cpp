@@ -38,8 +38,12 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
+struct Game_Settings {
+    int Gui_Update_rate;
+};
+
 struct Game_Variables {
-    int VramHandle; // In MB
+    int VramHandle;
     GLint sizeInBytes = 0;
     uint64_t Frame = 0;
     glm::ivec3 Last_Chunk;
@@ -52,6 +56,7 @@ struct Game_Variables {
     int Mesh_Updates;
     int World_Updates;
     int Updates;
+    bool Gui_Init = false;
 
     // Terrain Generation:
     int Seed;
@@ -71,6 +76,7 @@ private:
     FPS Fps;
     camera Camera;
     Game_Variables game;
+    Game_Settings game_settings;
     GLuint ShaderProgram;
     size_t Mesh_Size;
     Movement movement;
@@ -81,6 +87,7 @@ private:
     Shader shader;
     Mesh mesh;
     size_t Alloc;
+    size_t Capacity;
     Gui gui;
 
 public:
@@ -107,6 +114,7 @@ void Game::Init_Settings(const std::string Path) {
     game.FOV = Settings.Get<int>("FOV", 0);
     Camera.Speed = Settings.Get<float>("Speed", 0.0f);
     Camera.SprintSpeed = Settings.Get<float>("Sprint Speed", 0.0f);
+    game_settings.Gui_Update_rate = Settings.Get<int>("Gui Update Rate", 0.0);
 
     game.Seed = Settings.Get<int>("Seed", 0);
     game.basefreq = Settings.Get<float>("Base Frequency", 0.0f);
@@ -191,7 +199,7 @@ void Tick_Update(camera &Camera, GLFWwindow* window, const float DeltaTime, Move
     movement.Init(Camera, window, Chunk_Size, Colisions);
 }
 
-void DebugInfo(Game_Variables &game, const size_t Mesh_Size, const camera &Camera, const size_t Alloc, Fun &fun, const GLenum &err) {
+void DebugInfo(Game_Variables &game, const size_t Mesh_Size, const camera &Camera, const size_t Alloc, Fun &fun, const GLenum &err, const size_t Capacity) {
 //----------------------
 // Initialization
 //----------------------
@@ -211,10 +219,11 @@ void DebugInfo(Game_Variables &game, const size_t Mesh_Size, const camera &Camer
 // Performance
 //----------------------
     ImGui::Text("FPS: %d", game.FPS);
-    ImGui::Text("Triangles in Mesh: %d", Mesh_Size / 5);
+    ImGui::Text("Triangles in Mesh: %s", fun.FormatNumber(Mesh_Size / 5).c_str());
     ImGui::Text("Chunks: %d", (int)World.size());
-    ImGui::Text("Buffer Size: %dMB", (Mesh_Size * sizeof(float))/1048576);
-    ImGui::Text("Tried to Alloc: %dMB", (Alloc / (1024 * 1024)));
+    ImGui::Text("Buffer Size: %s", fun.FormatSize(Mesh_Size).c_str());
+    ImGui::Text("Tried to Alloc: %s", fun.FormatSize(Alloc).c_str());
+    ImGui::Text("Capacity: %s", fun.FormatSize(Capacity).c_str());
     ImGui::Text("Render Distance: %d", Camera.RenderDistance);
     ImGui::Text("Ram Used: %dMB", ramUsed / 1024 / 1024);
     ImGui::Text("World Usage: %zuMB", fun.calculateWorldMemory(World, Chunk_Size) / (1024 * 1024));
@@ -234,7 +243,6 @@ void DebugInfo(Game_Variables &game, const size_t Mesh_Size, const camera &Camer
 
     ImGui::End();
     ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void Game::MainLoop() {
@@ -252,6 +260,7 @@ void Game::MainLoop() {
 
             DeltaTime = Fps.Start();
             game.Tick_Timer += DeltaTime;
+            game.Frame += 1;
 
             //-------------------------
             // Tick Update
@@ -266,11 +275,12 @@ void Game::MainLoop() {
             // Mesh Generation
                 game.Updates = 0;
                 for (auto& [key, chunk] : World_Map::World) {
-                    if (chunk.DirtyFlag) {
+                    if (chunk.DirtyFlag && chunk.Gen_Mesh) {
                         if (game.Updates <= game.Mesh_Updates) {
                             chunk.Allocate();
                             mesh.GenerateMesh(chunk, chunk.Mesh, key.first, key.second, Chunk_Size, Camera.RenderDistance);
                             chunk.SendData();
+                            chunk.Gen_Mesh = false;
                             game.Updates += 1;
                         } else {
                             break;
@@ -336,6 +346,7 @@ void Game::MainLoop() {
         // Drawing Mesh to Screen
         //-------------------------
             Alloc = 0;
+            Capacity = 0;
             Mesh_Size = 0;
             for (const auto& [key, chunk] : World_Map::World) {
                 //if (!(Mesh_Size * sizeof(float)/1048576 > game.VRamAlloc)) {
@@ -345,16 +356,31 @@ void Game::MainLoop() {
                 //}
                 Alloc += chunk.Alloc;
                 Mesh_Size += chunk.Mesh.size();
+                Capacity += chunk.Mesh.capacity();
             }
         //-------------------------
         // GUI - My Own GUI Engine
         //-------------------------
-            gui.addWidget<Label>(10,10,"Hello");
+        GLenum err = glGetError();
+        if (!game.Gui_Init) {
+            // Initialize Gui
+            //gui.addWidget<Label>(10,10,"Hello");
+            //gui.addWidget<Button>(10,10,50,50,"Button");
+            game.Gui_Init = true;
+            DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity);
+        }
 
+        if (game.Frame % game_settings.Gui_Update_rate == 0) {
+            // Update Gui
+            //gui.update(0,0,false);
+            //gui.render();
+            DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity);
+        }
+        // Render ImGui
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         //-------------------------
         // Out Of VRam Error
         //-------------------------
-            GLenum err = glGetError();
             if (err == GL_OUT_OF_MEMORY) {
                 if (game.VramHandle == 1) {
                     std::cerr << "Out of VRAM! Changed RenderDistance by -1" << "\n";
@@ -367,7 +393,7 @@ void Game::MainLoop() {
             }
 
 
-            DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err);
+            DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity);
             game.FPS = Fps.End();
         // Update Screen
             glfwSwapBuffers(window);

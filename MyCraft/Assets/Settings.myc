@@ -1,7 +1,8 @@
 // Graphics:
-Render Distance=16
+Render Distance=24
 Out Of Vram=1 // 1 - Dont Exit Program and change RenderDist by -1 | 0 - Exit Program (Crash)
 V-Sync=1
+Gui Update Rate=16 // 0 will crash 16 is good enough
 // if Updates are set to 0 it will Update Mesh/World in 1 Frame
 Mesh Updates=12
 World Updates=0 // Not working now xd
@@ -28,6 +29,6 @@ Biome Power=6 // its Height^x
 Tick Rate=60.0f
 
 // Player:
-FOV=70
+FOV=80
 Speed=0.1f
 Sprint Speed=0.08f

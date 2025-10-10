@@ -1,16 +1,24 @@
 #include "Generation.hpp"
 
 void ChunkGeneration::GenerateChunks(const camera &Camera, const glm::ivec3 ChunkSize) {
-    const auto& World = World_Map::World;
-    for (int dx = -Camera.RenderDistance; dx <= Camera.RenderDistance; ++dx) {
-        for (int dz = -Camera.RenderDistance; dz <= Camera.RenderDistance; ++dz) {
+    auto& World = World_Map::World;
+    for (int dx = -Camera.RenderDistance-1; dx <= Camera.RenderDistance+1; ++dx) {
+        for (int dz = -Camera.RenderDistance-1; dz <= Camera.RenderDistance+1; ++dz) {
             const int chunkX = Camera.Chunk.x + dx;
             const int chunkZ = Camera.Chunk.z + dz;
-
+            
             const std::pair<int, int> key = {chunkX, chunkZ};
+            
+            const int dist = std::max(std::abs(dx), std::abs(dz));
+            const bool isEdge = (dist > Camera.RenderDistance);
 
             if (World.find(key) == World.end()) {
                 Terrain.Generate_Terrain_Chunk(chunkX, chunkZ, ChunkSize);
+            }
+
+            auto it = World.find(key);
+            if (it != World.end()) {
+                it->second.Gen_Mesh = !isEdge;
             }
         }
     }
@@ -29,7 +37,7 @@ void ChunkGeneration::RemoveChunks(const camera& Camera) {
 
         const int dist = std::max(std::abs(dx), std::abs(dz));
 
-        if (dist > Camera.RenderDistance) {
+        if (dist > Camera.RenderDistance+1) {
             toRemove.push_back(key);
         }
     }

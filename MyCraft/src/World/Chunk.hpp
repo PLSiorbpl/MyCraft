@@ -27,6 +27,7 @@ public:
 
     // Mesh Stuff
     size_t Alloc = 0;
+    bool Gen_Mesh = true;
     std::vector<float> Mesh;
     bool DirtyFlag = true;
     GLuint vao = 0;

@@ -23,6 +23,7 @@ void main() {
     // Normalization
     // ----------------------------
     vec3 WorldNormal = normalize(Normal);
+    if (length(WorldNormal) < 0.5) discard;
     vec3 SunDir = normalize(Sun);
     vec3 viewDir = normalize(ViewPos - FragPos);
     vec3 lightDir = normalize(-SunDir);
@@ -45,15 +46,19 @@ void main() {
     // ----------------------------
     // Specular
     // ----------------------------
-    float shininess = 2/pow(roughness, 2) - 2;
-    vec3 halfVector = normalize(lightDir+viewDir);
+    float SpecularLight = 0.0;
+     if (DiffuseLight > 0.0) {
+        float shininess = 2/pow(roughness, 2) - 2;
+        vec3 halfVector = normalize(lightDir+viewDir);
 
-    float SpecularLight = pow(max(dot(halfVector, WorldNormal), 0.0), shininess);
+        SpecularLight = pow(max(dot(halfVector, WorldNormal), 0.0), shininess);
+    }
 
     // ----------------------------
     // Final
     // ----------------------------
-    float LightBritness = DiffuseLight + SpecularLight + AmbientLight;
+    float LightBritness = clamp(DiffuseLight + SpecularLight + AmbientLight, 0.0, 1.0);
+
 
     FinalColor *= lightColor;
     FinalColor *= LightBritness;

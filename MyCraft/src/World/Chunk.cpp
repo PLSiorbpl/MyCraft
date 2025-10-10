@@ -12,8 +12,8 @@ const std::map<uint8_t, Chunk::Block> Chunk::BlockDefs = {
  };
 
 void Chunk::Allocate() {
-    // Special Allocation
-    Alloc = width * height * depth * 1.3f;
+    const size_t estimate = static_cast<size_t>(width) * height * depth;
+    Alloc = static_cast<size_t>(estimate * 0.75);
     Mesh.clear();
     Mesh.reserve(Alloc);
 }
