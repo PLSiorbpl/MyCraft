@@ -43,7 +43,7 @@ struct Game_Settings {
 };
 
 struct Game_Variables {
-    int VramHandle;
+    int ramHandle;
     GLint sizeInBytes = 0;
     uint64_t Frame = 0;
     glm::ivec3 Last_Chunk;
@@ -57,6 +57,7 @@ struct Game_Variables {
     int World_Updates;
     int Updates;
     bool Gui_Init = false;
+    uint64_t Max_Ram;
 
     // Terrain Generation:
     int Seed;
@@ -89,6 +90,8 @@ private:
     size_t Alloc;
     size_t Capacity;
     Gui gui;
+    PROCESS_MEMORY_COUNTERS meminfo;
+    SIZE_T ramUsed;
 
 public:
     Settings_Loader Settings;
@@ -105,7 +108,8 @@ void Game::Init_Settings(const std::string Path) {
     Settings.Load_Settings(Path);
 
     Camera.RenderDistance = Settings.Get<int>("Render Distance", 0);
-    game.VramHandle = Settings.Get<int>("Out Of Vram", 0);
+    game.Max_Ram = Settings.Get<int>("RAM", 0);
+    game.ramHandle = Settings.Get<int>("Out Of ram", 0);
     Chunk_Size.x = Settings.Get<int>("Chunk Width", 0);
     Chunk_Size.y = Settings.Get<int>("Chunk Height", 0);
     Chunk_Size.z = Settings.Get<int>("Chunk Depth", 0);
@@ -199,34 +203,29 @@ void Tick_Update(camera &Camera, GLFWwindow* window, const float DeltaTime, Move
     movement.Init(Camera, window, Chunk_Size, Colisions);
 }
 
-void DebugInfo(Game_Variables &game, const size_t Mesh_Size, const camera &Camera, const size_t Alloc, Fun &fun, const GLenum &err, const size_t Capacity) {
+void DebugInfo(Game_Variables &game, const size_t Mesh_Size, const camera &Camera, const size_t Alloc, Fun &fun, const GLenum &err, const size_t Capacity, size_t ramUsed) {
 //----------------------
 // Initialization
 //----------------------
     const auto& World = World_Map::World;
-    SIZE_T ramUsed;
-    PROCESS_MEMORY_COUNTERS meminfo;
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
     ImGui::Begin("Debug");
 
-    GetProcessMemoryInfo(GetCurrentProcess(), &meminfo, sizeof(meminfo));
-    ramUsed = meminfo.WorkingSetSize;
-
 //----------------------
 // Performance
 //----------------------
     ImGui::Text("FPS: %d", game.FPS);
     ImGui::Text("Triangles in Mesh: %s", fun.FormatNumber(Mesh_Size / 5).c_str());
-    ImGui::Text("Chunks: %d", (int)World.size());
+    ImGui::Text("Chunks: %s", fun.FormatNumber(World.size()).c_str());
     ImGui::Text("Buffer Size: %s", fun.FormatSize(Mesh_Size).c_str());
     ImGui::Text("Tried to Alloc: %s", fun.FormatSize(Alloc).c_str());
     ImGui::Text("Capacity: %s", fun.FormatSize(Capacity).c_str());
     ImGui::Text("Render Distance: %d", Camera.RenderDistance);
-    ImGui::Text("Ram Used: %dMB", ramUsed / 1024 / 1024);
-    ImGui::Text("World Usage: %zuMB", fun.calculateWorldMemory(World, Chunk_Size) / (1024 * 1024));
+    ImGui::Text("Ram Used: %s/%s", fun.FormatSize(ramUsed).c_str(), fun.FormatSize(game.Max_Ram*1024*1024).c_str());
+    ImGui::Text("World Usage: %s", fun.FormatSize(fun.calculateWorldMemory(World, Chunk_Size)).c_str());
     ImGui::Text("OpenGL error: 0x%X", err);
 
 //----------------------
@@ -281,6 +280,7 @@ void Game::MainLoop() {
                             mesh.GenerateMesh(chunk, chunk.Mesh, key.first, key.second, Chunk_Size, Camera.RenderDistance);
                             chunk.SendData();
                             chunk.Gen_Mesh = false;
+                            chunk.Ready_Render = true;
                             game.Updates += 1;
                         } else {
                             break;
@@ -308,6 +308,7 @@ void Game::MainLoop() {
             shader.Set_Mat4(ShaderProgram, "Model", model);
             shader.Set_Mat4(ShaderProgram, "View", view);
             shader.Set_Mat4(ShaderProgram, "Proj", proj);
+            shader.Set_Int(ShaderProgram, "RenderDist", Camera.RenderDistance);
 
             Camera.Chunk.x = static_cast<int>(std::floor(Camera.Position.x / Chunk_Size.x));
             Camera.Chunk.y = 0;
@@ -333,10 +334,12 @@ void Game::MainLoop() {
                 
                 if (game.Mesh_Updates == 0) {
                     for (auto& [key, chunk] : World_Map::World) {
-                        if (chunk.DirtyFlag) {
+                        if (chunk.DirtyFlag && chunk.Gen_Mesh) {
                             chunk.Allocate();
                             mesh.GenerateMesh(chunk, chunk.Mesh, key.first, key.second, Chunk_Size, Camera.RenderDistance);
                             chunk.SendData();
+                            chunk.Gen_Mesh = false;
+                            chunk.Ready_Render = true;
                         }
                     }
                 }
@@ -350,9 +353,11 @@ void Game::MainLoop() {
             Mesh_Size = 0;
             for (const auto& [key, chunk] : World_Map::World) {
                 //if (!(Mesh_Size * sizeof(float)/1048576 > game.VRamAlloc)) {
+                if (chunk.Ready_Render) {
                     glBindVertexArray(chunk.vao);
                     glDrawArrays(GL_TRIANGLES, 0, chunk.indexCount);
                     glBindVertexArray(0);
+                }
                 //}
                 Alloc += chunk.Alloc;
                 Mesh_Size += chunk.Mesh.size();
@@ -367,33 +372,36 @@ void Game::MainLoop() {
             //gui.addWidget<Label>(10,10,"Hello");
             //gui.addWidget<Button>(10,10,50,50,"Button");
             game.Gui_Init = true;
-            DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity);
+            DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity, ramUsed);
         }
 
         if (game.Frame % game_settings.Gui_Update_rate == 0) {
             // Update Gui
             //gui.update(0,0,false);
             //gui.render();
-            DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity);
+            DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity, ramUsed);
         }
         // Render ImGui
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         //-------------------------
         // Out Of VRam Error
         //-------------------------
-            if (err == GL_OUT_OF_MEMORY) {
-                if (game.VramHandle == 1) {
+        GetProcessMemoryInfo(GetCurrentProcess(), &meminfo, sizeof(meminfo));
+        ramUsed = meminfo.WorkingSetSize;
+            if (err == GL_OUT_OF_MEMORY || ramUsed >= game.Max_Ram*1024*1024) {
+                if (game.ramHandle == 1) {
                     std::cerr << "Out of VRAM! Changed RenderDistance by -1" << "\n";
                     if (Camera.RenderDistance > 1) {
                         Camera.RenderDistance -= 1;
+                        GenerateChunk.RemoveChunks(Camera);
                     }
                 } else {
                     break;
                 }
             }
+            // Out Of Ram
 
-
-            DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity);
+            DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity, ramUsed);
             game.FPS = Fps.End();
         // Update Screen
             glfwSwapBuffers(window);

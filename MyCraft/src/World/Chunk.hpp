@@ -13,7 +13,7 @@ public:
         int8_t id;
         bool transparent;
         bool solid;
-        uint8_t light;
+        uint8_t light; // Emiter
 
         Block(uint8_t id = 0, bool transparent = false, bool solid = false, uint8_t light = 0)
             : id(id), transparent(transparent), solid(solid), light(light) {}
@@ -28,6 +28,7 @@ public:
     // Mesh Stuff
     size_t Alloc = 0;
     bool Gen_Mesh = true;
+    bool Ready_Render = false;
     std::vector<float> Mesh;
     bool DirtyFlag = true;
     GLuint vao = 0;

@@ -3,9 +3,11 @@
 in vec2 TexCoord;
 in vec3 Normal;
 in vec3 FragPos;
+//in vec3 VColor;
 
 uniform sampler2D BaseTexture;
 uniform vec3 ViewPos;
+uniform int RenderDist;
 
 out vec4 FragColor;
 
@@ -55,6 +57,19 @@ void main() {
     }
 
     // ----------------------------
+    // Fog
+    // ----------------------------
+    vec3 fogColor = vec3(0.5, 0.7, 1.0);//vec3(0.7, 0.8, 0.9);
+
+    float distance = length(FragPos - ViewPos);
+
+    float fogEnd   = (RenderDist*16)+128;
+    float fogStart = (RenderDist*16)-64;
+
+    float fogFactor = clamp((fogEnd - distance) / (fogEnd - fogStart), 0.0, 1.0);
+
+
+    // ----------------------------
     // Final
     // ----------------------------
     float LightBritness = clamp(DiffuseLight + SpecularLight + AmbientLight, 0.0, 1.0);
@@ -62,6 +77,8 @@ void main() {
 
     FinalColor *= lightColor;
     FinalColor *= LightBritness;
+    //FinalColor *= VColor;
+    FinalColor = mix(fogColor, FinalColor, fogFactor);
 
     FragColor = vec4(pow(FinalColor, vec3(1/2.2)), baseColorData.a);
 

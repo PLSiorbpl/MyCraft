@@ -43,6 +43,10 @@ void Chunk::SendData() {
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)(5 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
+    // Vertex Color (location = 3)
+//    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, stride, (void*)(8 * sizeof(float)));
+//    glEnableVertexAttribArray(3);
+
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 

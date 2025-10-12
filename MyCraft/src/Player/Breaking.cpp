@@ -16,7 +16,10 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, bo
     auto SetNeighborsDirty = [&](int localX, int localZ, int chunkX, int chunkZ) {
         auto mark = [&](int cx, int cz){
             auto it = World.find({cx, cz});
-            if (it != World.end()) it->second.DirtyFlag = true;
+            if (it != World.end()) {
+                it->second.DirtyFlag = true;
+                it->second.Gen_Mesh = true;
+            }
         };
         if (localX == 0) mark(chunkX-1, chunkZ);
         if (localX == ChunkSize.x-1) mark(chunkX+1, chunkZ);
@@ -54,6 +57,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, bo
                     if (chunk0.get(localX, Block.y, localZ).solid) {
                         chunk0.set(localX, Block.y, localZ, Chunk::BlockDefs.at(0));
                         chunk0.DirtyFlag = true;
+                        chunk0.Gen_Mesh = true;
                         SetNeighborsDirty(localX, localZ, chunkX, chunkZ);
                         break;
                     }
@@ -85,6 +89,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, bo
                             } else {
                                 // Block Placed
                                 chunk1.DirtyFlag = true;
+                                chunk1.Gen_Mesh = true;
                                 Camera.Place_CoolDown = 12;
                                 SetNeighborsDirty(localPX, localPZ, PchunkX, PchunkZ);
                                 break;

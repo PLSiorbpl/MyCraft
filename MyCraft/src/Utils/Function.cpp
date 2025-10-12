@@ -11,7 +11,6 @@ size_t Fun::calculateWorldMemory(const std::unordered_map<std::pair<int, int>, C
     total = World.size() * ChunkSize.x * ChunkSize.y * ChunkSize.z * sizeof(Chunk::Block);
     total += (sizeof(std::pair<const std::pair<int,int>, Chunk>) + nodeOverhead) * World.size();
 
-
     return total;
 }
 
