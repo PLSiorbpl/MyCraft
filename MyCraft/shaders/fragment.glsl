@@ -59,14 +59,11 @@ void main() {
     // ----------------------------
     // Fog
     // ----------------------------
-    vec3 fogColor = vec3(0.5, 0.7, 1.0);//vec3(0.7, 0.8, 0.9);
+    vec3 fogColor = vec3(0.5, 0.7, 1.0);
 
-    float distance = length(FragPos - ViewPos);
-
-    float fogEnd   = (RenderDist*16)+128;
-    float fogStart = (RenderDist*16)-64;
-
-    float fogFactor = clamp((fogEnd - distance) / (fogEnd - fogStart), 0.0, 1.0);
+    float FOG_DENSITY = 7.0;
+    float dist = length(FragPos - ViewPos) / (RenderDist*16);
+    float fogFactor = exp(-FOG_DENSITY * (1.0 - dist));
 
 
     // ----------------------------
@@ -77,10 +74,10 @@ void main() {
 
     FinalColor *= lightColor;
     FinalColor *= LightBritness;
-    //FinalColor *= VColor;
-    FinalColor = mix(fogColor, FinalColor, fogFactor);
+    FinalColor = pow(FinalColor, vec3(1/2.2));
+    FinalColor = mix(FinalColor, fogColor, clamp(fogFactor, 0.0, 1.0));
 
-    FragColor = vec4(pow(FinalColor, vec3(1/2.2)), baseColorData.a);
+    FragColor = vec4(pow(FinalColor, vec3(1/1)), baseColorData.a);
 
     // ----------------------------
     // Debug
