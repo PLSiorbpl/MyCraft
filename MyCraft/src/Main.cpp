@@ -12,13 +12,20 @@
 #include <cmath>
 #include <cinttypes>
 #include <algorithm>
-#include <windows.h>
-#include <psapi.h>
+#if defined(_WIN32) // Windows
+    #include <windows.h>
+    #include <psapi.h>
+#elif defined(__linux__) // Linux
+    #include <unistd.h>
+    #include <sys/types.h>
+    #include <sys/sysinfo.h>
+#endif
 #include <fstream>
 #include <sstream>
 #include <filesystem>
 #include "FastNoiseLite.h"
 #define STB_IMAGE_IMPLEMENTATION
+// My Files
 #include "Utils/FPS.hpp"
 #include "Render/Camera.hpp"
 #include "Utils/Settings.hpp"
@@ -90,8 +97,12 @@ private:
     size_t Alloc;
     size_t Capacity;
     Gui gui;
-    PROCESS_MEMORY_COUNTERS meminfo;
-    SIZE_T ramUsed;
+    #if defined(_WIN32) // Windows
+        PROCESS_MEMORY_COUNTERS meminfo;
+        SIZE_T ramUsed;
+    #elif defined(__linux__) // Linux
+        size_t ramUsed;
+    #endif
 
 public:
     Settings_Loader Settings;
@@ -179,6 +190,8 @@ bool Game::Init_Window() {
     }
 
     glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetWindowUserPointer(window, &Camera);
     glfwSetCursorPosCallback(window, movement.mouse_callback);
@@ -386,8 +399,16 @@ void Game::MainLoop() {
         //-------------------------
         // Out Of VRam Error
         //-------------------------
-        GetProcessMemoryInfo(GetCurrentProcess(), &meminfo, sizeof(meminfo));
-        ramUsed = meminfo.WorkingSetSize;
+        #if defined(_WIN32)
+            GetProcessMemoryInfo(GetCurrentProcess(), &meminfo, sizeof(meminfo));
+            ramUsed = meminfo.WorkingSetSize;
+        #elif defined(__linux__)
+            std::ifstream file("/proc/self/statm");
+            size_t size;
+            file >> size;
+            long page_size_kb = sysconf(_SC_PAGE_SIZE);
+            ramUsed = size * page_size_kb;
+        #endif
             if (err == GL_OUT_OF_MEMORY || ramUsed >= game.Max_Ram*1024*1024) {
                 if (game.ramHandle == 1) {
                     std::cerr << "Out of VRAM! Changed RenderDistance by -1" << "\n";

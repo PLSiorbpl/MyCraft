@@ -37,12 +37,12 @@ public:
 
     Chunk() : width(0), height(0), depth(0), chunkX(0), chunkZ(0), blocks(0) {}
 
-    int index(int x, int y, int z) const {
+    inline int index(int x, int y, int z) const noexcept {
         return x + z * width + y * width * depth;
     }
 
-    const Block& get(int x, int y, int z) const {
-        return blocks.at(index(x, y, z));
+    inline const Block& get(int x, int y, int z) const noexcept {
+        return blocks[index(x, y, z)];
     }
 
     void set(int x, int y, int z, const Block& block) {

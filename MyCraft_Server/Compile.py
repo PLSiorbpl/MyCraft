@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
@@ -9,8 +10,13 @@ Debug = "" # -g
 Open_Game = False
 Last_Compiled = "./Last_Compiled.txt"
 Source_Includes = ['-I', 'src/', '-I./MyCraft/Include', '-I./MyCraft/Include/asio']
-Flags = ['-std=c++17', '-LMyCraft/lib', '-lmswsock', '-lws2_32', '-pthread', '-static-libstdc++', '-static-libgcc', '-static']
-Destination  = ["./Client.exe", "./Server.exe"]
+if sys.platform == "win32": # Windows
+    Flags = ['-std=c++17', '-LMyCraft/lib', '-lmswsock', '-lws2_32', '-pthread', '-static-libstdc++', '-static-libgcc', '-static']
+    Destination  = ["./Client.exe", "./Server.exe"]
+if sys.platform == "linux": # Linux
+    Flags = [ '-std=c++17', '-LMyCraft/lib', '-lpthread', '-ldl', '-lm', '-static-libstdc++', '-static-libgcc']
+    Destination  = ["./Client", "./Server"]
+Error = False
 
 # Paths
 Base = "MyCraft_Server/"
@@ -127,7 +133,10 @@ def Compile(Files, jobs, PreCompile):
 
 def Link(Destination_exe, PreCompile):
     obj_dir = os.path.join(Base, PreCompile)
-    objects = [os.path.join(obj_dir, f) for f in os.listdir(obj_dir) if f.endswith(".o")]
+    if sys.platform == "win32": # Windows
+        objects = [os.path.join(obj_dir, f) for f in os.listdir(obj_dir) if f.endswith(".o")]
+    if sys.platform == "linux": # Linux
+        objects = [os.path.join(obj_dir, f) for f in os.listdir(obj_dir) if f.endswith(".o") and f != "resource.o"]
     if not objects:
         Print_Red("Nothing to Link")
         return

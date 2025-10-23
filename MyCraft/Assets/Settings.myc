@@ -3,13 +3,13 @@ RAM=8128 // in MB
 Render Distance=24
 Out Of ram=1 // 1 - Dont Exit Program and change RenderDist by -1 | 0 - Exit Program (Crash)
 V-Sync=1
-Gui Update Rate=16 // 0 will crash 16 is good enough
+Gui Update Rate=4 // 0 will crash 16 is good enough
 // if Updates are set to 0 it will Update Mesh/World in 1 Frame
-Mesh Updates=12
+Mesh Updates=32
 World Updates=0 // Not working now xd
 
 // World Generation:
-Chunk Width=16
+Chunk Width=16 // Now X is Hard Coded to 16
 Chunk Height=256
 Chunk Depth=16
 
