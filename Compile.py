@@ -15,7 +15,7 @@ if sys.platform == "win32": # Windows
     Flags = ['-std=c++17', '-LMyCraft/lib', '-lglfw3', '-lgdi32', '-lopengl32', '-static-libstdc++', '-static-libgcc', '-static']
     Destination = ["../Mycraft.exe"]
 if sys.platform == "linux": # Linux
-    Flags = ['-std=c++17', '-LMyCraft/lib', '-lglfw', '-lGL', '-lpthread', '-ldl', '-lX11', '-static-libstdc++', '-static-libgcc']
+    Flags = ['-std=c++17', '-LMyCraft/lib', '-lglfw', '-lGL', '-lpthread', '-ldl', '-lX11', '-static-libstdc++', '-static-libgcc', '-static']
     Destination = ["../Mycraft-Linux"]
 Error = False
 

@@ -14,7 +14,7 @@ if sys.platform == "win32": # Windows
     Flags = ['-std=c++17', '-LMyCraft/lib', '-lmswsock', '-lws2_32', '-pthread', '-static-libstdc++', '-static-libgcc', '-static']
     Destination  = ["./Client.exe", "./Server.exe"]
 if sys.platform == "linux": # Linux
-    Flags = [ '-std=c++17', '-LMyCraft/lib', '-lpthread', '-ldl', '-lm', '-static-libstdc++', '-static-libgcc']
+    Flags = [ '-std=c++17', '-LMyCraft/lib', '-lpthread', '-ldl', '-lm', '-static-libstdc++', '-static-libgcc', '-static']
     Destination  = ["./Client-Linux", "./Server-Linux"]
 Error = False
 

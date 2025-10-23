@@ -173,7 +173,7 @@ bool Game::Init_Window() {
     width = mode->width;
     height = mode->height;
 
-    window = glfwCreateWindow(width, height, "MyCraft", nullptr, nullptr);
+    window = glfwCreateWindow(width, height, "MyCraft", monitor, nullptr);
     if (!window) {
         std::cerr << "skill issue with GLFW!\n";
         glfwTerminate();
