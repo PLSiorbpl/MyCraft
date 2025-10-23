@@ -15,7 +15,7 @@ if sys.platform == "win32": # Windows
     Destination  = ["./Client.exe", "./Server.exe"]
 if sys.platform == "linux": # Linux
     Flags = [ '-std=c++17', '-LMyCraft/lib', '-lpthread', '-ldl', '-lm', '-static-libstdc++', '-static-libgcc']
-    Destination  = ["./Client", "./Server"]
+    Destination  = ["./Client-Linux", "./Server-Linux"]
 Error = False
 
 # Paths

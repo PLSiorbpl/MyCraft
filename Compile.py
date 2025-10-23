@@ -16,7 +16,7 @@ if sys.platform == "win32": # Windows
     Destination = ["../Mycraft.exe"]
 if sys.platform == "linux": # Linux
     Flags = ['-std=c++17', '-LMyCraft/lib', '-lglfw', '-lGL', '-lpthread', '-ldl', '-lX11', '-static-libstdc++', '-static-libgcc']
-    Destination = ["../Mycraft"]
+    Destination = ["../Mycraft-Linux"]
 Error = False
 
 # Paths

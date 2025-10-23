@@ -1,9 +1,11 @@
 # MyCraft
-![Icon](./MyCraft/Assets/Icon.png)
+![Icon](./MyCraft/Assets/Icon-Client.png)
 
 - MyCraft is a Clone of Minecraft programed from scrach in **c++** and **OpenGL**. Its my First c++ project so any advices/help are welcome!
 
 - Still WIP but you can Help!! [GitHub](https://github.com/PLSiorbpl/MyCraft)
+
+- **Windows** And **Linux** Support!!
 
 ## 🎮 Controls
 - ⬆️ To move forward use **"W"** Key
@@ -18,10 +20,9 @@
 ## ✨ Features!!
 - 🔲 Infinite World Generation
 - 🧱 Customizable Terrain (/MyCraft/Assets/Settings.txt)
-- 📦 Pretty Efficient mesh generation
-- 🎮 Game is Alredy Compiled (only Windows)
+- 📦 Efficient mesh generation
+- 🎮 Game is Alredy Compiled (Windows And Linux (Arch at least))
 - ⚙️ Settings (/MyCraft/Assets/Settings.txt)
-- 💩 Bad Mesh rendering/sending System xd
 
 ## 🗂️ Project Structure
 ```bash 
