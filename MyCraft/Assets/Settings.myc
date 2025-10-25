@@ -5,7 +5,7 @@ Out Of ram=1 // 1 - Dont Exit Program and change RenderDist by -1 | 0 - Exit Pro
 V-Sync=1
 Gui Update Rate=4 // 0 will crash 16 is good enough
 // if Updates are set to 0 it will Update Mesh/World in 1 Frame
-Mesh Updates=32
+Mesh Updates=16
 World Updates=0 // Not working now xd
 
 // World Generation:

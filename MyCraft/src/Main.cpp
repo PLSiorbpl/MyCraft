@@ -36,6 +36,7 @@
 #include "World/Terrain.hpp"
 #include "World/Generation.hpp"
 #include "Render/Mesh.hpp"
+#include "Render/Frustum.hpp"
 #include "World/World.hpp"
 #include "GUI/Gui.hpp"
 
@@ -96,7 +97,9 @@ private:
     Mesh mesh;
     size_t Alloc;
     size_t Capacity;
+    int Triangles;
     Gui gui;
+    Frustum frustum;
     #if defined(_WIN32) // Windows
         PROCESS_MEMORY_COUNTERS meminfo;
         SIZE_T ramUsed;
@@ -174,6 +177,11 @@ bool Game::Init_Window() {
     height = mode->height;
 
     window = glfwCreateWindow(width, height, "MyCraft", monitor, nullptr);
+    glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+    glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_TRUE);
+    glfwSetWindowPos(window, 0, 0);
+    glfwSetWindowSize(window, mode->width, mode->height);
+
     if (!window) {
         std::cerr << "skill issue with GLFW!\n";
         glfwTerminate();
@@ -216,11 +224,19 @@ void Tick_Update(camera &Camera, GLFWwindow* window, const float DeltaTime, Move
     movement.Init(Camera, window, Chunk_Size, Colisions);
 }
 
-void DebugInfo(Game_Variables &game, const size_t Mesh_Size, const camera &Camera, const size_t Alloc, Fun &fun, const GLenum &err, const size_t Capacity, size_t ramUsed) {
+void DebugInfo(Game_Variables &game, const size_t Mesh_Size, const camera &Camera, const size_t Alloc, Fun &fun, const GLenum &err, const size_t Capacity, size_t ramUsed, int Triangles) {
 //----------------------
 // Initialization
 //----------------------
     const auto& World = World_Map::World;
+    const float ramUsedRatio = float(ramUsed) / float(game.Max_Ram * 1024 * 1024);
+    const float TrianglesDrawnRatio = float(Triangles / 8) / float(Mesh_Size / 8);
+    const ImVec4 RamBarColor = (ramUsedRatio > 0.8f) ? ImVec4(1.0f, 0.2f, 0.2f, 1.0f) :
+                    (ramUsedRatio > 0.5f) ? ImVec4(1.0f, 0.7f, 0.2f, 1.0f) :
+                                             ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
+    const ImVec4 TriBarColor = (TrianglesDrawnRatio > 0.8f) ? ImVec4(1.0f, 0.2f, 0.2f, 1.0f) :
+                    (TrianglesDrawnRatio > 0.5f) ? ImVec4(1.0f, 0.7f, 0.2f, 1.0f) :
+                                             ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -231,13 +247,27 @@ void DebugInfo(Game_Variables &game, const size_t Mesh_Size, const camera &Camer
 // Performance
 //----------------------
     ImGui::Text("FPS: %d", game.FPS);
-    ImGui::Text("Triangles in Mesh: %s", fun.FormatNumber(Mesh_Size / 5).c_str());
+
+    ImGui::PushStyleColor(ImGuiCol_PlotHistogram, TriBarColor);
+    std::string overlay = fun.FormatNumber(Triangles/8) + "/" + fun.FormatNumber(Mesh_Size/8);
+    ImGui::Text("Triangles:");
+    ImGui::SameLine();
+    ImGui::ProgressBar(TrianglesDrawnRatio, ImVec2(0.0f, 0.0f), overlay.c_str());
+    ImGui::PopStyleColor();
+
     ImGui::Text("Chunks: %s", fun.FormatNumber(World.size()).c_str());
-    ImGui::Text("Buffer Size: %s", fun.FormatSize(Mesh_Size).c_str());
-    ImGui::Text("Tried to Alloc: %s", fun.FormatSize(Alloc).c_str());
-    ImGui::Text("Capacity: %s", fun.FormatSize(Capacity).c_str());
+    ImGui::Text("VRam Usage: %s", fun.FormatSize(Mesh_Size).c_str());
+    ImGui::Text("Mesh Allocated: %s", fun.FormatSize(Alloc).c_str());
+    ImGui::Text("Mesh Capacity: %s", fun.FormatSize(Capacity).c_str());
     ImGui::Text("Render Distance: %d", Camera.RenderDistance);
-    ImGui::Text("Ram Used: %s/%s", fun.FormatSize(ramUsed).c_str(), fun.FormatSize(game.Max_Ram*1024*1024).c_str());
+
+    overlay = fun.FormatSize(ramUsed) + "/" + fun.FormatSize(game.Max_Ram * 1024 * 1024);
+    ImGui::PushStyleColor(ImGuiCol_PlotHistogram, RamBarColor);
+    ImGui::Text("Ram:");
+    ImGui::SameLine();
+    ImGui::ProgressBar(ramUsedRatio, ImVec2(0.0f, 0.0f), overlay.c_str());
+    ImGui::PopStyleColor();
+
     ImGui::Text("World Usage: %s", fun.FormatSize(fun.calculateWorldMemory(World, Chunk_Size)).c_str());
     ImGui::Text("OpenGL error: 0x%X", err);
 
@@ -364,12 +394,21 @@ void Game::MainLoop() {
             Alloc = 0;
             Capacity = 0;
             Mesh_Size = 0;
+            Triangles = 0;
+            const Frustum::Frust Frust = frustum.ExtractFrustum(proj*view);
+
             for (const auto& [key, chunk] : World_Map::World) {
                 //if (!(Mesh_Size * sizeof(float)/1048576 > game.VRamAlloc)) {
                 if (chunk.Ready_Render) {
-                    glBindVertexArray(chunk.vao);
-                    glDrawArrays(GL_TRIANGLES, 0, chunk.indexCount);
-                    glBindVertexArray(0);
+                    const glm::vec3 chunkMin = glm::vec3(key.first * Chunk_Size.x, 0, key.second * Chunk_Size.z);
+                    const glm::vec3 chunkMax = chunkMin + glm::vec3(Chunk_Size);
+
+                    if (frustum.IsAABBVisible(Frust, chunkMin, chunkMax)) {
+                        glBindVertexArray(chunk.vao);
+                        glDrawArrays(GL_TRIANGLES, 0, chunk.indexCount);
+                        glBindVertexArray(0);
+                        Triangles += chunk.Mesh.size();
+                    }
                 }
                 //}
                 Alloc += chunk.Alloc;
@@ -385,14 +424,14 @@ void Game::MainLoop() {
             //gui.addWidget<Label>(10,10,"Hello");
             //gui.addWidget<Button>(10,10,50,50,"Button");
             game.Gui_Init = true;
-            DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity, ramUsed);
+            DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity, ramUsed, Triangles);
         }
 
         if (game.Frame % game_settings.Gui_Update_rate == 0) {
             // Update Gui
             //gui.update(0,0,false);
             //gui.render();
-            DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity, ramUsed);
+            DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity, ramUsed, Triangles);
         }
         // Render ImGui
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -422,7 +461,7 @@ void Game::MainLoop() {
             }
             // Out Of Ram
 
-            DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity, ramUsed);
+            //DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity, ramUsed, Triangles);
             game.FPS = Fps.End();
         // Update Screen
             glfwSwapBuffers(window);
