@@ -29,29 +29,24 @@ void Chunk::SendData() {
     glBindVertexArray(vao);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, Mesh.size() * sizeof(float), Mesh.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, Mesh.size() * sizeof(Vertex), Mesh.data(), GL_STATIC_DRAW);
 
-    const int stride = 8 * sizeof(float);
     // aPos (location = 0)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
     glEnableVertexAttribArray(0);
 
     // atexture (location = 1)
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
+    glVertexAttribIPointer(1, 2, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
     glEnableVertexAttribArray(1);
 
     // aNormal (location = 2)
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)(5 * sizeof(float)));
+    glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
     glEnableVertexAttribArray(2);
-
-    // Vertex Color (location = 3)
-//    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, stride, (void*)(8 * sizeof(float)));
-//    glEnableVertexAttribArray(3);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    indexCount = Mesh.size() / 8;
+    indexCount = Mesh.size();
     DirtyFlag = false;
 }
 

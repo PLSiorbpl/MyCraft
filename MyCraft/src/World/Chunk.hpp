@@ -1,4 +1,5 @@
 #pragma once
+#include <glm/glm.hpp>
 #include <vector>
 #include <string>
 #include <map>
@@ -19,6 +20,13 @@ public:
             : id(id), transparent(transparent), solid(solid), light(light) {}
     };
 
+    struct Vertex {
+        glm::vec3 position;
+        uint8_t uv[2];
+        uint8_t normal;
+        uint8_t pad = 0;
+    };
+
     // World Stuff
     std::vector<Block> blocks;
     int width, height, depth;
@@ -29,7 +37,7 @@ public:
     size_t Alloc = 0;
     bool Gen_Mesh = true;
     bool Ready_Render = false;
-    std::vector<float> Mesh;
+    std::vector<Vertex> Mesh;
     bool DirtyFlag = true;
     GLuint vao = 0;
     GLuint vbo = 0;

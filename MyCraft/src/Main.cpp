@@ -62,6 +62,7 @@ struct Game_Variables {
     int FOV;
     int FPS = 0;
     int Mesh_Updates;
+    int Lazy_Mesh_Updates;
     int World_Updates;
     int Updates;
     bool Gui_Init = false;
@@ -146,6 +147,7 @@ void Game::Init_Settings(const std::string Path) {
     game.biomepower = Settings.Get<int>("Biome Power", 0);
     game.Mesh_Updates = Settings.Get<int>("Mesh Updates", 0);
     game.World_Updates = Settings.Get<int>("World Updates", 0);
+    game.Lazy_Mesh_Updates = Settings.Get<int>("Lazy Mesh Updates", 0);
 }
 
 void Game::CleanUp() {
@@ -230,7 +232,7 @@ void DebugInfo(Game_Variables &game, const size_t Mesh_Size, const camera &Camer
 //----------------------
     const auto& World = World_Map::World;
     const float ramUsedRatio = float(ramUsed) / float(game.Max_Ram * 1024 * 1024);
-    const float TrianglesDrawnRatio = float(Triangles / 8) / float(Mesh_Size / 8);
+    const float TrianglesDrawnRatio = float(Triangles/3) / float(Mesh_Size/3);
     const ImVec4 RamBarColor = (ramUsedRatio > 0.8f) ? ImVec4(1.0f, 0.2f, 0.2f, 1.0f) :
                     (ramUsedRatio > 0.5f) ? ImVec4(1.0f, 0.7f, 0.2f, 1.0f) :
                                              ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
@@ -249,8 +251,8 @@ void DebugInfo(Game_Variables &game, const size_t Mesh_Size, const camera &Camer
     ImGui::Text("FPS: %d", game.FPS);
 
     ImGui::PushStyleColor(ImGuiCol_PlotHistogram, TriBarColor);
-    std::string overlay = fun.FormatNumber(Triangles/8) + "/" + fun.FormatNumber(Mesh_Size/8);
-    ImGui::Text("Triangles:");
+    std::string overlay = fun.FormatNumber(Triangles/3) + "/" + fun.FormatNumber(Mesh_Size/3);
+    ImGui::Text("Triangles: %i", Triangles);
     ImGui::SameLine();
     ImGui::ProgressBar(TrianglesDrawnRatio, ImVec2(0.0f, 0.0f), overlay.c_str());
     ImGui::PopStyleColor();
@@ -270,6 +272,7 @@ void DebugInfo(Game_Variables &game, const size_t Mesh_Size, const camera &Camer
 
     ImGui::Text("World Usage: %s", fun.FormatSize(fun.calculateWorldMemory(World, Chunk_Size)).c_str());
     ImGui::Text("OpenGL error: 0x%X", err);
+    ImGui::Text("Mesh Updates: %i/%i", game.Updates, game.Mesh_Updates);
 
 //----------------------
 // Player
@@ -300,6 +303,27 @@ void Game::MainLoop() {
         // Main Engine
         // -------------------------------------------------------------------------------
 
+            //-------------------------
+            // Uniforms
+            //-------------------------
+            const float aspectRatio = (float)width / (float)height;
+            const float FOV = fun.ConvertHorizontalFovToVertical(game.FOV, aspectRatio);
+    
+            const glm::mat4 model = glm::mat4(1.0f);
+            const glm::mat4 view = movement.GetViewMatrix(Camera);
+            const glm::mat4 proj = glm::perspective(glm::radians(FOV), aspectRatio, 0.1f, 2000.0f);
+    
+            shader.Set_Vec3(ShaderProgram, "ViewPos", Camera.Position);
+            shader.Set_Mat4(ShaderProgram, "Model", model);
+            shader.Set_Mat4(ShaderProgram, "View", view);
+            shader.Set_Mat4(ShaderProgram, "Proj", proj);
+            shader.Set_Int(ShaderProgram, "RenderDist", Camera.RenderDistance);
+    
+            const Frustum::Frust Frust = frustum.ExtractFrustum(proj*view);
+    
+            Camera.Chunk.x = static_cast<int>(std::floor(Camera.Position.x / Chunk_Size.x));
+            Camera.Chunk.y = 0;
+            Camera.Chunk.z = static_cast<int>(std::floor(Camera.Position.z / Chunk_Size.z));
             DeltaTime = Fps.Start();
             game.Tick_Timer += DeltaTime;
             game.Frame += 1;
@@ -315,21 +339,41 @@ void Game::MainLoop() {
 
             //-------------------------
             // Mesh Generation
-                game.Updates = 0;
-                for (auto& [key, chunk] : World_Map::World) {
-                    if (chunk.DirtyFlag && chunk.Gen_Mesh) {
-                        if (game.Updates <= game.Mesh_Updates) {
-                            chunk.Allocate();
-                            mesh.GenerateMesh(chunk, chunk.Mesh, key.first, key.second, Chunk_Size, Camera.RenderDistance);
-                            chunk.SendData();
-                            chunk.Gen_Mesh = false;
-                            chunk.Ready_Render = true;
-                            game.Updates += 1;
-                        } else {
-                            break;
-                        }
-                    }
+            game.Updates = 0;
+
+            for (auto& [key, chunk] : World_Map::World) {
+                if (!chunk.DirtyFlag || !chunk.Gen_Mesh)
+                    continue;
+
+                if (game.Updates >= game.Mesh_Updates)
+                    break;
+            
+                const glm::vec3 chunkMin = glm::vec3(key.first * Chunk_Size.x, 0, key.second * Chunk_Size.z);
+                const glm::vec3 chunkMax = chunkMin + glm::vec3(Chunk_Size);
+            
+                const bool visible = frustum.IsAABBVisible(Frust, chunkMin, chunkMax);
+
+                // Normal Updates
+                if (visible && game.Updates < game.Mesh_Updates) {
+                    chunk.Allocate();
+                    mesh.GenerateMesh(chunk, chunk.Mesh, key.first, key.second, Chunk_Size, Camera.RenderDistance);
+                    chunk.SendData();
+                    chunk.Gen_Mesh = false;
+                    chunk.Ready_Render = true;
+                    game.Updates++;
+                    continue;
                 }
+            
+                // Lazy Updates
+                if (!visible && game.Updates < game.Lazy_Mesh_Updates) {
+                    chunk.Allocate();
+                    mesh.GenerateMesh(chunk, chunk.Mesh, key.first, key.second, Chunk_Size, Camera.RenderDistance);
+                    chunk.SendData();
+                    chunk.Gen_Mesh = false;
+                    chunk.Ready_Render = true;
+                    game.Updates++;
+                }
+            }
             }
 
         //-------------------------
@@ -337,26 +381,6 @@ void Game::MainLoop() {
             glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);       
 
-        //-------------------------
-        // Uniforms
-        //-------------------------
-            const float aspectRatio = (float)width / (float)height;
-            const float FOV = fun.ConvertHorizontalFovToVertical(game.FOV, aspectRatio);
-
-            const glm::mat4 model = glm::mat4(1.0f);
-            const glm::mat4 view = movement.GetViewMatrix(Camera);
-            const glm::mat4 proj = glm::perspective(glm::radians(FOV), aspectRatio, 0.1f, 2000.0f);
-
-            shader.Set_Vec3(ShaderProgram, "ViewPos", Camera.Position);
-            shader.Set_Mat4(ShaderProgram, "Model", model);
-            shader.Set_Mat4(ShaderProgram, "View", view);
-            shader.Set_Mat4(ShaderProgram, "Proj", proj);
-            shader.Set_Int(ShaderProgram, "RenderDist", Camera.RenderDistance);
-
-            Camera.Chunk.x = static_cast<int>(std::floor(Camera.Position.x / Chunk_Size.x));
-            Camera.Chunk.y = 0;
-            Camera.Chunk.z = static_cast<int>(std::floor(Camera.Position.z / Chunk_Size.z));
-        
         //-------------------------
         // Chunk Update
             game.ChunkUpdated = false;
@@ -395,8 +419,6 @@ void Game::MainLoop() {
             Capacity = 0;
             Mesh_Size = 0;
             Triangles = 0;
-            const Frustum::Frust Frust = frustum.ExtractFrustum(proj*view);
-
             for (const auto& [key, chunk] : World_Map::World) {
                 //if (!(Mesh_Size * sizeof(float)/1048576 > game.VRamAlloc)) {
                 if (chunk.Ready_Render) {
@@ -405,6 +427,7 @@ void Game::MainLoop() {
 
                     if (frustum.IsAABBVisible(Frust, chunkMin, chunkMax)) {
                         glBindVertexArray(chunk.vao);
+                        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
                         glDrawArrays(GL_TRIANGLES, 0, chunk.indexCount);
                         glBindVertexArray(0);
                         Triangles += chunk.Mesh.size();
@@ -435,6 +458,7 @@ void Game::MainLoop() {
         }
         // Render ImGui
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         //-------------------------
         // Out Of VRam Error
         //-------------------------
@@ -459,9 +483,6 @@ void Game::MainLoop() {
                     break;
                 }
             }
-            // Out Of Ram
-
-            //DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity, ramUsed, Triangles);
             game.FPS = Fps.End();
         // Update Screen
             glfwSwapBuffers(window);

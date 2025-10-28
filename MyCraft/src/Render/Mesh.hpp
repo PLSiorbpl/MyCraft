@@ -10,10 +10,9 @@
 class Mesh {
     public:
 
-    void GenerateMesh(const Chunk& chunk, std::vector<float>& vertices, const int chunkX, const int chunkZ, const glm::ivec3 ChunkSize, const int RenderDist);
-    void CubeMesh(std::vector<float>& vertices, glm::vec3 w, const Chunk& chunk, glm::ivec3 Local, const glm::ivec3 ChunkSized);
-    void MeshZFace(std::vector<float>& vertices, const glm::vec3& w, const int width, const glm::ivec2& texCoord, const int dir);
-    void MeshYFace(std::vector<float>& vertices, const glm::vec3& w, const int width, const glm::ivec2& texCoord, const int dir);
-    void MeshXFace(std::vector<float>& vertices, const glm::vec3& w, const int width, const glm::ivec2& texCoord, const int dir);
+    void GenerateMesh(const Chunk& chunk, std::vector<Chunk::Vertex>& vertices, const int chunkX, const int chunkZ, const glm::ivec3 ChunkSize, const int RenderDist);
+    void MeshZFace(std::vector<Chunk::Vertex>& vertices, const glm::vec3& w, const int width, const glm::ivec2& texCoord, const int dir);
+    void MeshYFace(std::vector<Chunk::Vertex>& vertices, const glm::vec3& w, const int width, const glm::ivec2& texCoord, const int dir);
+    void MeshXFace(std::vector<Chunk::Vertex>& vertices, const glm::vec3& w, const int width, const glm::ivec2& texCoord, const int dir);
     inline bool IsBlockAt(int WorldX, int y, int WorldZ, const glm::ivec3& ChunkSize);
 };

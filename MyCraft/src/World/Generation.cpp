@@ -7,6 +7,9 @@ void ChunkGeneration::GenerateChunks(const camera &Camera, const glm::ivec3 Chun
             const int chunkX = Camera.Chunk.x + dx;
             const int chunkZ = Camera.Chunk.z + dz;
             
+            const int dist2 = dx*dx + dz*dz;
+            if (dist2 > Camera.RenderDistance * Camera.RenderDistance) continue;
+
             const std::pair<int, int> key = {chunkX, chunkZ};
             
             const int dist = std::max(std::abs(dx), std::abs(dz));
