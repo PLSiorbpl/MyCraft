@@ -252,7 +252,7 @@ void DebugInfo(Game_Variables &game, const size_t Mesh_Size, const camera &Camer
 
     ImGui::PushStyleColor(ImGuiCol_PlotHistogram, TriBarColor);
     std::string overlay = fun.FormatNumber(Triangles/3) + "/" + fun.FormatNumber(Mesh_Size/3);
-    ImGui::Text("Triangles: %i", Triangles);
+    ImGui::Text("Triangles: ");
     ImGui::SameLine();
     ImGui::ProgressBar(TrianglesDrawnRatio, ImVec2(0.0f, 0.0f), overlay.c_str());
     ImGui::PopStyleColor();
