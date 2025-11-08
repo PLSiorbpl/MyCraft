@@ -41,6 +41,21 @@ void Gui::Statistics() {
     }
 }
 
+void Gui::Crosschair() {
+    uint64_t Special = 0;
+    glm::vec2 UV = glm::vec2(0.0);
+
+    glm::vec2 Size = glm::vec2(0.5f, 5.0f);
+    Rectangle(Anchor(Anch::Center, Size), Size, UV, Special);
+
+    Size = glm::vec2(5.0f, 0.5f);
+    Rectangle(Anchor(Anch::Center, Size), Size, UV, Special);
+}
+
+void Gui::Menu() {
+
+}
+
 glm::vec2 Gui::Anchor(Anch anchor, const glm::vec2 &Size, glm::vec2 Offset) {
     switch(anchor) {
         case Anch::BottomLeft:   return glm::vec2(0, height - Size.y) + Offset;

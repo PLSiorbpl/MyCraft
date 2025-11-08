@@ -13,6 +13,7 @@ void Movement::Init(camera &Camera, GLFWwindow* window, const glm::ivec3 ChunkSi
     Damp(Camera);
 
     if (Camera.Place_CoolDown > 0) Camera.Place_CoolDown -= 1;
+    if (Camera.Break_CoolDown > 0) Camera.Break_CoolDown -= 1;
 }
 
 void Movement::Input(GLFWwindow* window, camera &Camera, glm::ivec3 ChunkSize) {
@@ -56,8 +57,8 @@ void Movement::Input(GLFWwindow* window, camera &Camera, glm::ivec3 ChunkSize) {
     if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) Camera.Vel.y = -Camera.JumpStrength;
 
     // Mouse Actions
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) TAction.RayCastBlock(Camera, ChunkSize, false, 5);
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) TAction.RayCastBlock(Camera, ChunkSize, true, 0);
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) TAction.RayCastBlock(Camera, ChunkSize, true, 0);
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) TAction.RayCastBlock(Camera, ChunkSize, false, 5);
 
     Camera.Vel.y = std::clamp(Camera.Vel.y, -0.5f, 0.2f);
 }

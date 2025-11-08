@@ -466,6 +466,7 @@ void Game::MainLoop() {
 
             gui.HotBar();
             gui.Statistics();
+            gui.Crosschair();
 
             gui.Send_Data();
             DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity, ramUsed, Triangles);

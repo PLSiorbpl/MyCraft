@@ -18,6 +18,7 @@ public:
     float JumpStrength = 0.15f;
     glm::ivec3 Chunk = glm::ivec3(0,0,0);
     int Place_CoolDown = 0;
+    int Break_CoolDown = 0;
     int RenderDistance;
     bool Mode = false;
 

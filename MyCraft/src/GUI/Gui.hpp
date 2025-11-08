@@ -40,4 +40,5 @@ public:
     void HotBar();
     void Statistics();
     void Menu();
+    void Crosschair();
 };

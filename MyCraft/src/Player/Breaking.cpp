@@ -49,7 +49,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, bo
             Chunk& chunk0 = it->second;
 
             if (Block.y >= 0 && Block.y < ChunkSize.y) {
-                if (Action) {
+                if (Action && Camera.Break_CoolDown == 0) {
                     // --------------
                     // Breaking
                     // --------------
@@ -59,6 +59,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, bo
                         chunk0.DirtyFlag = true;
                         chunk0.Gen_Mesh = true;
                         SetNeighborsDirty(localX, localZ, chunkX, chunkZ);
+                        Camera.Break_CoolDown = 8;
                         break;
                     }
                 } else if (Camera.Place_CoolDown == 0) {
