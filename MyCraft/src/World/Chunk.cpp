@@ -12,13 +12,6 @@ const std::map<uint8_t, Chunk::Block> Chunk::BlockDefs = {
     { 6, Block(6, true, true) } // Water
  };
 
-void Chunk::Allocate() {
-    const size_t estimate = static_cast<size_t>(width) * height * depth;
-    Alloc = static_cast<size_t>(estimate * 0.75);
-    Mesh.clear();
-    Mesh.reserve(Alloc);
-}
-
 void Chunk::SendData() {
     if (vao == 0) {
         glGenVertexArrays(1, &vao);

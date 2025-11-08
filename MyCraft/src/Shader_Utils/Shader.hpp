@@ -13,7 +13,7 @@ class Shader {
     //---------------------
     // Initialization
     //---------------------
-    void Init_Shader(GLuint &ShaderProgram);
+    void Init_Shader(GLuint& ShaderProgram, GLuint& Gui_ShaderProgram);
 
     GLuint Create_Shader(const std::string& vertex, const std::string& fragment);
 

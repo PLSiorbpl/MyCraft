@@ -1,75 +1,43 @@
 #pragma once
-#include <string>
+#include <glm/glm.hpp>
+#include <cinttypes>
 #include <vector>
-#include <memory>
-#include <iostream>
 
-class Widget {
-public:
-    float x, y;
-    float w, h;
-    bool visible = true;
-
-    virtual void update(double mouseX, double mouseY, bool mousePressed) = 0;
-    virtual void render() = 0;
-    virtual ~Widget() {}
+struct GuiVertex {
+    glm::vec2 Pos;
+    glm::vec2 UV;
+    uint32_t Special;
 };
 
-class Label : public Widget {
-public:
-    std::string text;
-
-    Label(float x, float y, std::string text) {
-        this->x = x; this->y = y;
-        this->w = 0; this->h = 0;
-        this->text = text;
-    }
-
-    void update(double, double, bool) override {}
-    void render() override {
-        std::cout << "Render Label: " << text << "\n";
-    }
-};
-
-class Button : public Widget {
-public:
-    std::string text;
-    bool hovered = false;
-    bool pressed = false;
-
-    Button(float x, float y, float w, float h, std::string txt) {
-        this->x = x; this->y = y; this->w = w; this->h = h;
-        this->text = txt;
-    }
-
-    void update(double mouseX, double mouseY, bool mousePressed) override {
-        hovered = (mouseX >= x && mouseX <= x+w && mouseY >= y && mouseY <= y+h);
-        pressed = hovered && mousePressed;
-    }
-
-    void render() override {
-        std::cout << "Render Button: " << text
-                  << (pressed ? " [PRESSED]" : hovered ? " [HOVER]" : "") << "\n";
-    }
+enum class Anch {
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+    Center,
+    BottomCenter,
+    TopCenter,
+    LeftCenter,
+    RightCenter
 };
 
 class Gui {
 public:
-    std::vector<std::unique_ptr<Widget>> widgets;
+    std::vector<GuiVertex> Mesh;
+    GLuint vao = 0;
+    GLuint vbo = 0;
+    GLsizei IndexCount;
 
-    template <typename T, typename... Args>
-    T* addWidget(Args&&... args) {
-        auto widget = std::make_unique<T>(std::forward<Args>(args)...);
-        T* ptr = widget.get();
-        widgets.push_back(std::move(widget));
-        return ptr;
-    }
+    float width, height;
 
-    void update(double mouseX, double mouseY, bool mousePressed) {
-        for (auto& w : widgets) if (w->visible) w->update(mouseX, mouseY, mousePressed);
-    }
+    void Clear(int w, int h);
+    void Send_Data();
+    void Push(const glm::vec2& Pos, const glm::vec2& UV, const uint64_t& Special);
 
-    void render() {
-        for (auto& w : widgets) if (w->visible) w->render();
-    }
+    void Rectangle(const glm::vec2& Pos, const glm::vec2& Size, const glm::vec2& UV, const uint64_t& Special);
+    glm::vec2 Anchor(Anch anchor, const glm::vec2 &Size, glm::vec2 Offset = {0.0f,0.0f});
+
+    void HotBar();
+    void Statistics();
+    void Menu();
 };

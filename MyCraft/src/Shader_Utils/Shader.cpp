@@ -91,12 +91,15 @@ GLuint Shader::Create_Shader(const std::string& vertex, const std::string& fragm
     return ShaderProgram;
 }
 
-void Shader::Init_Shader(GLuint &ShaderProgram) {
+void Shader::Init_Shader(GLuint& ShaderProgram, GLuint& Gui_ShaderProgram) {
     unsigned int TextureID;
     Load_Texture(TextureID, GL_TEXTURE0);
 
     ShaderProgram = Create_Shader("MyCraft/shaders/vertex.glsl", "MyCraft/shaders/fragment.glsl");
+    Gui_ShaderProgram = Create_Shader("MyCraft/shaders/Gui_vert.glsl", "MyCraft/shaders/Gui_Frag.glsl");
 
     glUseProgram(ShaderProgram);
     Set_Int(ShaderProgram, "BaseTexture", 0);
+    glUseProgram(Gui_ShaderProgram);
+    Set_Int(Gui_ShaderProgram, "BaseTexture", 0);
 }

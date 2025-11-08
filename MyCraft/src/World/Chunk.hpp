@@ -61,8 +61,6 @@ public:
         blocks.at(index(x, y, z)).id = id;
     }
 
-    void Allocate();
-
     void SendData();
 
     void RemoveData();

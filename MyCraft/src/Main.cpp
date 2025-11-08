@@ -88,6 +88,7 @@ private:
     Game_Variables game;
     Game_Settings game_settings;
     GLuint ShaderProgram;
+    GLuint Gui_Shader;
     size_t Mesh_Size;
     Movement movement;
     float DeltaTime;
@@ -175,14 +176,14 @@ bool Game::Init_Window() {
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(monitor); // Window or Full Screen
 
-    width = mode->width;
+    width  = mode->width;
     height = mode->height;
 
     window = glfwCreateWindow(width, height, "MyCraft", monitor, nullptr);
     glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
     glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_TRUE);
     glfwSetWindowPos(window, 0, 0);
-    glfwSetWindowSize(window, mode->width, mode->height);
+    glfwSetWindowSize(window, width, height);
 
     if (!window) {
         std::cerr << "skill issue with GLFW!\n";
@@ -219,7 +220,7 @@ bool Game::Init_Window() {
 }
 
 void Game::Init_Shader() {
-    shader.Init_Shader(ShaderProgram);
+    shader.Init_Shader(ShaderProgram, Gui_Shader);
 }
 
 void Tick_Update(camera &Camera, GLFWwindow* window, const float DeltaTime, Movement &movement, colisions &Colisions) {
@@ -299,6 +300,7 @@ void Game::MainLoop() {
             glfwSetWindowShouldClose(window, true);
 
             glUseProgram(ShaderProgram);
+            glfwGetWindowSize(window, &width, &height);
         // -------------------------------------------------------------------------------
         // Main Engine
         // -------------------------------------------------------------------------------
@@ -309,7 +311,7 @@ void Game::MainLoop() {
             const float aspectRatio = (float)width / (float)height;
             const float FOV = fun.ConvertHorizontalFovToVertical(game.FOV, aspectRatio);
     
-            const glm::mat4 model = glm::mat4(1.0f);
+            glm::mat4 model = glm::mat4(1.0f);
             const glm::mat4 view = movement.GetViewMatrix(Camera);
             const glm::mat4 proj = glm::perspective(glm::radians(FOV), aspectRatio, 0.1f, 2000.0f);
     
@@ -355,7 +357,7 @@ void Game::MainLoop() {
 
                 // Normal Updates
                 if (visible && game.Updates < game.Mesh_Updates) {
-                    chunk.Allocate();
+                    chunk.Mesh.clear();
                     mesh.GenerateMesh(chunk, chunk.Mesh, key.first, key.second, Chunk_Size, Camera.RenderDistance);
                     chunk.SendData();
                     chunk.Gen_Mesh = false;
@@ -366,7 +368,7 @@ void Game::MainLoop() {
             
                 // Lazy Updates
                 if (!visible && game.Updates < game.Lazy_Mesh_Updates) {
-                    chunk.Allocate();
+                    chunk.Mesh.clear();
                     mesh.GenerateMesh(chunk, chunk.Mesh, key.first, key.second, Chunk_Size, Camera.RenderDistance);
                     chunk.SendData();
                     chunk.Gen_Mesh = false;
@@ -402,7 +404,7 @@ void Game::MainLoop() {
                 if (game.Mesh_Updates == 0) {
                     for (auto& [key, chunk] : World_Map::World) {
                         if (chunk.DirtyFlag && chunk.Gen_Mesh) {
-                            chunk.Allocate();
+                            chunk.Mesh.clear();
                             mesh.GenerateMesh(chunk, chunk.Mesh, key.first, key.second, Chunk_Size, Camera.RenderDistance);
                             chunk.SendData();
                             chunk.Gen_Mesh = false;
@@ -427,7 +429,6 @@ void Game::MainLoop() {
 
                     if (frustum.IsAABBVisible(Frust, chunkMin, chunkMax)) {
                         glBindVertexArray(chunk.vao);
-                        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
                         glDrawArrays(GL_TRIANGLES, 0, chunk.indexCount);
                         glBindVertexArray(0);
                         Triangles += chunk.Mesh.size();
@@ -441,22 +442,48 @@ void Game::MainLoop() {
         //-------------------------
         // GUI - My Own GUI Engine
         //-------------------------
+    
+        glUseProgram(Gui_Shader);
+        float guiScale = floor(width / 320.0f);
+        if (height / 240.0f < guiScale)
+            guiScale = floor(height / 240.0f);
+        if (guiScale < 1.0f)
+            guiScale = 1.0f;
+        glm::mat4 projection = glm::ortho(0.0f, (float)width/guiScale, (float)height/guiScale, 0.0f, -1.0f, 1.0f);
+        shader.Set_Mat4(Gui_Shader, "Model", model);
+        shader.Set_Mat4(Gui_Shader, "Projection", projection);
         GLenum err = glGetError();
         if (!game.Gui_Init) {
             // Initialize Gui
-            //gui.addWidget<Label>(10,10,"Hello");
-            //gui.addWidget<Button>(10,10,50,50,"Button");
             game.Gui_Init = true;
             DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity, ramUsed, Triangles);
         }
 
         if (game.Frame % game_settings.Gui_Update_rate == 0) {
+            //-------------------------
             // Update Gui
-            //gui.update(0,0,false);
-            //gui.render();
+            gui.Clear(width/guiScale, height/guiScale);
+
+            gui.HotBar();
+            gui.Statistics();
+
+            gui.Send_Data();
             DebugInfo(game, Mesh_Size, Camera, Alloc, fun, err, Capacity, ramUsed, Triangles);
         }
+        //-------------------------
+        // Render MyGui
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        glBindVertexArray(gui.vao);
+        glDrawArrays(GL_TRIANGLES, 0, gui.IndexCount);
+        glBindVertexArray(0);
+        
         // Render ImGui
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_BLEND);
+        glUseProgram(ShaderProgram);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         //-------------------------
