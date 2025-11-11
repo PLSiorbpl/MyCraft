@@ -92,8 +92,8 @@ void Gui::Push(const glm::vec2& Pos, const glm::vec2& UV, const uint64_t& Specia
 void Gui::Clear(int w, int h) {
     width = w;
     height = h;
-    if (vao) { glDeleteVertexArrays(1, &vao); vao = 0; }
-    if (vbo) { glDeleteBuffers(1, &vbo); vbo = 0; }
+    //if (vao) { glDeleteVertexArrays(1, &vao); vao = 0; }
+    //if (vbo) { glDeleteBuffers(1, &vbo); vbo = 0; }
     Mesh.clear();
 }
 

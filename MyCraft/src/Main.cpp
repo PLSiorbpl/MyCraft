@@ -26,19 +26,25 @@
 #include "FastNoiseLite.h"
 #define STB_IMAGE_IMPLEMENTATION
 // My Files
-#include "Utils/FPS.hpp"
-#include "Render/Camera.hpp"
-#include "Utils/Settings.hpp"
-#include "World/Chunk.hpp"
+#include "GUI/Gui.hpp"
+
 #include "Player/Movement.hpp"
-#include "Shader_Utils/Shader.hpp"
-#include "Utils/Function.hpp"
-#include "World/Terrain.hpp"
-#include "World/Generation.hpp"
+
 #include "Render/Mesh.hpp"
 #include "Render/Frustum.hpp"
+#include "Render/SelectionBox.hpp"
+#include "Render/Camera.hpp"
+
+#include "Shader_Utils/Shader.hpp"
+
+#include "Utils/FPS.hpp"
+#include "Utils/Settings.hpp"
+#include "Utils/Function.hpp"
+
+#include "World/Chunk.hpp"
+#include "World/Terrain.hpp"
+#include "World/Generation.hpp"
 #include "World/World.hpp"
-#include "GUI/Gui.hpp"
 
 glm::ivec3 Chunk_Size;
 
@@ -89,6 +95,7 @@ private:
     Game_Settings game_settings;
     GLuint ShaderProgram;
     GLuint Gui_Shader;
+    GLuint SelectionBox_Shader;
     size_t Mesh_Size;
     Movement movement;
     float DeltaTime;
@@ -102,6 +109,7 @@ private:
     int Triangles;
     Gui gui;
     Frustum frustum;
+    Selection selection;
     #if defined(_WIN32) // Windows
         PROCESS_MEMORY_COUNTERS meminfo;
         SIZE_T ramUsed;
@@ -220,11 +228,11 @@ bool Game::Init_Window() {
 }
 
 void Game::Init_Shader() {
-    shader.Init_Shader(ShaderProgram, Gui_Shader);
+    shader.Init_Shader(ShaderProgram, Gui_Shader, SelectionBox_Shader);
 }
 
-void Tick_Update(camera &Camera, GLFWwindow* window, const float DeltaTime, Movement &movement, colisions &Colisions) {
-    movement.Init(Camera, window, Chunk_Size, Colisions);
+void Tick_Update(camera &Camera, GLFWwindow* window, const float DeltaTime, Movement &movement, colisions &Colisions, Selection& Sel) {
+    movement.Init(Camera, window, Chunk_Size, Colisions, Sel);
 }
 
 void DebugInfo(Game_Variables &game, const size_t Mesh_Size, const camera &Camera, const size_t Alloc, Fun &fun, const GLenum &err, const size_t Capacity, size_t ramUsed, int Triangles) {
@@ -294,6 +302,7 @@ void DebugInfo(Game_Variables &game, const size_t Mesh_Size, const camera &Camer
 void Game::MainLoop() {
     ChunkGeneration GenerateChunk(game.Seed, game.basefreq, game.baseamp, game.oct, game.addfreq, game.addamp, game.biomefreq, game.biomemult, game.biomebase, game.biomepower);
     glfwGetWindowSize(window, &width, &height);
+    selection.Init(SelectionBox_Shader);
     Fps.Init();
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -336,7 +345,7 @@ void Game::MainLoop() {
             while (game.Tick_Timer >= game.TickRate) {
                 game.Tick_Timer -= game.TickRate;
                 if (!game.ChunkUpdated) {
-                    Tick_Update(Camera, window, DeltaTime, movement, Colisions);
+                    Tick_Update(Camera, window, DeltaTime, movement, Colisions, selection);
                 }
 
             //-------------------------
@@ -439,6 +448,17 @@ void Game::MainLoop() {
                 Mesh_Size += chunk.Mesh.size();
                 Capacity += chunk.Mesh.capacity();
             }
+        if (Camera.Draw_Selection) {
+            glUseProgram(SelectionBox_Shader);
+            glBindVertexArray(selection.vao);
+            glBindBuffer(GL_ARRAY_BUFFER, selection.vbo);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, selection.boxLinesCopy.size() * sizeof(float), selection.boxLinesCopy.data());
+            glm::mat4 MVP = proj * view * model;
+            shader.Set_Mat4(SelectionBox_Shader, "MVP", MVP);
+            glLineWidth(1.0f);
+            glDrawArrays(GL_LINES, 0, 24);
+            glBindVertexArray(0);
+        }
         //-------------------------
         // GUI - My Own GUI Engine
         //-------------------------

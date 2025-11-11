@@ -1,20 +1,10 @@
 #include "Breaking.hpp"
 
-void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, bool Action, int block, float MaxDistance, float StepSize) {
-    bool Finish = false;
-    auto& World = World_Map::World;
-    glm::vec3 Pos;
-    glm::vec3 direction;
-    direction.x = cos(glm::radians(Camera.Yaw)) * cos(glm::radians(Camera.Pitch));
-    direction.y = sin(glm::radians(Camera.Pitch));
-    direction.z = sin(glm::radians(Camera.Yaw)) * cos(glm::radians(Camera.Pitch));
-    direction = glm::normalize(direction);
+void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, int Action, int block, Selection& Sel, float MaxDistance, float StepSize) {
+    auto &World = World_Map::World;
 
-    // --------------
-    // Functions
-    // --------------
     auto SetNeighborsDirty = [&](int localX, int localZ, int chunkX, int chunkZ) {
-        auto mark = [&](int cx, int cz){
+        auto mark = [&](int cx, int cz) {
             auto it = World.find({cx, cz});
             if (it != World.end()) {
                 it->second.DirtyFlag = true;
@@ -27,79 +17,104 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, bo
         if (localZ == ChunkSize.z-1) mark(chunkX, chunkZ+1);
     };
 
-    for (float Distance = 0; Distance < MaxDistance; Distance += StepSize) {
-        Pos = Camera.Position + direction * Distance;
+    glm::vec3 direction;
+    direction.x = cos(glm::radians(Camera.Yaw)) * cos(glm::radians(Camera.Pitch));
+    direction.y = sin(glm::radians(Camera.Pitch));
+    direction.z = sin(glm::radians(Camera.Yaw)) * cos(glm::radians(Camera.Pitch));
+    direction = glm::normalize(direction);
 
-        const glm::ivec3 Block = glm::floor(Pos);
+    const glm::vec3 Pos = Camera.Position;
+    glm::ivec3 Block = glm::floor(Pos);
 
-        const int chunkX = floor((float)Block.x / ChunkSize.x);
-        const int chunkZ = floor((float)Block.z / ChunkSize.z);
+    const glm::ivec3 Step = glm::ivec3(direction.x > 0 ? 1 : -1,
+        direction.y > 0 ? 1 : -1,
+        direction.z > 0 ? 1 : -1);
+    
+    glm::vec3 tMax = glm::vec3(((Step.x > 0 ? (Block.x + 1) : Block.x) - Pos.x) / direction.x,
+        ((Step.y > 0 ? (Block.y + 1) : Block.y) - Pos.y) / direction.y,
+        ((Step.z > 0 ? (Block.z + 1) : Block.z) - Pos.z) / direction.z);
 
-        const int localX = Block.x - chunkX * ChunkSize.x;
-        const int localZ = Block.z - chunkZ * ChunkSize.z;
+    const glm::vec3 tDelta = glm::abs(1.0f / direction+0.000001f);
+    
+    float distance = 0.0f;
+    bool firstrun = true;
+    Chunk* LastChunk = nullptr;
+    Chunk::Block LastBlock;
+    glm::ivec3 LastCord;
+    glm::ivec2 LastC;
 
-        if (localX < 0 || localX >= ChunkSize.x || localZ < 0 || localZ >= ChunkSize.z) {
-            continue;
-        }
-        // --------------
-        // Action
-        // --------------
-        auto it = World.find({chunkX, chunkZ});
+    while(distance < MaxDistance) {
+        if (distance > MaxDistance) break;
+        const int cx = floor(Block.x / float(ChunkSize.x));
+        const int cz = floor(Block.z / float(ChunkSize.z));
+
+        const int LocalX = Block.x - cx * ChunkSize.x;
+        const int LocalZ = Block.z - cz * ChunkSize.z;
+        
+        auto it = World.find({cx, cz});
         if (it != World.end()) {
-            Chunk& chunk0 = it->second;
+            Chunk& chunk = it->second;
 
             if (Block.y >= 0 && Block.y < ChunkSize.y) {
-                if (Action && Camera.Break_CoolDown == 0) {
-                    // --------------
-                    // Breaking
-                    // --------------
-
-                    if (chunk0.get(localX, Block.y, localZ).solid) {
-                        chunk0.set(localX, Block.y, localZ, Chunk::BlockDefs.at(0));
-                        chunk0.DirtyFlag = true;
-                        chunk0.Gen_Mesh = true;
-                        SetNeighborsDirty(localX, localZ, chunkX, chunkZ);
+                if (Action == 1 && Camera.Break_CoolDown == 0) {
+                    if (chunk.get(LocalX, Block.y, LocalZ).solid) {
+                        chunk.set(LocalX, Block.y, LocalZ, Chunk::BlockDefs.at(0));
+                        chunk.DirtyFlag = true;
+                        chunk.Gen_Mesh = true;
+                        SetNeighborsDirty(LocalX, LocalZ, cx, cz);
                         Camera.Break_CoolDown = 8;
                         break;
                     }
-                } else if (Camera.Place_CoolDown == 0) {
-                    // --------------
-                    // Placing
-                    // --------------
-
-                    const glm::ivec3 PBlock = glm::floor(Camera.Position + direction * (Distance-StepSize));
-
-                    const int PchunkX = floor((float)PBlock.x / ChunkSize.x);
-                    const int PchunkZ = floor((float)PBlock.z / ChunkSize.z);
-
-                    const int localPX = PBlock.x - PchunkX * ChunkSize.x;
-                    const int localPZ = PBlock.z - PchunkZ * ChunkSize.z;
-
-                    auto itP = World.find({PchunkX, PchunkZ});
-                    Chunk& chunk1 = itP->second;
-
-                    if (PBlock.y >= 0 && PBlock.y < ChunkSize.y) {
-
-                        if (chunk0.get(localX, Block.y, localZ).id != 0 && chunk1.get(localPX, PBlock.y, localPZ).id == 0) {
-                            const Chunk::Block LastBlock = chunk1.get(localPX, PBlock.y, localPZ);
-                            chunk1.set(localPX, PBlock.y, localPZ, Chunk::BlockDefs.at(block));
-                            if (Colision.isSolidAround(Camera.Position, ChunkSize)) {
-                                // Block is in Player
-                                chunk1.set(localPX, PBlock.y, localPZ, LastBlock);
-                                break;
-                            } else {
-                                // Block Placed
-                                chunk1.DirtyFlag = true;
-                                chunk1.Gen_Mesh = true;
-                                Camera.Place_CoolDown = 12;
-                                SetNeighborsDirty(localPX, localPZ, PchunkX, PchunkZ);
-                                break;
-                            }
-
+                } else if (Action == 2 && Camera.Place_CoolDown == 0 && !firstrun) {
+                    if (chunk.get(LocalX, Block.y, LocalZ).solid && !LastBlock.solid) {
+                        const Chunk::Block TryBlock = LastChunk->get(LastCord.x, LastCord.y, LastCord.z);
+                        LastChunk->set(LastCord.x, LastCord.y, LastCord.z, Chunk::BlockDefs.at(block));
+                        if (Colision.isSolidAround(Camera.Position, ChunkSize)) {
+                            LastChunk->set(LastCord.x, LastCord.y, LastCord.z, TryBlock);
+                            Camera.Place_CoolDown = 8;
+                            break;
+                        } else {
+                            LastChunk->DirtyFlag = true;
+                            LastChunk->Gen_Mesh = true;
+                            SetNeighborsDirty(LastCord.x, LastCord.z, LastC.x, LastC.y);
+                            Camera.Place_CoolDown = 12;
+                            break;
                         }
+                    }
+                } else if (Action == 0) {
+                    if (chunk.get(LocalX, Block.y, LocalZ).solid) {
+                        Sel.Draw(glm::vec3(Block));
+                        Camera.Draw_Selection = true;
+                        break;
+                    } else {
+                        Camera.Draw_Selection = false;
                     }
                 }
             }
+            LastChunk = &chunk;
+            LastBlock = chunk.get(LocalX, Block.y, LocalZ);
+            LastCord = glm::ivec3(LocalX, Block.y, LocalZ);
+            LastC = glm::ivec2(cx, cz);
+            firstrun = false;
         }
+        if (tMax.x < tMax.y) {
+            if (tMax.x < tMax.z) {
+                Block.x += Step.x;
+                tMax.x += tDelta.x;
+            } else {
+                Block.z += Step.z;
+                tMax.z += tDelta.z;
+            }
+        } else {
+            if (tMax.y < tMax.z) {
+                Block.y += Step.y;
+                tMax.y += tDelta.y;
+            } else {
+                Block.z += Step.z;
+                tMax.z += tDelta.z;
+            }
+        }
+
+        distance = std::min({tMax.x, tMax.y, tMax.z});
     }
 }
