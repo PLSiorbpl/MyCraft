@@ -3,7 +3,8 @@
 
 void Gui::HotBar() {
     uint64_t Special = 0;
-    glm::vec2 UV = glm::vec2(0.0);
+    glm::vec4 UV = glm::vec4(0.0);
+    std::array<glm::vec2, 4> uv = {};
 
     const float slotSize = 20.0f;
     const float slotSpacing = 1.0f + slotSize;
@@ -11,7 +12,10 @@ void Gui::HotBar() {
     glm::vec2 Size = glm::vec2(190.0f, 22.0f);
     Rectangle(Anchor(Anch::BottomCenter, Size, {0.0f, -2.0f}), Size, UV, Special);
 
+    float UVSize = 1.0/512.0;
+
     Size = glm::vec2(slotSize);
+    UV = glm::vec4(0.0, 0.0, 16*UVSize, 16*UVSize);
     for (int i = 0; i < 9; i++) {
         Rectangle(Anchor(Anch::BottomCenter, Size, {-84.0f+(i*slotSpacing), -3.0f}), Size, UV, Special);
     }
@@ -92,8 +96,6 @@ void Gui::Push(const glm::vec2& Pos, const glm::vec2& UV, const uint64_t& Specia
 void Gui::Clear(int w, int h) {
     width = w;
     height = h;
-    //if (vao) { glDeleteVertexArrays(1, &vao); vao = 0; }
-    //if (vbo) { glDeleteBuffers(1, &vbo); vbo = 0; }
     Mesh.clear();
 }
 
@@ -101,27 +103,27 @@ void Gui::Send_Data() {
     if (vao == 0) {
         glGenVertexArrays(1, &vao);
         glGenBuffers(1, &vbo);
-    }
 
-    glBindVertexArray(vao);
+        glBindVertexArray(vao);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        // aPos (location = 0)
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GuiVertex), (void*)offsetof(GuiVertex, Pos));
+        glEnableVertexAttribArray(0);
+
+        // atexture (location = 1)
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GuiVertex), (void*)offsetof(GuiVertex, UV));
+        glEnableVertexAttribArray(1);
+
+        // aNormal (location = 2)
+        glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(GuiVertex), (void*)offsetof(GuiVertex, Special));
+        glEnableVertexAttribArray(2);
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, Mesh.size() * sizeof(GuiVertex), Mesh.data(), GL_STATIC_DRAW);
-
-    // aPos (location = 0)
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GuiVertex), (void*)offsetof(GuiVertex, Pos));
-    glEnableVertexAttribArray(0);
-
-    // atexture (location = 1)
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GuiVertex), (void*)offsetof(GuiVertex, UV));
-    glEnableVertexAttribArray(1);
-
-    // aNormal (location = 2)
-    glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(GuiVertex), (void*)offsetof(GuiVertex, Special));
-    glEnableVertexAttribArray(2);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
 
     IndexCount = Mesh.size();
 }

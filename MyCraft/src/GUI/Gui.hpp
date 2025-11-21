@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <cinttypes>
 #include <vector>
+#include <array>
 
 struct GuiVertex {
     glm::vec2 Pos;

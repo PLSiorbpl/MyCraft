@@ -1,5 +1,5 @@
 #include "Mesh.hpp"
-#include <iostream>
+
 static const glm::ivec2 BlockUVs[] = {
     {0,0}, // 0 - air
     {0,0}, // 1 - stone
@@ -13,102 +13,115 @@ static const glm::ivec2 BlockUVs[] = {
 void Mesh::GenerateMesh(const Chunk& chunk, std::vector<Chunk::Vertex>& vertices, const int chunkX, const int chunkZ, const glm::ivec3 ChunkSize, const int RenderDist) {
     const int worldOffsetX = chunkX * ChunkSize.x;
     const int worldOffsetZ = chunkZ * ChunkSize.z;
-    uint16_t Visible[ChunkSize.y][ChunkSize.z]; // x is uint16_t
+
+    const int H = ChunkSize.y;
+    const int D = ChunkSize.z;
+    const int W = ChunkSize.x;
+
+    std::vector<uint32_t> Visible;
+    Visible.resize(static_cast<size_t>(H) * static_cast<size_t>(D));
+
+    auto VisibleAt = [&](int y, int z) -> uint32_t& {
+        return Visible[static_cast<size_t>(y) * static_cast<size_t>(D) + static_cast<size_t>(z)];
+    };
 
     // Visible Blocks
     for (int y = 0; y < ChunkSize.y; y++) {
         for (int z = 0; z < ChunkSize.z; z++) {
-            uint16_t bits = 0;
+            uint32_t bits = 0;
             for (int x = 0; x < ChunkSize.x; x++) {
-                const bool vis = chunk.get(x, y, z).solid;
+                const bool vis = chunk.get(x, y, z).Flags & 0b10'00'00'00;
                 if (vis) {
-                    bits |= (1 << x);
+                    bits |= (uint32_t(1) << x);
                 }
             }
-            Visible[y][z] = bits;
+            VisibleAt(y, z) = bits;
         }
     }
 
     // Visible Faces
     for (int y = 0; y < ChunkSize.y; y++) {
         for (int z = 0; z < ChunkSize.z; z++) {
-            const uint16_t current = Visible[y][z];
+            const uint32_t current = VisibleAt(y, z);
             //-------------------------
             // Z+
-            uint16_t next;
+            uint32_t next;
             if (z + 1 < ChunkSize.z) {
-                next = Visible[y][z + 1];
+                next = VisibleAt(y, z+1);
             } else {
-                uint16_t bits = 0;
+                uint32_t bits = 0;
                 for (int x = 0; x < ChunkSize.x; x++) {
                     if (IsBlockAt(worldOffsetX + x, y, worldOffsetZ + z+1, ChunkSize)) {
-                        bits |= (1 << x);
+                        bits |= (uint32_t(1) << x);
                     }
                 }
                 next = bits;
             }
-            const uint16_t visibleZp = current & ~next;
+            const uint32_t visibleZp = current & ~next;
             //-------------------------
             // Z-
-            uint16_t prev;
+            uint32_t prev;
             if (z - 1 >= 0) {
-                prev = Visible[y][z - 1];
+                prev = VisibleAt(y, z-1);
             } else {
-                uint16_t bits = 0;
+                uint32_t bits = 0;
                 for (int x = 0; x < ChunkSize.x; x++) {
                     if (IsBlockAt(worldOffsetX + x, y, worldOffsetZ + z - 1, ChunkSize)) {
-                        bits |= (1 << x);
+                        bits |= (uint32_t(1) << x);
                     }
                 }
                 prev = bits;
             }
-            const uint16_t visibleZm = current & ~prev;
+            const uint32_t visibleZm = current & ~prev;
             //-------------------------
             // Y+
-            uint16_t nextY;
+            uint32_t nextY;
             if (y + 1  < ChunkSize.y) {
-                nextY = Visible[y + 1][z];
+                nextY = VisibleAt(y+1, z);
             } else {
-                uint16_t bits = 0;
+                uint32_t bits = 0;
                 for (int x = 0; x < ChunkSize.x; x++) {
                     if (IsBlockAt(worldOffsetX + x, y + 1, worldOffsetZ + z, ChunkSize)) {
-                        bits |= (1 << x);
+                        bits |= (uint32_t(1) << x);
                     }
                 }
                 nextY = bits;
             }
-            const uint16_t visibleYp = current & ~nextY;
+            const uint32_t visibleYp = current & ~nextY;
             //-------------------------
             // Y-
-            const uint16_t prevY = (y > 0) ? Visible[y - 1][z] : 0;
-            const uint16_t visibleYm = current & ~prevY;
+            const uint32_t prevY = (y > 0) ? VisibleAt(y-1, z) : 0ULL;
+            const uint32_t visibleYm = current & ~prevY;
 
             //-------------------------
             // Meshing
             for (int x = 0; x < ChunkSize.x; x++) {
                 const auto block = chunk.get(x, y, z);
-                if (!block.solid) continue;
+                if (!(block.Flags & 0b10'00'00'00)) continue;
                 const glm::vec3 w = {worldOffsetX + x, float(y), worldOffsetZ + z};
 
                 const glm::ivec2 tex = BlockUVs[block.id];
 
-                if (visibleZp & (1 << x)) MeshZFace(vertices, w, 1, tex,  1);
-                if (visibleZm & (1 << x)) MeshZFace(vertices, w, 1, tex, -1);
-                if (visibleYp & (1 << x)) MeshYFace(vertices, w, 1, tex,  1);
-                if (visibleYm & (1 << x)) MeshYFace(vertices, w, 1, tex, -1);
+                uint32_t mask = (uint32_t(1) << x);
+                if (visibleZp & mask) MeshZFace(vertices, w, 1, tex,  1);
+                if (visibleZm & mask) MeshZFace(vertices, w, 1, tex, -1);
+                if (visibleYp & mask) MeshYFace(vertices, w, 1, tex,  1);
+                if (visibleYm & mask) MeshYFace(vertices, w, 1, tex, -1);
                 //-------------------------
                 // X+
-                if ((x + 1 < ChunkSize.x && !chunk.get(x + 1, y, z).solid) ||
+                if ((x + 1 < ChunkSize.x && !(chunk.get(x+1, y, z).Flags & 0b10'00'00'00)) ||
                     (x + 1 >= ChunkSize.x && !IsBlockAt(worldOffsetX + x + 1, y, worldOffsetZ + z, ChunkSize)))
                     MeshXFace(vertices, w, 1, tex, 1);
                 //-------------------------
                 // X-
-                if ((x > 0 && !chunk.get(x - 1, y, z).solid) ||
+                if ((x > 0 && !(chunk.get(x-1, y, z).Flags & 0b10'00'00'00)) ||
                     (x == 0 && !IsBlockAt(worldOffsetX + x - 1, y, worldOffsetZ + z, ChunkSize)))
                     MeshXFace(vertices, w, 1, tex, -1);
             }
         }
     }
+    Visible.clear();
+    Visible.shrink_to_fit();
 }
 // 0 - Top | 1 - Right | 2 - Left | 3 - Bottom
 inline void getUVs(std::array<glm::vec2, 4>& outUV, const glm::ivec2& BaseCoord, const float Side) {

@@ -57,7 +57,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
 
             if (Block.y >= 0 && Block.y < ChunkSize.y) {
                 if (Action == 1 && Camera.Break_CoolDown == 0) {
-                    if (chunk.get(LocalX, Block.y, LocalZ).solid) {
+                    if (chunk.get(LocalX, Block.y, LocalZ).Flags & 0b10'00'00'00) {
                         chunk.set(LocalX, Block.y, LocalZ, Chunk::BlockDefs.at(0));
                         chunk.DirtyFlag = true;
                         chunk.Gen_Mesh = true;
@@ -66,7 +66,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
                         break;
                     }
                 } else if (Action == 2 && Camera.Place_CoolDown == 0 && !firstrun) {
-                    if (chunk.get(LocalX, Block.y, LocalZ).solid && !LastBlock.solid) {
+                    if (chunk.get(LocalX, Block.y, LocalZ).Flags & 0b10'00'00'00 && !(LastBlock.Flags & 0b10'00'00'00)) {
                         const Chunk::Block TryBlock = LastChunk->get(LastCord.x, LastCord.y, LastCord.z);
                         LastChunk->set(LastCord.x, LastCord.y, LastCord.z, Chunk::BlockDefs.at(block));
                         if (Colision.isSolidAround(Camera.Position, ChunkSize)) {
@@ -82,7 +82,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
                         }
                     }
                 } else if (Action == 0) {
-                    if (chunk.get(LocalX, Block.y, LocalZ).solid) {
+                    if (chunk.get(LocalX, Block.y, LocalZ).Flags & 0b10'00'00'00) {
                         Sel.Draw(glm::vec3(Block));
                         Camera.Draw_Selection = true;
                         break;

@@ -12,12 +12,11 @@ class Chunk {
 public:
     struct Block {
         int8_t id;
-        bool transparent;
-        bool solid;
-        uint8_t light; // Emiter
+        // Flags: Solid, Transparent, ...
+        uint8_t Flags;
 
-        Block(uint8_t id = 0, bool transparent = false, bool solid = false, uint8_t light = 0)
-            : id(id), transparent(transparent), solid(solid), light(light) {}
+        Block(uint8_t id = 0, uint8_t Flags = 0)
+            : id(id), Flags(Flags) {}
     };
 
     struct Vertex {
@@ -34,11 +33,10 @@ public:
     static const std::map<uint8_t, Block> BlockDefs;
 
     // Mesh Stuff
-    size_t Alloc = 0;
     bool Gen_Mesh = true;
     bool Ready_Render = false;
-    std::vector<Vertex> Mesh;
     bool DirtyFlag = true;
+    std::vector<Vertex> Mesh;
     GLuint vao = 0;
     GLuint vbo = 0;
     GLsizei indexCount = 0;

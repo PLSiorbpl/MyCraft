@@ -59,7 +59,7 @@ void Movement::Input(GLFWwindow* window, camera &Camera, glm::ivec3 ChunkSize, S
     // Mouse Actions
     TAction.RayCastBlock(Camera, ChunkSize, 0, 0, Sel);
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) TAction.RayCastBlock(Camera, ChunkSize, 1, 0, Sel);
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) TAction.RayCastBlock(Camera, ChunkSize, 2, 5, Sel);
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) TAction.RayCastBlock(Camera, ChunkSize, 2, 3, Sel);
 
     Camera.Vel.y = std::clamp(Camera.Vel.y, -0.5f, 0.2f);
 }

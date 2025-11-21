@@ -10,5 +10,17 @@ class World_Map {
         }
     };
 
+    struct Render_Info {
+        int chunkX, chunkZ;
+        GLuint vao;
+        GLuint vbo;
+        GLsizei indexCount;
+        size_t Mesh_Size;
+        size_t Capacity;
+        uint64_t Triangles;
+    };
+
     static std::unordered_map<std::pair<int, int>, Chunk, pair_hash> World;
+    static std::vector<Render_Info> Render_List;
+    static std::vector<Chunk*> Mesh_Queue;
 };

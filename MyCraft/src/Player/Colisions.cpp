@@ -36,7 +36,7 @@ bool colisions::isSolidAt(glm::vec3 pos, const glm::ivec3 ChunkSize) {
         const Chunk& chunk = it->second;
 
         if (blockY >= 0 && blockY < ChunkSize.y) {
-            return chunk.get(localX, blockY, localZ).solid;
+            return chunk.get(localX, blockY, localZ).Flags & 0b1000'0000;
         }
     }
 

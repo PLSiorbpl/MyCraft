@@ -1,4 +1,5 @@
 #include "Generation.hpp"
+#include <glad/glad.h>
 
 void ChunkGeneration::GenerateChunks(const camera &Camera, const glm::ivec3 ChunkSize) {
     auto& World = World_Map::World;
@@ -17,6 +18,8 @@ void ChunkGeneration::GenerateChunks(const camera &Camera, const glm::ivec3 Chun
 
             if (World.find(key) == World.end()) {
                 Terrain.Generate_Terrain_Chunk(chunkX, chunkZ, ChunkSize);
+                Chunk* ptr = &World[key];
+                World_Map::Mesh_Queue.push_back(ptr);
             }
 
             auto it = World.find(key);
@@ -29,6 +32,8 @@ void ChunkGeneration::GenerateChunks(const camera &Camera, const glm::ivec3 Chun
 
 void ChunkGeneration::RemoveChunks(const camera& Camera) {
     auto& World = World_Map::World;
+    auto& chunk = World_Map::Mesh_Queue;
+    auto& RL = World_Map::Render_List;
     std::vector<std::pair<int,int>> toRemove;
 
     for (const auto& [key, chunk] : World) {
@@ -46,6 +51,26 @@ void ChunkGeneration::RemoveChunks(const camera& Camera) {
     }
 
     for (const auto& key : toRemove) {
+        const int cx = key.first;
+        const int cz = key.second;
+        for (size_t i = 0; i < RL.size(); i++) {
+            if (RL[i].chunkX == cx && RL[i].chunkZ == cz) {
+                glDeleteBuffers(1, &RL[i].vbo);
+                glDeleteVertexArrays(1, &RL[i].vao);
+                // Fast delete by moving chunk to back
+                RL[i] = RL.back();
+                RL.pop_back();
+                break;
+            }
+        }
+        for (size_t i = 0; i < chunk.size(); i++) {
+            if (chunk[i]->chunkX == cx && chunk[i]->chunkZ == cz) {
+                // Fast delete by moving chunk to back
+                chunk[i] = chunk.back();
+                chunk.pop_back();
+                break;
+            }
+        }
         auto it = World.find(key);
         if (it != World.end()) {
             it->second.RemoveData();
