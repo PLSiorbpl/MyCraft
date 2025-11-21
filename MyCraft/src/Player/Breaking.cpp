@@ -1,6 +1,6 @@
 #include "Breaking.hpp"
 
-void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, int Action, int block, Selection& Sel, float MaxDistance, float StepSize) {
+void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, int Action, int block, Selection& Sel, bool &ChunkUpdated, float MaxDistance, float StepSize) {
     auto &World = World_Map::World;
 
     auto SetNeighborsDirty = [&](int localX, int localZ, int chunkX, int chunkZ) {
@@ -9,6 +9,12 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
             if (it != World.end()) {
                 it->second.DirtyFlag = true;
                 it->second.Gen_Mesh = true;
+                it->second.Ready_Render = false;
+                // we need to delete chunk from Render List
+                ChunkUpdated = true;
+                const std::pair<int, int> key = {cx, cz};
+                Chunk* ptr = &it->second;
+                World_Map::Mesh_Queue.push_back(ptr);
             }
         };
         if (localX == 0) mark(chunkX-1, chunkZ);
@@ -61,6 +67,11 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
                         chunk.set(LocalX, Block.y, LocalZ, Chunk::BlockDefs.at(0));
                         chunk.DirtyFlag = true;
                         chunk.Gen_Mesh = true;
+                        chunk.Ready_Render = false;
+                        // we need to delete chunk from Render List
+                        ChunkUpdated = true;
+                        Chunk* ptr = &it->second;
+                        World_Map::Mesh_Queue.push_back(ptr);
                         SetNeighborsDirty(LocalX, LocalZ, cx, cz);
                         Camera.Break_CoolDown = 8;
                         break;
@@ -76,6 +87,11 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
                         } else {
                             LastChunk->DirtyFlag = true;
                             LastChunk->Gen_Mesh = true;
+                            LastChunk->Ready_Render = false;
+                            // we need to delete chunk from Render List
+                            ChunkUpdated = true;
+                            Chunk* ptr = &it->second;
+                            World_Map::Mesh_Queue.push_back(ptr);
                             SetNeighborsDirty(LastCord.x, LastCord.z, LastC.x, LastC.y);
                             Camera.Place_CoolDown = 12;
                             break;

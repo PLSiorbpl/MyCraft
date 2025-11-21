@@ -267,8 +267,8 @@ void Game::Init_Shader() {
     shader.Init_Shader(SH.Solid_Shader_Blocks, SH.General_Gui_Shader, SH.SelectionBox_Shader);
 }
 
-void Tick_Update(camera &Camera, GLFWwindow* window, const float DeltaTime, Movement &movement, colisions &Colisions, Selection& Sel) {
-    movement.Init(Camera, window, Chunk_Size, Colisions, Sel);
+void Tick_Update(camera &Camera, GLFWwindow* window, const float DeltaTime, Movement &movement, colisions &Colisions, Selection &Sel, bool &ChunkUpdated) {
+    movement.Init(Camera, window, Chunk_Size, Colisions, Sel, ChunkUpdated);
 }
 
 void DebugInfo(Game_Variables &game, const camera &Camera, Fun &fun, const GLenum &err, PerfStats &PS) {
@@ -402,7 +402,7 @@ void Game::MainLoop() {
             while (game.Tick_Timer >= game.TickRate) {
                 game.Tick_Timer -= game.TickRate;
                 if (!game.ChunkUpdated) {
-                    Tick_Update(Camera, window, game.DeltaTime, movement, Colisions, selection);
+                    Tick_Update(Camera, window, game.DeltaTime, movement, Colisions, selection, game.ChunkUpdated);
                 }
             }
             PerfS.tick = time.ElapsedMs();
@@ -466,6 +466,15 @@ void Game::MainLoop() {
                 }
             }
             PerfS.mesh = time.ElapsedMs();
+            for (int i = static_cast<int>(World_Map::Mesh_Queue.size()) - 1; i >= 0; i--) {
+                Chunk* chunk = World_Map::Mesh_Queue[i];
+
+                if (!chunk->Ready_Render)
+                    continue;
+
+                World_Map::Mesh_Queue[i] = World_Map::Mesh_Queue.back();
+                World_Map::Mesh_Queue.pop_back();
+            }
 
         //-------------------------
         // Clearing Screen
