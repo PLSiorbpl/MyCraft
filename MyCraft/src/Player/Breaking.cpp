@@ -1,6 +1,7 @@
 #include "Breaking.hpp"
+#include <glad/glad.h>
 
-void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, int Action, int block, Selection& Sel, bool &ChunkUpdated, float MaxDistance, float StepSize) {
+void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, int Action, int block, Selection& Sel, float MaxDistance, float StepSize) {
     auto &World = World_Map::World;
 
     auto SetNeighborsDirty = [&](int localX, int localZ, int chunkX, int chunkZ) {
@@ -10,11 +11,17 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
                 it->second.DirtyFlag = true;
                 it->second.Gen_Mesh = true;
                 it->second.Ready_Render = false;
-                // we need to delete chunk from Render List
-                ChunkUpdated = true;
-                const std::pair<int, int> key = {cx, cz};
-                Chunk* ptr = &it->second;
-                World_Map::Mesh_Queue.push_back(ptr);
+                for (int i = 0; i < World_Map::Render_List.size(); i++) {
+                    auto &info = World_Map::Render_List[i];
+                    if (World_Map::Render_List[i].chunkX == cx && World_Map::Render_List[i].chunkZ == cz) {
+                        info.Delete = 1;
+                        break;
+                    }
+                }
+                Chunk* chunkPtr = &it->second;
+                if(std::find(World_Map::Mesh_Queue.begin(), World_Map::Mesh_Queue.end(), chunkPtr) == World_Map::Mesh_Queue.end()) {
+                    World_Map::Mesh_Queue.push_back(chunkPtr);
+                }
             }
         };
         if (localX == 0) mark(chunkX-1, chunkZ);
@@ -35,12 +42,20 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
     const glm::ivec3 Step = glm::ivec3(direction.x > 0 ? 1 : -1,
         direction.y > 0 ? 1 : -1,
         direction.z > 0 ? 1 : -1);
-    
-    glm::vec3 tMax = glm::vec3(((Step.x > 0 ? (Block.x + 1) : Block.x) - Pos.x) / direction.x,
-        ((Step.y > 0 ? (Block.y + 1) : Block.y) - Pos.y) / direction.y,
-        ((Step.z > 0 ? (Block.z + 1) : Block.z) - Pos.z) / direction.z);
 
-    const glm::vec3 tDelta = glm::abs(1.0f / direction+0.000001f);
+    glm::vec3 safeDir = direction;
+    const glm::vec3 eps(1e-6f);
+        
+    if (fabs(safeDir.x) < eps.x) safeDir.x = (safeDir.x >= 0 ? eps.x : -eps.x);
+    if (fabs(safeDir.y) < eps.x) safeDir.y = (safeDir.y >= 0 ? eps.x : -eps.x);
+    if (fabs(safeDir.z) < eps.x) safeDir.z = (safeDir.z >= 0 ? eps.x : -eps.x);
+    
+    glm::vec3 tMax = glm::vec3(((Step.x > 0 ? (Block.x + 1) : Block.x) - Pos.x) / safeDir.x,
+        ((Step.y > 0 ? (Block.y + 1) : Block.y) - Pos.y) / safeDir.y,
+        ((Step.z > 0 ? (Block.z + 1) : Block.z) - Pos.z) / safeDir.z);
+
+    const glm::vec3 tDelta = glm::abs(1.0f / (direction + eps));
+
     
     float distance = 0.0f;
     bool firstrun = true;
@@ -68,10 +83,17 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
                         chunk.DirtyFlag = true;
                         chunk.Gen_Mesh = true;
                         chunk.Ready_Render = false;
-                        // we need to delete chunk from Render List
-                        ChunkUpdated = true;
-                        Chunk* ptr = &it->second;
-                        World_Map::Mesh_Queue.push_back(ptr);
+                        for (int i = 0; i < World_Map::Render_List.size(); i++) {
+                            auto &info = World_Map::Render_List[i];
+                            if (World_Map::Render_List[i].chunkX == cx && World_Map::Render_List[i].chunkZ == cz) {
+                                info.Delete = 1;
+                                break;
+                            }
+                        }
+                        Chunk* chunkPtr = &it->second;
+                        if(std::find(World_Map::Mesh_Queue.begin(), World_Map::Mesh_Queue.end(), chunkPtr) == World_Map::Mesh_Queue.end()) {
+                            World_Map::Mesh_Queue.push_back(chunkPtr);
+                        }
                         SetNeighborsDirty(LocalX, LocalZ, cx, cz);
                         Camera.Break_CoolDown = 8;
                         break;
@@ -88,10 +110,17 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
                             LastChunk->DirtyFlag = true;
                             LastChunk->Gen_Mesh = true;
                             LastChunk->Ready_Render = false;
-                            // we need to delete chunk from Render List
-                            ChunkUpdated = true;
-                            Chunk* ptr = &it->second;
-                            World_Map::Mesh_Queue.push_back(ptr);
+                            for (int i = 0; i < World_Map::Render_List.size(); i++) {
+                                auto &info = World_Map::Render_List[i];
+                                if (World_Map::Render_List[i].chunkX == LastC.x && World_Map::Render_List[i].chunkZ == LastC.y) {
+                                    info.Delete = 1;
+                                    break;
+                                }
+                            }
+                            Chunk* chunkPtr = LastChunk;
+                            if(std::find(World_Map::Mesh_Queue.begin(), World_Map::Mesh_Queue.end(), chunkPtr) == World_Map::Mesh_Queue.end()) {
+                                World_Map::Mesh_Queue.push_back(chunkPtr);
+                            }
                             SetNeighborsDirty(LastCord.x, LastCord.z, LastC.x, LastC.y);
                             Camera.Place_CoolDown = 12;
                             break;

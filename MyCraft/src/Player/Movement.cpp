@@ -1,13 +1,13 @@
 #include "Movement.hpp"
 
-void Movement::Init(camera &Camera, GLFWwindow* window, const glm::ivec3 ChunkSize, colisions &Colisions, Selection& Sel, bool &ChunkUpdated) {
+void Movement::Init(camera &Camera, GLFWwindow* window, const glm::ivec3 ChunkSize, colisions &Colisions, Selection& Sel) {
     direction = glm::vec3(0.0f);
     Cos.x = cos(glm::radians(Camera.Pitch));
     Cos.y = cos(glm::radians(Camera.Yaw));
     Sin.x = sin(glm::radians(Camera.Pitch));
     Sin.y = sin(glm::radians(Camera.Yaw));
 
-    Input(window, Camera, ChunkSize, Sel, ChunkUpdated);
+    Input(window, Camera, ChunkSize, Sel);
     Special_Keys(window, Camera);
     TestColisions(Camera, ChunkSize, Colisions);
     Damp(Camera);
@@ -16,7 +16,7 @@ void Movement::Init(camera &Camera, GLFWwindow* window, const glm::ivec3 ChunkSi
     if (Camera.Break_CoolDown > 0) Camera.Break_CoolDown -= 1;
 }
 
-void Movement::Input(GLFWwindow* window, camera &Camera, glm::ivec3 ChunkSize, Selection& Sel, bool &ChunkUpdated) {
+void Movement::Input(GLFWwindow* window, camera &Camera, glm::ivec3 ChunkSize, Selection& Sel) {
     //// Slipperiness
     //float slipperiness = 0.6f;
     //if (Camera.onGround) {
@@ -57,9 +57,9 @@ void Movement::Input(GLFWwindow* window, camera &Camera, glm::ivec3 ChunkSize, S
     if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) Camera.Vel.y = -Camera.JumpStrength;
 
     // Mouse Actions
-    TAction.RayCastBlock(Camera, ChunkSize, 0, 0, Sel, ChunkUpdated);
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) TAction.RayCastBlock(Camera, ChunkSize, 1, 0, Sel, ChunkUpdated);
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) TAction.RayCastBlock(Camera, ChunkSize, 2, 3, Sel, ChunkUpdated);
+    TAction.RayCastBlock(Camera, ChunkSize, 0, 0, Sel);
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) TAction.RayCastBlock(Camera, ChunkSize, 1, 0, Sel);
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) TAction.RayCastBlock(Camera, ChunkSize, 2, 3, Sel);
 
     Camera.Vel.y = std::clamp(Camera.Vel.y, -0.5f, 0.2f);
 }

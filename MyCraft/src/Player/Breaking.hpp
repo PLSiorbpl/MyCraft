@@ -14,5 +14,5 @@ class Terrain_Action {
     private:
         colisions Colision;
     public:
-        void RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, int Action, int block, Selection& Sel, bool &ChunkUpdated, float MaxDistance = 6.0f, float StepSize = 0.05f);
+        void RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, int Action, int block, Selection& Sel, float MaxDistance = 6.0f, float StepSize = 0.05f);
 };

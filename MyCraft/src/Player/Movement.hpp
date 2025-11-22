@@ -21,8 +21,8 @@ class Movement {
     glm::vec3 testPos;
     bool lastStateKey1 = false;
 
-    void Init(camera &Camera, GLFWwindow* window, const glm::ivec3 ChunkSize, colisions &Colisions, Selection& Sel, bool &ChunkUpdated);
-    void Input(GLFWwindow* window, camera &Camera, glm::ivec3 ChunkSize, Selection& Sel, bool &ChunkUpdated);
+    void Init(camera &Camera, GLFWwindow* window, const glm::ivec3 ChunkSize, colisions &Colisions, Selection& Sel);
+    void Input(GLFWwindow* window, camera &Camera, glm::ivec3 ChunkSize, Selection& Sel);
     void Special_Keys(GLFWwindow* window, camera &Camera);
     void TestColisions(camera &Camera, const glm::ivec3 ChunkSize, colisions &Colisions);
     void Damp(camera &Camera);

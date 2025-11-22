@@ -267,8 +267,8 @@ void Game::Init_Shader() {
     shader.Init_Shader(SH.Solid_Shader_Blocks, SH.General_Gui_Shader, SH.SelectionBox_Shader);
 }
 
-void Tick_Update(camera &Camera, GLFWwindow* window, const float DeltaTime, Movement &movement, colisions &Colisions, Selection &Sel, bool &ChunkUpdated) {
-    movement.Init(Camera, window, Chunk_Size, Colisions, Sel, ChunkUpdated);
+void Tick_Update(camera &Camera, GLFWwindow* window, const float DeltaTime, Movement &movement, colisions &Colisions, Selection &Sel) {
+    movement.Init(Camera, window, Chunk_Size, Colisions, Sel);
 }
 
 void DebugInfo(Game_Variables &game, const camera &Camera, Fun &fun, const GLenum &err, PerfStats &PS) {
@@ -402,7 +402,7 @@ void Game::MainLoop() {
             while (game.Tick_Timer >= game.TickRate) {
                 game.Tick_Timer -= game.TickRate;
                 if (!game.ChunkUpdated) {
-                    Tick_Update(Camera, window, game.DeltaTime, movement, Colisions, selection, game.ChunkUpdated);
+                    Tick_Update(Camera, window, game.DeltaTime, movement, Colisions, selection);
                 }
             }
             PerfS.tick = time.ElapsedMs();
@@ -410,7 +410,7 @@ void Game::MainLoop() {
             // Mesh Generation
             game.Updates = 0;
             time.Reset();
-            for (auto& chunk : World_Map::Mesh_Queue) {
+            for (Chunk* chunk : World_Map::Mesh_Queue) {
                 if (!chunk->DirtyFlag || !chunk->Gen_Mesh)
                     continue;
                 if (game.Updates >= game.Mesh_Updates)
@@ -433,8 +433,11 @@ void Game::MainLoop() {
                         chunk->indexCount,
                         chunk->Mesh.size()*sizeof(Chunk::Vertex),
                         chunk->Mesh.capacity()*sizeof(Chunk::Vertex),
-                        chunk->Mesh.size()/3
+                        chunk->Mesh.size()/3,
+                        0
                     });
+                    chunk->vao = 0;
+                    chunk->vbo = 0;
                     chunk->Mesh.clear();
                     chunk->Mesh.shrink_to_fit();
                     chunk->Gen_Mesh = false;
@@ -456,8 +459,11 @@ void Game::MainLoop() {
                         chunk->indexCount,
                         chunk->Mesh.size()*sizeof(Chunk::Vertex),
                         chunk->Mesh.capacity()*sizeof(Chunk::Vertex),
-                        chunk->Mesh.size()/3
+                        chunk->Mesh.size()/3,
+                        0
                     });
+                    chunk->vao = 0;
+                    chunk->vbo = 0;
                     chunk->Mesh.clear();
                     chunk->Mesh.shrink_to_fit();
                     chunk->Gen_Mesh = false;
@@ -466,13 +472,15 @@ void Game::MainLoop() {
                 }
             }
             PerfS.mesh = time.ElapsedMs();
-            for (int i = static_cast<int>(World_Map::Mesh_Queue.size()) - 1; i >= 0; i--) {
+            // Delete already done chunks
+            for (int i = World_Map::Mesh_Queue.size() - 1; i-- > 0;) {
                 Chunk* chunk = World_Map::Mesh_Queue[i];
 
                 if (!chunk->Ready_Render)
                     continue;
 
-                World_Map::Mesh_Queue[i] = World_Map::Mesh_Queue.back();
+                if(i != World_Map::Mesh_Queue.size() - 1)
+                    std::swap(World_Map::Mesh_Queue[i], World_Map::Mesh_Queue.back());
                 World_Map::Mesh_Queue.pop_back();
             }
 
@@ -498,12 +506,19 @@ void Game::MainLoop() {
         //-------------------------
         // Drawing Mesh to Screen
         //-------------------------
-            glUseProgram(SH.Solid_Shader_Blocks);
-            time.Reset();
             PerfS.Capacity = 0; PerfS.Mesh_Size = 0; PerfS.Triangles = 0; PerfS.Total_Triangles = 0;
-            for (const auto& info : World_Map::Render_List) {
+            for (auto& info : World_Map::Render_List) {
+                if (info.Delete == 5) {
+                    glDeleteBuffers(1, &info.vbo);
+                    glDeleteVertexArrays(1, &info.vao);
+                    info = World_Map::Render_List.back();
+                    World_Map::Render_List.pop_back();
+                    continue;
+                } else if (info.Delete > 0) {
+                    info.Delete++;
+                }
 
-                const glm::vec3 chunkMin = glm::vec3(info.chunkX * Chunk_Size.x, 0, info.chunkZ * Chunk_Size.z);
+                 const glm::vec3 chunkMin = glm::vec3(info.chunkX * Chunk_Size.x, 0, info.chunkZ * Chunk_Size.z);
                 const glm::vec3 chunkMax = chunkMin + glm::vec3(Chunk_Size);
 
                 if (frustum.IsAABBVisible(Frust, chunkMin, chunkMax)) {
@@ -598,7 +613,6 @@ void Game::MainLoop() {
                     break;
                 }
             }
-            //glFinish();
             PerfS.EntireTime = FrameTime.ElapsedMs();
             game.FPS = Fps.End();
         // Update Screen
@@ -610,12 +624,15 @@ void Game::MainLoop() {
 int main() {
     Game main;
 
+    std::cout << "Initializing Settings:\n";
     main.Init_Settings("MyCraft/Assets/Settings.myc");
     if (main.Init_Window()) return -1;
-    
+    std::cout << "Initializing Shaders:\n";
     main.Init_Shader();
+    std::cout << "Launching Game:\n";
     main.MainLoop();
+    std::cout << "Cleaning:\n";
     main.CleanUp();
-    std::cout << "Safely Closed App";
+    std::cout << "Safely Closed Game";
     return 0;
 }

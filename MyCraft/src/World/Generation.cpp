@@ -18,8 +18,7 @@ void ChunkGeneration::GenerateChunks(const camera &Camera, const glm::ivec3 Chun
 
             if (World.find(key) == World.end()) {
                 Terrain.Generate_Terrain_Chunk(chunkX, chunkZ, ChunkSize);
-                Chunk* ptr = &World[key];
-                World_Map::Mesh_Queue.push_back(ptr);
+                World_Map::Mesh_Queue.push_back(&World[key]);
             }
 
             auto it = World.find(key);
@@ -53,7 +52,7 @@ void ChunkGeneration::RemoveChunks(const camera& Camera) {
     for (const auto& key : toRemove) {
         const int cx = key.first;
         const int cz = key.second;
-        for (size_t i = 0; i < RL.size(); i++) {
+        for (int i = RL.size() - 1; i-- > 0;) {
             if (RL[i].chunkX == cx && RL[i].chunkZ == cz) {
                 glDeleteBuffers(1, &RL[i].vbo);
                 glDeleteVertexArrays(1, &RL[i].vao);
@@ -63,7 +62,7 @@ void ChunkGeneration::RemoveChunks(const camera& Camera) {
                 break;
             }
         }
-        for (size_t i = 0; i < chunk.size(); i++) {
+        for (int i = chunk.size() - 1; i-- > 0;) {
             if (chunk[i]->chunkX == cx && chunk[i]->chunkZ == cz) {
                 // Fast delete by moving chunk to back
                 chunk[i] = chunk.back();

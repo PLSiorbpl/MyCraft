@@ -1,5 +1,7 @@
 #pragma once
 #include <unordered_map>
+#include <memory>
+#include <vector>
 #include "Chunk.hpp"
 
 class World_Map {
@@ -18,6 +20,7 @@ class World_Map {
         size_t Mesh_Size;
         size_t Capacity;
         uint64_t Triangles;
+        int Delete;
     };
 
     static std::unordered_map<std::pair<int, int>, Chunk, pair_hash> World;
