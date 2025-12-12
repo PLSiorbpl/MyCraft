@@ -13,11 +13,15 @@
 -  Gamemode Specator/Creative: **"1"** key
 -  Up: **"E"** Key
 -  Down: **"CTRL"** Key
+-  Menu: **"ESCAPE"** Key
+-  HotBar: **"Scroll Wheel"** on Mouse
+-  Place/Break: **"Mouse"** Buttons
 
 ## Features
-- Infinite World Generation
+-  Infinite World Generation
 -  Customizable Terrain (/MyCraft/Assets/Settings.txt)
 -  Efficient mesh generation
+-  Gui System
 -  Game is Alredy Compiled (Windows And Linux)
 -  Settings (/MyCraft/Assets/Settings.txt)
 
