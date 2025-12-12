@@ -7,24 +7,21 @@
 
 - **Windows** And **Linux** Support!!
 
-## 🎮 Controls
-- ⬆️ To move forward use **"W"** Key
-- ➡️ To move Right use **"D"** Key
-- ⬅️ To move Left use **"A"** Key
-- ⬇️ To move Back use **"S"** Key
-- ⤴️ To Jump use **"SPACE"** Key
-- 🔄 To Switch to Specator/Creative mode use **"1"**
-- ⬆️ To move Up use **"E"** Key
-- ⬇️ To move Down use **"CTRL"** Key
+## Controls
+-  Movement: **WASD** Keys
+-  Jump: **"SPACE"** Key
+-  Gamemode Specator/Creative: **"1"** key
+-  Up: **"E"** Key
+-  Down: **"CTRL"** Key
 
-## ✨ Features!!
-- 🔲 Infinite World Generation
-- 🧱 Customizable Terrain (/MyCraft/Assets/Settings.txt)
-- 📦 Efficient mesh generation
-- 🎮 Game is Alredy Compiled (Windows And Linux (Arch at least))
-- ⚙️ Settings (/MyCraft/Assets/Settings.txt)
+## Features
+- Infinite World Generation
+-  Customizable Terrain (/MyCraft/Assets/Settings.txt)
+-  Efficient mesh generation
+-  Game is Alredy Compiled (Windows And Linux)
+-  Settings (/MyCraft/Assets/Settings.txt)
 
-## 🗂️ Project Structure
+## Project Structure
 ```bash 
 .
 ├── MyCraft/
@@ -40,25 +37,25 @@
 └── README.md   # You are reading this xd
 ```
 
-## ⛓️‍💥 Build Instructions
+## Build Instructions
 - Get VS Code (I like just it)
 - Get g++ compiler (MinGW)
 - You need c++ extension too (in VS Code)
 - Edit include Path (if its not detecting Include's)
 - Run make.bat file and it should work
 - You can also compile it with CMake but idk how
-### 🔩 Recomended Include Path
+### Recomended Include Path
 - ${workspaceFolder}/**
 - ${workspaceFolder}/MyCraft/Include/**
 - ${workspaceFolder}/MyCraft/Include/glm/**
 - ${workspaceFolder}/MyCraft/**
 
-## ⚠️ Troubleshooting
+## Troubleshooting
 - If you encounter any issues while compiling or running the game, feel free to **open an issue** on [GitHub](https://github.com/PLSiorbpl/MyCraft/issues)
 
-## 👨‍💻 Author
+## Author
 - **PLSiorbpl**
 - **ORE** Comunity also Helped me with **bugs** and **learning** c++
-### 💬 Contact
+### Contact
 - Discord: kopalnia4322
 - GitHub: @PLSiorbpl | [My GitHub](https://github.com/PLSiorbpl)
