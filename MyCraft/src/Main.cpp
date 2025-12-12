@@ -255,7 +255,7 @@ void DebugInfo(Fun &fun, const GLenum &err, PerfStats &PS) {
 //----------------------
 // Player
 //----------------------
-    ImGui::Text("");
+    ImGui::Text(" ");
     ImGui::Text("Camera:");
     std::string Mode;
     if (!Camera.Mode) Mode = "Survival"; else Mode = "Spectator";
@@ -544,7 +544,7 @@ void Game::MainLoop() {
             size_t size;
             file >> size;
             long page_size_kb = sysconf(_SC_PAGE_SIZE);
-            PerfS.Ram_Used = size * page_size_kb;
+            PerfS.ramUsed = size * page_size_kb;
         #endif
             if (err == GL_OUT_OF_MEMORY || PerfS.ramUsed >= game.Max_Ram*1024*1024) {
                 if (game.ramHandle == 1) {
