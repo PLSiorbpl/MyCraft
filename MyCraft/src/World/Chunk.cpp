@@ -10,7 +10,7 @@ const std::map<uint8_t, Chunk::Block> Chunk::BlockDefs = {
     { 3, Block(3, 0b10'00'00'00) }, // Dirt
     { 4, Block(4, 0b10'00'00'00) }, // Blacha
     { 5, Block(5, 0b10'00'00'00) }, // Wool
-    { 6, Block(6, 0b01'00'00'00) } // Water
+    { 6, Block(6, 0b11'00'00'00) } // Water
  };
 
 void Chunk::SendData() {

@@ -33,6 +33,7 @@ public:
     static const std::map<uint8_t, Block> BlockDefs;
 
     // Mesh Stuff
+    bool InRender = false;
     bool Gen_Mesh = true;
     bool Ready_Render = false;
     bool DirtyFlag = true;

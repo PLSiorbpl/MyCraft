@@ -11,11 +11,9 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
                 it->second.DirtyFlag = true;
                 it->second.Gen_Mesh = true;
                 it->second.Ready_Render = false;
-                for (int i = 0; i < World_Map::Render_List.size(); i++) {
-                    auto &info = World_Map::Render_List[i];
-                    if (World_Map::Render_List[i].chunkX == cx && World_Map::Render_List[i].chunkZ == cz) {
+                for (auto& info : World_Map::Render_List) {
+                    if (info.chunkX == cx && info.chunkZ == cz) {
                         info.Delete = 1;
-                        break;
                     }
                 }
                 Chunk* chunkPtr = &it->second;
@@ -24,9 +22,9 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
                 }
             }
         };
-        if (localX == 0) mark(chunkX-1, chunkZ);
+        if (localX == 0)             mark(chunkX-1, chunkZ);
         if (localX == ChunkSize.x-1) mark(chunkX+1, chunkZ);
-        if (localZ == 0) mark(chunkX, chunkZ-1);
+        if (localZ == 0)             mark(chunkX, chunkZ-1);
         if (localZ == ChunkSize.z-1) mark(chunkX, chunkZ+1);
     };
 
@@ -64,6 +62,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
     glm::ivec3 LastCord;
     glm::ivec2 LastC;
 
+    // RayCast
     while(distance < MaxDistance) {
         if (distance > MaxDistance) break;
         const int cx = floor(Block.x / float(ChunkSize.x));
@@ -76,18 +75,18 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
         if (it != World.end()) {
             Chunk& chunk = it->second;
 
+            // Actions  Break | Place | Show SelectionBox
             if (Block.y >= 0 && Block.y < ChunkSize.y) {
+                // Break
                 if (Action == 1 && Camera.Break_CoolDown == 0) {
                     if (chunk.get(LocalX, Block.y, LocalZ).Flags & 0b10'00'00'00) {
                         chunk.set(LocalX, Block.y, LocalZ, Chunk::BlockDefs.at(0));
                         chunk.DirtyFlag = true;
                         chunk.Gen_Mesh = true;
                         chunk.Ready_Render = false;
-                        for (int i = 0; i < World_Map::Render_List.size(); i++) {
-                            auto &info = World_Map::Render_List[i];
-                            if (World_Map::Render_List[i].chunkX == cx && World_Map::Render_List[i].chunkZ == cz) {
+                        for (auto& info : World_Map::Render_List) {
+                            if (info.chunkX == cx && info.chunkZ == cz) {
                                 info.Delete = 1;
-                                break;
                             }
                         }
                         Chunk* chunkPtr = &it->second;
@@ -98,6 +97,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
                         Camera.Break_CoolDown = 8;
                         break;
                     }
+                    // Place
                 } else if (Action == 2 && Camera.Place_CoolDown == 0 && !firstrun) {
                     if (chunk.get(LocalX, Block.y, LocalZ).Flags & 0b10'00'00'00 && !(LastBlock.Flags & 0b10'00'00'00)) {
                         const Chunk::Block TryBlock = LastChunk->get(LastCord.x, LastCord.y, LastCord.z);
@@ -110,22 +110,22 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
                             LastChunk->DirtyFlag = true;
                             LastChunk->Gen_Mesh = true;
                             LastChunk->Ready_Render = false;
-                            for (int i = 0; i < World_Map::Render_List.size(); i++) {
-                                auto &info = World_Map::Render_List[i];
-                                if (World_Map::Render_List[i].chunkX == LastC.x && World_Map::Render_List[i].chunkZ == LastC.y) {
+                            for (auto& info : World_Map::Render_List) {
+                                if (info.chunkX == LastC.x && info.chunkZ == LastC.y) { // vec2 so x and y but y is z
                                     info.Delete = 1;
-                                    break;
                                 }
                             }
                             Chunk* chunkPtr = LastChunk;
                             if(std::find(World_Map::Mesh_Queue.begin(), World_Map::Mesh_Queue.end(), chunkPtr) == World_Map::Mesh_Queue.end()) {
                                 World_Map::Mesh_Queue.push_back(chunkPtr);
                             }
+                            //SetNeighborsDirty(LocalX, LocalZ, cx, cz);
                             SetNeighborsDirty(LastCord.x, LastCord.z, LastC.x, LastC.y);
                             Camera.Place_CoolDown = 12;
                             break;
                         }
                     }
+                    // Show SelectionBox
                 } else if (Action == 0) {
                     if (chunk.get(LocalX, Block.y, LocalZ).Flags & 0b10'00'00'00) {
                         Sel.Draw(glm::vec3(Block));

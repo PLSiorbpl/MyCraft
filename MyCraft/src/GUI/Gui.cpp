@@ -2,128 +2,111 @@
 #include "Gui.hpp"
 
 void Gui::HotBar() {
-    uint64_t Special = 0;
-    glm::vec4 UV = glm::vec4(0.0);
-    std::array<glm::vec2, 4> uv = {};
+    uint32_t Flags = 0;
 
-    const float slotSize = 20.0f;
-    const float slotSpacing = 1.0f + slotSize;
+    constexpr float slotSize = 19.0f;
+    constexpr float slotSpacing = 2.0f + slotSize;
 
     glm::vec2 Size = glm::vec2(190.0f, 22.0f);
-    Rectangle(Anchor(Anch::BottomCenter, Size, {0.0f, -2.0f}), Size, UV, Special);
+    Rectangle(Anchor(Anch::BottomCenter, Size, {0.0f, -2.0f}), Size, rgb(0x303030), Flags);
 
-    float UVSize = 1.0/512.0;
+    if (In.ScrollY != 0) {
+        Camera.HotBarSlot = wrap(Camera.HotBarSlot - In.ScrollY, 9);
+        Camera.ItemHeld = (Camera.HotBarSlot % 6) + 1;
+        In.ScrollY = 0;
+    }
 
     Size = glm::vec2(slotSize);
-    UV = glm::vec4(0.0, 0.0, 16*UVSize, 16*UVSize);
-    for (int i = 0; i < 9; i++) {
-        Rectangle(Anchor(Anch::BottomCenter, Size, {-84.0f+(i*slotSpacing), -3.0f}), Size, UV, Special);
+    if (!Camera.Mode) {
+        for (int i = 0; i < 9; i++) {
+            Rectangle(Anchor(Anch::BottomCenter, Size, {-84.0f+(i*slotSpacing), -3.5f}), Size, Texture(texture::Block, i, 0, Flags), Flags);
+        }
+        // Selected Slot
+        glm::vec4 color = rgb(0xfff072);
+        Size = glm::vec2(23, 2);
+        Rectangle(Anchor(Anch::BottomCenter, Size, {-84.0f+(Camera.HotBarSlot*slotSpacing), -1.5f}), Size, Color(color, Flags), Flags);
+        Rectangle(Anchor(Anch::BottomCenter, Size, {-84.0f+(Camera.HotBarSlot*slotSpacing), -22.5f}), Size, Color(color, Flags), Flags);
+        Size = glm::vec2(2, 19);
+        Rectangle(Anchor(Anch::BottomCenter, Size, {-94.5f+(Camera.HotBarSlot*slotSpacing), -3.5f}), Size, Color(color, Flags), Flags);
+        Rectangle(Anchor(Anch::BottomCenter, Size, {-73.5f+(Camera.HotBarSlot*slotSpacing), -3.5f}), Size, Color(color, Flags), Flags);
+    } else {
+        for (int i = 0; i < 9; i++) {
+            Rectangle(Anchor(Anch::BottomCenter, Size, {-84.0f+(i*slotSpacing), -3.0f}), Size, Color(rgb(0x404040), Flags), Flags);
+        }
     }
 }
 
 void Gui::Statistics() {
-    uint64_t Special = 0;
-    glm::vec2 UV = glm::vec2(0.0);
+    uint32_t Flags = 0;
+    glm::vec4 UV = glm::vec4(0);
 
-    // Health
     float HalfHotBar = 188.0f/2;
     glm::vec2 StatSize = glm::vec2(8.5f, 8.5f);
     float StatSpacing = 0.5f + StatSize.x;
-
-    for (int i = 0; i < 10; i++) {
-        Rectangle(Anchor(Anch::BottomCenter, StatSize, {-HalfHotBar + StatSize.x/2 + (i*StatSpacing), -26.0f}), StatSize, UV, Special);
-    }
-
+    
     // Food
     for (int i = 0; i < 10; i++) {
-        Rectangle(Anchor(Anch::BottomCenter, StatSize, {0.0f + StatSize.x + (i*StatSpacing), -26.0f}), StatSize, UV, Special);
+        Rectangle(Anchor(Anch::BottomCenter, StatSize, {-HalfHotBar + StatSize.x/2 + (i*StatSpacing), -26.0f}), StatSize, Color(rgb(0xff8c00), Flags), Flags);
     }
 
     // Water
     for (int i = 0; i < 10; i++) {
-        Rectangle(Anchor(Anch::BottomCenter, StatSize, {0.0f + StatSize.x + (i*StatSpacing), -36.5f}), StatSize, UV, Special);
+        Rectangle(Anchor(Anch::BottomCenter, StatSize, {0.0f + StatSize.x + (i*StatSpacing), -26.0f}), StatSize, Color(rgb(0x00f7ff), Flags), Flags);
     }
+}
+
+void Gui::Health() {
+    uint32_t Flags = 0;
+    glm::vec2 Size = glm::vec2(100, 150);
+
+    Rectangle(Anchor(Anch::BottomLeft, Size, {1.0f, -1.0f}), Size, Color(rgb(0x404040), Flags), Flags);
 }
 
 void Gui::Crosschair() {
-    uint64_t Special = 0;
-    glm::vec2 UV = glm::vec2(0.0);
+    uint32_t Flags = 0;
+    glm::vec4 color = rgb(0xffffff);
 
     glm::vec2 Size = glm::vec2(0.5f, 5.0f);
-    Rectangle(Anchor(Anch::Center, Size), Size, UV, Special);
+    Rectangle(Anchor(Anch::Center, Size), Size, Color(color, Flags), Flags);
 
     Size = glm::vec2(5.0f, 0.5f);
-    Rectangle(Anchor(Anch::Center, Size), Size, UV, Special);
+    Rectangle(Anchor(Anch::Center, Size), Size, Color(color, Flags), Flags);
 }
 
 void Gui::Menu() {
+    uint32_t Flags = 0;
+    glm::vec2 Size = glm::vec2(width, height);
 
-}
+    //Rectangle({0.0f, 0.0f}, Size, Color(rgb(0x404040), Flags), Flags);
 
-glm::vec2 Gui::Anchor(Anch anchor, const glm::vec2 &Size, glm::vec2 Offset) {
-    switch(anchor) {
-        case Anch::BottomLeft:   return glm::vec2(0, height - Size.y) + Offset;
-        case Anch::BottomRight:  return glm::vec2(width - Size.x, height - Size.y) + Offset;
-        case Anch::TopLeft:      return glm::vec2(0, 0) + Offset;
-        case Anch::TopRight:     return glm::vec2(width - Size.x, 0) + Offset;
-        case Anch::Center:       return glm::vec2((width - Size.x)/2, (height - Size.y)/2) + Offset;
-        case Anch::BottomCenter: return glm::vec2((width-Size.x)/2, height-Size.y) + Offset;
-        case Anch::TopCenter:   return glm::vec2((width-Size.x)/2, 0) + Offset;
-        case Anch::LeftCenter:   return glm::vec2(0, (height - Size.y)/2) + Offset;
-        case Anch::RightCenter:  return glm::vec2(width-Size.x, (height - Size.y)/2) + Offset;
+    glm::vec2 Pos;
+    glm::vec4 Col = rgb(0x404040);
+    Size = glm::vec2(150, 20);
+    Rectangle(Anchor(Anch::Center, Size, {0.0f, -25.0f}), Size, Color(rgb(0x404040), Flags), Flags);
+
+    Pos = Anchor(Anch::Center, Size, {0.0f, 25.0f});
+    if (MouseInRect(Pos, Size)) {
+        Col = rgb(0xffffff);
+        if (In.MouseState[GLFW_MOUSE_BUTTON_1]) {
+            glfwSetWindowShouldClose(window, true);
+        }
     }
-    return glm::vec2(0);
+    Rectangle(Pos, Size, Color(Col, Flags), Flags);
+
+    Size = glm::vec2(70, 20);
+    Rectangle(Anchor(Anch::Center, Size, {-(Size.x+10)/2, 0.0f}), Size, Color(rgb(0x404040), Flags), Flags);
+    Rectangle(Anchor(Anch::Center, Size, {(Size.x+10)/2, 0.0f}), Size, Color(rgb(0x404040), Flags), Flags);
 }
 
-void Gui::Rectangle(const glm::vec2& Pos, const glm::vec2& Size, const glm::vec2& UV, const uint64_t& Special) {
-    Push(Pos, UV, Special);
-    Push(Pos + glm::vec2(Size.x, 0.0f), UV, Special);
-    Push(Pos + glm::vec2(0.0f, Size.y), UV, Special);
+void Gui::Generate(const int width, const int heigh, const float Scale) {
+    Clear(width, heigh, Scale);
 
-    Push(Pos + Size, UV, Special);
-    Push(Pos + glm::vec2(Size.x, 0.0f), UV, Special);
-    Push(Pos + glm::vec2(0.0f, Size.y), UV, Special);
-}
+    HotBar();
+    if (!Camera.Mode) Statistics();
+    Crosschair();
+    if (In.keysState[GLFW_KEY_TAB] && !In.keysToggle[GLFW_KEY_ESCAPE]) { Health(); }
+    if (In.keysToggle[GLFW_KEY_ESCAPE]) { Menu(); Camera.Can_Move = false; }
+    else { Camera.Can_Move = true; }
 
-void Gui::Push(const glm::vec2& Pos, const glm::vec2& UV, const uint64_t& Special) {
-        GuiVertex ver;
-        ver.Pos = Pos;
-        ver.UV = UV;
-        ver.Special = Special;
-        Mesh.push_back(ver);
-}
-
-void Gui::Clear(int w, int h) {
-    width = w;
-    height = h;
-    Mesh.clear();
-}
-
-void Gui::Send_Data() {
-    if (vao == 0) {
-        glGenVertexArrays(1, &vao);
-        glGenBuffers(1, &vbo);
-
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        // aPos (location = 0)
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GuiVertex), (void*)offsetof(GuiVertex, Pos));
-        glEnableVertexAttribArray(0);
-
-        // atexture (location = 1)
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GuiVertex), (void*)offsetof(GuiVertex, UV));
-        glEnableVertexAttribArray(1);
-
-        // aNormal (location = 2)
-        glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(GuiVertex), (void*)offsetof(GuiVertex, Special));
-        glEnableVertexAttribArray(2);
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-    }
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, Mesh.size() * sizeof(GuiVertex), Mesh.data(), GL_STATIC_DRAW);
-
-    IndexCount = Mesh.size();
+    Send_Data();
 }

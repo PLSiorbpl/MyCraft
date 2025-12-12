@@ -41,6 +41,7 @@
 #include "Utils/Settings.hpp"
 #include "Utils/Function.hpp"
 #include "Utils/Timer.hpp"
+#include "Utils/Globals.hpp"
 
 #include "World/Chunk.hpp"
 #include "World/Terrain.hpp"
@@ -53,81 +54,11 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-struct Game_Settings {
-    int Gui_Update_rate;
-    int width, height;
-};
-
-struct Game_Variables {
-    int ramHandle;
-    GLint sizeInBytes = 0;
-    uint64_t Frame = 0;
-    glm::ivec3 Last_Chunk;
-    bool ChunkUpdated;
-    float TickRate;
-    float Tick_Timer = 0.0f;
-    int V_Sync;
-    int FOV;
-    int FPS = 0;
-    int Mesh_Updates;
-    int Lazy_Mesh_Updates;
-    int World_Updates;
-    int Updates;
-    bool Gui_Init = false;
-    uint64_t Max_Ram;
-    float DeltaTime;
-
-    // Terrain Generation:
-    int Seed;
-    float basefreq;
-    float baseamp;
-    int oct;
-    float addfreq;
-    float addamp;
-    float biomefreq;
-    float biomemult;
-    float biomebase;
-    int biomepower;
-};
-
-struct PerfStats {
-        double chunk = 0;
-        double mesh = 0;
-        double render = 0;
-        double remove = 0;
-        double tick = 0;
-        double gui = 0;
-        double EntireTime = 0;
-        int major = 0, minor = 0;
-        bool isModernGL;
-        uint64_t Triangles;
-        uint64_t Total_Triangles;
-        size_t Capacity;
-        size_t Mesh_Size;
-        #if defined(_WIN32) // Windows
-            PROCESS_MEMORY_COUNTERS meminfo;
-            SIZE_T ramUsed;
-        #elif defined(__linux__) // Linux
-            size_t ramUsed;
-        #endif
-    };
-
-struct Shaders {
-    GLuint Solid_Shader_Blocks;
-    GLuint General_Gui_Shader;
-    GLuint SelectionBox_Shader;
-};
-
 class Game {
 private:
     Timer time;
     Timer FrameTime;
     FPS Fps;
-    PerfStats PerfS;
-    camera Camera;
-    Game_Variables game;
-    Game_Settings game_settings;
-    Shaders SH;
     Movement movement;
     colisions Colisions;
     Fun fun;
@@ -138,7 +69,6 @@ private:
     Selection selection;
 public:
     Settings_Loader Settings;
-    GLFWwindow* window;
 
     bool Init_Window();
     void Init_Shader();
@@ -244,7 +174,10 @@ bool Game::Init_Window() {
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetWindowUserPointer(window, &Camera);
-    glfwSetCursorPosCallback(window, movement.mouse_callback);
+    glfwSetMouseButtonCallback(window, In.Mouse_Key_Callback);
+    glfwSetKeyCallback(window, In.Key_Callback);
+    glfwSetScrollCallback(window, In.Scroll_Callback);
+    glfwSetCursorPosCallback(window, In.Mouse_Callback);
 
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -267,11 +200,11 @@ void Game::Init_Shader() {
     shader.Init_Shader(SH.Solid_Shader_Blocks, SH.General_Gui_Shader, SH.SelectionBox_Shader);
 }
 
-void Tick_Update(camera &Camera, GLFWwindow* window, const float DeltaTime, Movement &movement, colisions &Colisions, Selection &Sel) {
-    movement.Init(Camera, window, Chunk_Size, Colisions, Sel);
+void Tick_Update(GLFWwindow* window, Movement &movement, colisions &Colisions, Selection &Sel) {
+    movement.Init(window, Chunk_Size, Colisions, Sel);
 }
 
-void DebugInfo(Game_Variables &game, const camera &Camera, Fun &fun, const GLenum &err, PerfStats &PS) {
+void DebugInfo(Fun &fun, const GLenum &err, PerfStats &PS) {
 //----------------------
 // Initialization
 //----------------------
@@ -353,24 +286,29 @@ void Game::MainLoop() {
     selection.Init(SH.SelectionBox_Shader);
     Fps.Init();
     while (!glfwWindowShouldClose(window)) {
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-            glfwSetWindowShouldClose(window, true);
+        //if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        //    glfwSetWindowShouldClose(window, true);
 
             game.DeltaTime = Fps.Start();
             FrameTime.Reset();
-            glUseProgram(SH.Solid_Shader_Blocks);
             glfwGetWindowSize(window, &game_settings.width, &game_settings.height);
+            if (game_settings.width == 0 || game_settings.height == 0) {
+                glfwPollEvents();
+                continue;
+            }
+            glUseProgram(SH.Solid_Shader_Blocks);
+            
         // -------------------------------------------------------------------------------
         // Main Engine
         // -------------------------------------------------------------------------------
             //-------------------------
             // Uniforms
             //-------------------------
-            const float aspectRatio = (float)game_settings.width / (float)game_settings.height;
+            const float aspectRatio = (float)game_settings.width / (float)std::max(game_settings.height, 1);
             const float FOV = fun.ConvertHorizontalFovToVertical(game.FOV, aspectRatio);
     
-            glm::mat4 model = glm::mat4(1.0f);
-            const glm::mat4 view = movement.GetViewMatrix(Camera);
+            static const glm::mat4 model = glm::mat4(1.0f);
+            const glm::mat4 view = movement.GetViewMatrix();
             const glm::mat4 proj = glm::perspective(glm::radians(FOV), aspectRatio, 0.1f, 2000.0f);
     
             shader.Set_Vec3(SH.Solid_Shader_Blocks, "ViewPos", Camera.Position);
@@ -402,16 +340,33 @@ void Game::MainLoop() {
             while (game.Tick_Timer >= game.TickRate) {
                 game.Tick_Timer -= game.TickRate;
                 if (!game.ChunkUpdated) {
-                    Tick_Update(Camera, window, game.DeltaTime, movement, Colisions, selection);
+                    Tick_Update(window, movement, Colisions, selection);
                 }
             }
             PerfS.tick = time.ElapsedMs();
             //-------------------------
             // Mesh Generation
+            for (int i = World_Map::Render_List.size() - 1; i >= 0; --i) {
+                auto& info = World_Map::Render_List[i];
+                if (info.Delete == 5) {
+                
+                    auto& chunk = World_Map::World.find({info.chunkX, info.chunkZ})->second;
+                    chunk.InRender = false;
+                
+                    glDeleteBuffers(1, &info.vbo);
+                    glDeleteVertexArrays(1, &info.vao);
+                
+                    if (i != World_Map::Render_List.size() - 1)
+                        std::swap(World_Map::Render_List[i], World_Map::Render_List.back());
+                
+                    World_Map::Render_List.pop_back();
+                }
+            }
+
             game.Updates = 0;
             time.Reset();
             for (Chunk* chunk : World_Map::Mesh_Queue) {
-                if (!chunk->DirtyFlag || !chunk->Gen_Mesh)
+                if (!chunk->DirtyFlag || !chunk->Gen_Mesh || chunk->InRender)
                     continue;
                 if (game.Updates >= game.Mesh_Updates)
                     break;
@@ -442,6 +397,7 @@ void Game::MainLoop() {
                     chunk->Mesh.shrink_to_fit();
                     chunk->Gen_Mesh = false;
                     chunk->Ready_Render = true;
+                    chunk->InRender = true;
                     game.Updates++;
                     continue;
                 }
@@ -468,6 +424,7 @@ void Game::MainLoop() {
                     chunk->Mesh.shrink_to_fit();
                     chunk->Gen_Mesh = false;
                     chunk->Ready_Render = true;
+                    chunk->InRender = true;
                     game.Updates++;
                 }
             }
@@ -479,7 +436,7 @@ void Game::MainLoop() {
                 if (!chunk->Ready_Render)
                     continue;
 
-                if(i != World_Map::Mesh_Queue.size() - 1)
+                if (i != World_Map::Mesh_Queue.size() - 1)
                     std::swap(World_Map::Mesh_Queue[i], World_Map::Mesh_Queue.back());
                 World_Map::Mesh_Queue.pop_back();
             }
@@ -506,19 +463,16 @@ void Game::MainLoop() {
         //-------------------------
         // Drawing Mesh to Screen
         //-------------------------
+            time.Reset();
             PerfS.Capacity = 0; PerfS.Mesh_Size = 0; PerfS.Triangles = 0; PerfS.Total_Triangles = 0;
+        if (game_settings.width != 0 && game_settings.height != 0) {
             for (auto& info : World_Map::Render_List) {
-                if (info.Delete == 5) {
-                    glDeleteBuffers(1, &info.vbo);
-                    glDeleteVertexArrays(1, &info.vao);
-                    info = World_Map::Render_List.back();
-                    World_Map::Render_List.pop_back();
-                    continue;
-                } else if (info.Delete > 0) {
+                if (info.Delete > 0) {
                     info.Delete++;
+                    //continue;
                 }
 
-                 const glm::vec3 chunkMin = glm::vec3(info.chunkX * Chunk_Size.x, 0, info.chunkZ * Chunk_Size.z);
+                const glm::vec3 chunkMin = glm::vec3(info.chunkX * Chunk_Size.x, 0, info.chunkZ * Chunk_Size.z);
                 const glm::vec3 chunkMax = chunkMin + glm::vec3(Chunk_Size);
 
                 if (frustum.IsAABBVisible(Frust, chunkMin, chunkMax)) {
@@ -540,52 +494,42 @@ void Game::MainLoop() {
             glLineWidth(1.0f);
             glDrawArrays(GL_LINES, 0, 24);
         }
+        }
         PerfS.render = time.ElapsedMs();
-        time.Reset();
-
+        
         //-------------------------
         // GUI - My Own GUI Engine
         //-------------------------
+        time.Reset();
         glUseProgram(SH.General_Gui_Shader);
         float guiScale = floor(game_settings.width / 320.0f);
         if (game_settings.height / 240.0f < guiScale)
             guiScale = floor(game_settings.height / 240.0f);
         if (guiScale < 1.0f)
             guiScale = 1.0f;
-        glm::mat4 projection = glm::ortho(0.0f, (float)game_settings.width/guiScale, (float)game_settings.height/guiScale, 0.0f, -1.0f, 1.0f);
-        shader.Set_Mat4(SH.General_Gui_Shader, "Model", model);
-        shader.Set_Mat4(SH.General_Gui_Shader, "Projection", projection);
         GLenum err = glGetError();
+
         if (!game.Gui_Init) {
             // Initialize Gui
             game.Gui_Init = true;
-            DebugInfo(game, Camera, fun, err, PerfS);
+            DebugInfo(fun, err, PerfS);
         }
 
         if (game.Frame % game_settings.Gui_Update_rate == 0) {
             //-------------------------
             // Update Gui
-            gui.Clear(game_settings.width/guiScale, game_settings.height/guiScale);
+            gui.Generate(game_settings.width/guiScale, game_settings.height/guiScale, guiScale);
 
-            gui.HotBar();
-            gui.Statistics();
-            gui.Crosschair();
-
-            gui.Send_Data();
-            DebugInfo(game, Camera, fun, err, PerfS);
+            DebugInfo(fun, err, PerfS);
         }
         //-------------------------
         // Render MyGui
-        glDisable(GL_DEPTH_TEST);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glm::mat4 projection = glm::ortho(0.0f, (float)game_settings.width/guiScale, (float)game_settings.height/guiScale, 0.0f, -1.0f, 1.0f);
+        shader.Set_Mat4(SH.General_Gui_Shader, "Model", model);
+        shader.Set_Mat4(SH.General_Gui_Shader, "Projection", projection);
 
-        glBindVertexArray(gui.vao);
-        glDrawArrays(GL_TRIANGLES, 0, gui.IndexCount);
-        
-        // Render ImGui
-        glEnable(GL_DEPTH_TEST);
-        glDisable(GL_BLEND);
+        gui.Draw();
+
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         PerfS.gui = time.ElapsedMs();
 

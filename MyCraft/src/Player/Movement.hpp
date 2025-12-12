@@ -4,7 +4,9 @@
 #include <GLFW/glfw3.h>
 #include <algorithm>
 #include <unordered_map>
-#include "Render/Camera.hpp"
+
+#include "Utils/Globals.hpp"
+#include "Utils/InputManager.hpp"
 #include "World/Chunk.hpp"
 #include "Colisions.hpp"
 #include "World/World.hpp"
@@ -14,19 +16,16 @@ class Movement {
     private:
     Terrain_Action TAction;
     public:
-    //colisions Colisions;
     glm::vec3 direction;
     glm::vec2 Cos;
     glm::vec2 Sin;
     glm::vec3 testPos;
-    bool lastStateKey1 = false;
 
-    void Init(camera &Camera, GLFWwindow* window, const glm::ivec3 ChunkSize, colisions &Colisions, Selection& Sel);
-    void Input(GLFWwindow* window, camera &Camera, glm::ivec3 ChunkSize, Selection& Sel);
-    void Special_Keys(GLFWwindow* window, camera &Camera);
-    void TestColisions(camera &Camera, const glm::ivec3 ChunkSize, colisions &Colisions);
-    void Damp(camera &Camera);
+    void Init(GLFWwindow* window, const glm::ivec3 ChunkSize, colisions &Colisions, Selection& Sel);
+    void Input(GLFWwindow* window, glm::ivec3 ChunkSize, Selection& Sel);
+    void Special_Keys(GLFWwindow* window);
+    void TestColisions(const glm::ivec3 ChunkSize, colisions &Colisions);
+    void Damp();
 
-    static void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-    glm::mat4 GetViewMatrix(const camera &Camera);
+    glm::mat4 GetViewMatrix() const;
 };
