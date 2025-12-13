@@ -27,7 +27,7 @@ public:
     int Place_CoolDown = 0;
     int Break_CoolDown = 0;
     bool Draw_Selection = false;
-    int RenderDistance;
+    int RenderDistance = 8;
 
     bool operator!=(const camera& other) const;
 };

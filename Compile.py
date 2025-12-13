@@ -1,6 +1,7 @@
 import os
 import sys
 import subprocess
+import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 # Settings
@@ -15,7 +16,7 @@ if sys.platform == "win32": # Windows
     Flags = ['-std=c++17', '-LMyCraft/lib', '-lglfw3', '-lgdi32', '-lopengl32', '-static-libstdc++', '-static-libgcc', '-static']
     Destination = ["../Mycraft.exe"]
 if sys.platform == "linux": # Linux
-    Flags = ['-std=c++17', '-LMyCraft/lib', '-lglfw', '-lGL', '-lpthread', '-ldl', '-lX11', '-static-libstdc++', '-static-libgcc', '-static']
+    Flags = ['-std=c++17', '-LMyCraft/lib', '-lglfw', '-lGL', '-lpthread', '-ldl', '-lX11', '-static-libstdc++', '-static-libgcc']
     Destination = ["../Mycraft-Linux"]
 Error = False
 
@@ -151,12 +152,15 @@ def Link(Destination_exe, PreCompile):
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode == 0:
         Print_Green(f"Created: {output_exe}")
-        if Open_Game:
-            Print_Blue(f"Opening: {output_exe}")
-            subprocess.run([output_exe])
+        return output_exe
     else:
         Print_Red("Linking Error:")
         Print_Red(result.stderr)
+
+def Open(Path):
+     if Open_Game and os.path.exists(Path):
+        Print_Blue(f"Opening: {Path}")
+        subprocess.run([Path])
 
 def main():
     Print_Cyan(f"Max Cores: {os.cpu_count()}")
@@ -164,9 +168,20 @@ def main():
     Clean = (True if (input("ReCompile All? :") == "1") else False)
     for i in range(len(Destination)):
         Print_Yellow(f"\n{Destination[i]}")
+
+        t_files = time.perf_counter()
         Files = Get_All_Files(Clean, Source_Folders[i], Source_Files[i])
+        Print_Cyan(f"Getting Files: {time.perf_counter() - t_files:.3f}s")
+
+        t_compile = time.perf_counter()
         Compile(Files, os.cpu_count(), PreCompiled[i])
-        Link(Destination[i], PreCompiled[i])
+        Print_Cyan(f"Compiling: {time.perf_counter() - t_compile:.3f}s")
+
+        t_link = time.perf_counter()
+        Path = Link(Destination[i], PreCompiled[i])
+        Print_Cyan(f"Linking: {time.perf_counter() - t_link:.3f}s")
+
+        Open(Path)
 
 if __name__ == "__main__":
     main()

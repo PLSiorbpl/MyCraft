@@ -1,20 +1,21 @@
-#include "Generation.hpp"
 #include <glad/glad.h>
+#include "Generation.hpp"
 
-void ChunkGeneration::GenerateChunks(const camera &Camera, const glm::ivec3 ChunkSize) {
+void ChunkGeneration::GenerateChunks(const glm::ivec3 ChunkSize) {
     auto& World = World_Map::World;
-    for (int dx = -Camera.RenderDistance-1; dx <= Camera.RenderDistance+1; ++dx) {
-        for (int dz = -Camera.RenderDistance-1; dz <= Camera.RenderDistance+1; ++dz) {
+    const int Rd = Camera.RenderDistance;
+    for (int dx = -Rd-1; dx <= Rd+1; ++dx) {
+        for (int dz = -Rd-1; dz <= Rd+1; ++dz) {
             const int chunkX = Camera.Chunk.x + dx;
             const int chunkZ = Camera.Chunk.z + dz;
             
-            const int dist2 = dx*dx + dz*dz;
-            if (dist2 > Camera.RenderDistance * Camera.RenderDistance) continue;
+            //const int dist2 = dx*dx + dz*dz;
+            //if (dist2 > (Camera.RenderDistance+1) * (Camera.RenderDistance+1)) continue;
 
             const std::pair<int, int> key = {chunkX, chunkZ};
             
             const int dist = std::max(std::abs(dx), std::abs(dz));
-            const bool isEdge = (dist > Camera.RenderDistance);
+            const bool isEdge = (dist > Rd);
 
             if (World.find(key) == World.end()) {
                 Terrain.Generate_Terrain_Chunk(chunkX, chunkZ, ChunkSize);
@@ -29,7 +30,7 @@ void ChunkGeneration::GenerateChunks(const camera &Camera, const glm::ivec3 Chun
     }
 }
 
-void ChunkGeneration::RemoveChunks(const camera& Camera) {
+void ChunkGeneration::RemoveChunks() {
     auto& World = World_Map::World;
     auto& chunk = World_Map::Mesh_Queue;
     auto& RL = World_Map::Render_List;
@@ -52,6 +53,7 @@ void ChunkGeneration::RemoveChunks(const camera& Camera) {
     for (const auto& key : toRemove) {
         const int cx = key.first;
         const int cz = key.second;
+        
         for (int i = RL.size() - 1; i-- > 0;) {
             if (RL[i].chunkX == cx && RL[i].chunkZ == cz) {
                 auto& chunk = World_Map::World.find({RL[i].chunkX, RL[i].chunkZ})->second;

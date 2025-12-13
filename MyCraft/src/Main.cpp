@@ -48,7 +48,7 @@
 #include "World/Generation.hpp"
 #include "World/World.hpp"
 
-glm::ivec3 Chunk_Size;
+glm::ivec3 Chunk_Size = glm::ivec3(16);
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -147,7 +147,7 @@ bool Game::Init_Window() {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        window = glfwCreateWindow(game_settings.width, game_settings.height, "MyCraft", nullptr, nullptr);
+        window = glfwCreateWindow(game_settings.width, game_settings.height, "MyCraft", monitor, nullptr);
 
         if (!window) {
             std::cerr << "You Dont Support OpenGl 3.3  Get New Card Or Update Drivers\n";
@@ -156,9 +156,9 @@ bool Game::Init_Window() {
         }
     }
     //glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
-    glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_TRUE);
+    glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
     glfwSetWindowPos(window, 0, 0);
-    glfwSetWindowSize(window, game_settings.width, game_settings.height);
+    //glfwSetWindowSize(window, game_settings.width, game_settings.height);
 
     glfwMakeContextCurrent(window);
     glfwSwapInterval(game.V_Sync); // V-sync
@@ -173,6 +173,7 @@ bool Game::Init_Window() {
     //glEnable(GL_BLEND);
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    
     glfwSetWindowUserPointer(window, &Camera);
     glfwSetMouseButtonCallback(window, In.Mouse_Key_Callback);
     glfwSetKeyCallback(window, In.Key_Callback);
@@ -452,11 +453,11 @@ void Game::MainLoop() {
             if (game.ChunkUpdated) {
                 if (game.World_Updates == 0) {
                     time.Reset();
-                    GenerateChunk.GenerateChunks(Camera, Chunk_Size);
+                    GenerateChunk.GenerateChunks(Chunk_Size);
                     PerfS.chunk = time.ElapsedMs();
                 }
                 time.Reset();
-                GenerateChunk.RemoveChunks(Camera);
+                GenerateChunk.RemoveChunks();
                 PerfS.remove = time.ElapsedMs();
             }
         
@@ -551,7 +552,7 @@ void Game::MainLoop() {
                     std::cerr << "Out of VRAM! Changed RenderDistance by -1" << "\n";
                     if (Camera.RenderDistance > 1) {
                         Camera.RenderDistance -= 1;
-                        GenerateChunk.RemoveChunks(Camera);
+                        GenerateChunk.RemoveChunks();
                     }
                 } else {
                     break;
