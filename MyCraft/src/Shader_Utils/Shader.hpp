@@ -7,17 +7,18 @@
 #include <sstream>
 #include <fstream>
 #include "stb_image.h"
+#include "Globals.hpp"
 
 class Shader {
     public:
     //---------------------
     // Initialization
     //---------------------
-    void Init_Shader(GLuint& ShaderProgram, GLuint& Gui_ShaderProgram, GLuint& SelectionBox_Shader);
+    void Init_Shader();
 
     GLuint Create_Shader(const std::string& vertex, const std::string& fragment);
 
-    void Load_Texture(unsigned int &Texture_ID, GLenum TextureUnit);
+    unsigned int Load_Texture(const std::string& path, GLenum TextureUnit);
 
     std::string LoadShaderSource(const std::string& path);
 

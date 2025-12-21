@@ -1,7 +1,7 @@
 #include <glad/glad.h>
 #include "Gui.hpp"
 
-glm::vec4 Gui::Texture(texture tex, int id, int Variant, uint32_t &Flags) {
+glm::vec4 Gui::Texture(texture tex, int id, int Variant, uint32_t &Flags, const glm::vec4 &Size) {
     constexpr float Pixel = 1.0f / 128.0f;
     constexpr float Tile  = 16 * Pixel;
 
@@ -16,7 +16,9 @@ glm::vec4 Gui::Texture(texture tex, int id, int Variant, uint32_t &Flags) {
 
         }
         case texture::Gui: {
-
+            F32.Set(Flags, static_cast<int>(Flag::UseTexture));
+            F32.SetTextureId(Flags, 1);
+            return (Size / glm::vec4(512));
         }
         default: {
             F32.Set(Flags, static_cast<int>(Flag::UseTexture));
@@ -26,12 +28,33 @@ glm::vec4 Gui::Texture(texture tex, int id, int Variant, uint32_t &Flags) {
     }
 }
 
+void Gui::Text(const glm::vec2& Pos, const std::string& text, const float Size, uint32_t Flags, const glm::vec2& Padding, const glm::vec2& Offset) {
+    F32.Set(Flags, static_cast<int>(Flag::UseTexture));
+    F32.SetTextureId(Flags, 2);
+    const int Cols = 16;
+    const glm::vec2 AtlasS = glm::vec2(128);
+    const int glypW = 8;
+    const int glypH = 9;
+    glm::vec2 Cursor = Pos+Offset;
+    for (const char c : text) {
+        const int idx = c - ' ';
+        const int col = idx % Cols;
+        const int row = idx / Cols;
+        const glm::vec2 px1 = glm::vec2(col * glypW, row * glypH);
+        const glm::vec2 px2 = glm::vec2(px1.x + glypW, px1.y + glypH);
+        const glm::vec4 uv = glm::vec4(px1/AtlasS, px2/AtlasS);
+        const glm::vec2 wh = glm::vec2((glypW) * Size, glypH * Size);
+        DrawRectangle(Cursor, wh, uv, Flags);
+        Cursor += glm::vec2(wh.x-Padding.x-Advance[idx], 0);
+    }
+}
+
 glm::vec4 Gui::Color(const glm::vec4 color, uint32_t &Flags) {
     F32.Clear(Flags, static_cast<int>(Flag::UseTexture));
     return color;
 }
 
-void Gui::Rectangle(const glm::vec2& Pos, const glm::vec2& Size, const glm::vec4& UV, const uint32_t& Flags) {
+void Gui::DrawRectangle(const glm::vec2& Pos, const glm::vec2& Size, const glm::vec4& UV, uint32_t& Flags) {
     if (F32.Get(Flags, static_cast<int>(Flag::UseTexture))) {
         Push(Pos, {UV.x, UV.y, 0}, Flags);
         Push(Pos + glm::vec2(Size.x, 0.0f), {UV.z, UV.y, 0}, Flags);
@@ -51,6 +74,16 @@ void Gui::Rectangle(const glm::vec2& Pos, const glm::vec2& Size, const glm::vec4
     }
 }
 
+void Gui::DrawProgressBar(float Progress, const glm::vec2 &Pos, const glm::vec2 &Size, const glm::vec4 &UV, uint32_t &Flags) {
+    Progress = glm::clamp(Progress, 0.0f, 1.0f);
+    const float filledWidth = Size.x * Progress;
+    glm::vec4 uv = UV;
+    if (F32.Get(Flags, static_cast<int>(Flag::UseTexture))) {
+        uv.z = uv.x + (UV.z - UV.x) * Progress;
+    }
+    DrawRectangle(Pos, {filledWidth, Size.y}, uv, Flags);
+}
+
 void Gui::Push(const glm::vec2& Pos, const glm::vec3& UV, const uint32_t& Flags) {
         GuiVertex ver;
         ver.Pos = Pos;
@@ -58,17 +91,6 @@ void Gui::Push(const glm::vec2& Pos, const glm::vec3& UV, const uint32_t& Flags)
         ver.Flags = Flags;
         Mesh.push_back(ver);
 }
-
-//glm::vec4 Gui::rgb(uint64_t color) {
-//    float a = (color > 0xFFFFFFu) ? (color & 0xFF) / 255.0f : 1.0f;
-//    return glm::vec4(
-//        ((color >> (color > 0xFFFFFFu ? 24 : 16)) & 0xFF) / 255.0f,
-//        ((color >> (color > 0xFFFFFFu ? 16 :  8)) & 0xFF) / 255.0f,
-//        ((color >> (color > 0xFFFFFFu ?  8 :  0)) & 0xFF) / 255.0f,
-//        a
-//    );
-//}
-
 
 void Gui::Send_Data() {
     if (vao == 0) {
@@ -137,3 +159,111 @@ glm::vec2 Gui::Anchor(Anch anchor, const glm::vec2 &Size, glm::vec2 Offset) cons
     }
     return glm::vec2(0);
 }
+
+bool Gui::Button(const glm::vec2& pos, const glm::vec2& size, uint32_t flags, int Mode, const glm::vec4 &Color_1, const glm::vec4 &Color_2) {
+    bool hovered = MouseInRect(pos, size);
+    glm::vec4 col = hovered ? Color_2 : Color_1;
+    if (Mode == 0) col = Color(col, flags);
+
+    DrawRectangle(pos, size, col, flags);
+
+    return hovered && In.MouseState[GLFW_MOUSE_BUTTON_1];
+}
+
+const int Gui::Advance[('~'-' ')+1] = {
+    /* ' ' */ 0,
+    /* '!' */ 3,
+    /* '"' */ 1,
+    /* '#' */ 0,
+    /* '$' */ 0,
+    /* '%' */ 0,
+    /* '&' */ -1,
+    /* ''' */ 2,
+    /* '(' */ 2,
+    /* ')' */ 2,
+    /* '*' */ 2,
+    /* '+' */ 2,
+    /* ',' */ 3,
+    /* '-' */ 2,
+    /* '.' */ 4,
+    /* '/' */ 1,
+    /* '0' */ 0,
+    /* '1' */ 0,
+    /* '2' */ 0,
+    /* '3' */ 0,
+    /* '4' */ 0,
+    /* '5' */ 0,
+    /* '6' */ 0,
+    /* '7' */ 0,
+    /* '8' */ 0,
+    /* '9' */ 0,
+    /* ':' */ 3,
+    /* ';' */ 3,
+    /* '<' */ 2,
+    /* '=' */ 2,
+    /* '>' */ 2,
+    /* '?' */ 0,
+    /* '@' */ 0,
+    /* 'A' */ 0,
+    /* 'B' */ 0,
+    /* 'C' */ 0,
+    /* 'D' */ 0,
+    /* 'E' */ 1,
+    /* 'F' */ 1,
+    /* 'G' */ 0,
+    /* 'H' */ 0,
+    /* 'I' */ 2,
+    /* 'J' */ 1,
+    /* 'K' */ 1,
+    /* 'L' */ 1,
+    /* 'M' */ 0,
+    /* 'N' */ 0,
+    /* 'O' */ 0,
+    /* 'P' */ 0,
+    /* 'Q' */ -1,
+    /* 'R' */ 0,
+    /* 'S' */ 0,
+    /* 'T' */ 0,
+    /* 'U' */ 0,
+    /* 'V' */ 0,
+    /* 'W' */ 0,
+    /* 'X' */ 0,
+    /* 'Y' */ 0,
+    /* 'Z' */ 0,
+    /* '[' */ 2,
+    /* '\' */ 1,
+    /* ']' */ 2,
+    /* '^' */ 0,
+    /* '_' */ 0,
+    /* '`' */ 3,
+    /* 'a' */ 0,
+    /* 'b' */ 1,
+    /* 'c' */ 2,
+    /* 'd' */ 1,
+    /* 'e' */ 1,
+    /* 'f' */ 1,
+    /* 'g' */ 1,
+    /* 'h' */ 2,
+    /* 'i' */ 4,
+    /* 'j' */ 2,
+    /* 'k' */ 1,
+    /* 'l' */ 3,
+    /* 'm' */ 0,
+    /* 'n' */ 2,
+    /* 'o' */ 1,
+    /* 'p' */ 1,
+    /* 'q' */ 1,
+    /* 'r' */ 1,
+    /* 's' */ 1,
+    /* 't' */ 2,
+    /* 'u' */ 1,
+    /* 'v' */ 0,
+    /* 'w' */ 0,
+    /* 'x' */ 0,
+    /* 'y' */ 1,
+    /* 'z' */ 0,
+    /* '{' */ 3,
+    /* '|' */ 3,
+    /* '}' */ 3,
+    /* '~' */ -1
+};

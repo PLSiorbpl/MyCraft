@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <vector>
 #include <array>
+#include <string>
 
 #include "Utils/Globals.hpp"
 #include "Utils/InputManager.hpp"
@@ -30,7 +31,8 @@ enum class Anch {
 enum class texture : int {
     Block = 0,
     Item = 1,
-    Gui = 2
+    Gui = 2,
+    Font = 3
 };
 
 enum class Block : int {
@@ -77,6 +79,7 @@ public:
 
     glm::vec2 Mouse;
     float width, height;
+    static const int Advance[('~'-' ')+1];
 
     void Clear(const int w, const int h, const float Scale);
     void Send_Data();
@@ -84,9 +87,14 @@ public:
     void Draw();
     void Generate(const int width, const int heigh, const float Scale);
 
-    void Rectangle(const glm::vec2 &Pos, const glm::vec2 &Size, const glm::vec4 &UV, const uint32_t &Flags);
+    void DrawRectangle(const glm::vec2 &Pos, const glm::vec2 &Size, const glm::vec4 &UV, uint32_t &Flags);
+    void DrawProgressBar(float Progress, const glm::vec2 &Pos, const glm::vec2 &Size, const glm::vec4 &UV, uint32_t &Flags);
+
+    bool Button(const glm::vec2& pos, const glm::vec2& size, uint32_t flags, int Mode = 0, const glm::vec4 &Color_1 = {0.25098, 0.25098, 0.25098, 0}, const glm::vec4 &Color_2 = {0.941176, 0.941176, 0.941176, 0});
+
     glm::vec2 Anchor(Anch anchor, const glm::vec2 &Size, glm::vec2 Offset = {0.0f,0.0f}) const;
-    glm::vec4 Texture(texture tex, int id, int Variant, uint32_t &Flags);
+    glm::vec4 Texture(texture tex, int id, int Variant, uint32_t &Flags, const glm::vec4 &Size = {0,0,0,0});
+    void Text(const glm::vec2& Pos, const std::string& text, const float Size, uint32_t Flags, const glm::vec2& Padding = {0,0}, const glm::vec2& Offset = {0.0f, 0.0f});
     glm::vec4 Color(const glm::vec4 color, uint32_t &Flags);
     inline const glm::vec4 rgb(const uint64_t color) const {
         const float a = (color > 0xFFFFFFu) ? (color & 0xFF) / 255.0f : 1.0f;
@@ -108,5 +116,6 @@ public:
     void HotBar();
     void Statistics();
     void Menu();
+    void Settings();
     void Crosschair();
 };

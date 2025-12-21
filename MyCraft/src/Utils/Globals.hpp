@@ -10,6 +10,7 @@
 #include "Render/Camera.hpp"
 
 struct Game_Variables {
+    int MenuId = 0;
     int ramHandle;
     GLint sizeInBytes = 0;
     uint64_t Frame = 0;
@@ -71,10 +72,18 @@ struct PerfStats {
     #endif
 };
 
+struct Sh {
+    GLuint Shader;
+    unsigned int Texture0;
+    unsigned int Texture1;
+    unsigned int Texture2;
+    unsigned int Texture3;
+};
+
 struct Shaders {
-    GLuint Solid_Shader_Blocks;
-    GLuint General_Gui_Shader;
-    GLuint SelectionBox_Shader;
+    Sh Solid_Shader_Blocks;
+    Sh General_Gui_Shader;
+    Sh SelectionBox_Shader;
 };
 
 extern GLFWwindow* window;

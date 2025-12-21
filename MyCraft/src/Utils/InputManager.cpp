@@ -17,11 +17,17 @@ void InputManager::Key_Callback(GLFWwindow* window, int key, int scancode, int a
             keysToggle[key] = !keysToggle[key];
 
             if (key == GLFW_KEY_ESCAPE) {
-                glfwSetInputMode(window, GLFW_CURSOR, keysToggle[key] ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
-                Camera.Mouse_Visible = keysToggle[key];
-                glfwSetCursorPos(window, game_settings.width/2, game_settings.height/2);
-                MouseX = game_settings.width/2; MouseY = game_settings.height/2;
-                Camera.LastX = game_settings.width/2; Camera.LastY = game_settings.height/2;
+                if (game.MenuId > 0) {
+                    keysState[key] = false;
+                    keysToggle[key] = !keysToggle[key];
+                    game.MenuId -= 1;
+                } else {
+                    glfwSetInputMode(window, GLFW_CURSOR, keysToggle[key] ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+                    Camera.Mouse_Visible = keysToggle[key];
+                    glfwSetCursorPos(window, game_settings.width/2, game_settings.height/2);
+                    MouseX = game_settings.width/2; MouseY = game_settings.height/2;
+                    Camera.LastX = game_settings.width/2; Camera.LastY = game_settings.height/2;
+                }
             }
         }
     }

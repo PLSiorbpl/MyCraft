@@ -115,9 +115,9 @@ void Game::CleanUp() {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
-    glDeleteProgram(SH.Solid_Shader_Blocks);
-    glDeleteProgram(SH.General_Gui_Shader);
-    glDeleteProgram(SH.SelectionBox_Shader);
+    glDeleteProgram(SH.Solid_Shader_Blocks.Shader);
+    glDeleteProgram(SH.General_Gui_Shader.Shader);
+    glDeleteProgram(SH.SelectionBox_Shader.Shader);
     glfwDestroyWindow(window);
     glfwTerminate();
 }
@@ -198,7 +198,7 @@ bool Game::Init_Window() {
 }
 
 void Game::Init_Shader() {
-    shader.Init_Shader(SH.Solid_Shader_Blocks, SH.General_Gui_Shader, SH.SelectionBox_Shader);
+    shader.Init_Shader();
 }
 
 void Tick_Update(GLFWwindow* window, Movement &movement, colisions &Colisions, Selection &Sel) {
@@ -284,7 +284,7 @@ void DebugInfo(Fun &fun, const GLenum &err, PerfStats &PS) {
 void Game::MainLoop() {
     ChunkGeneration GenerateChunk(game.Seed, game.basefreq, game.baseamp, game.oct, game.addfreq, game.addamp, game.biomefreq, game.biomemult, game.biomebase, game.biomepower);
     glfwGetWindowSize(window, &game_settings.width, &game_settings.height);
-    selection.Init(SH.SelectionBox_Shader);
+    selection.Init(SH.SelectionBox_Shader.Shader);
     Fps.Init();
     while (!glfwWindowShouldClose(window)) {
         //if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -297,7 +297,6 @@ void Game::MainLoop() {
                 glfwPollEvents();
                 continue;
             }
-            glUseProgram(SH.Solid_Shader_Blocks);
             
         // -------------------------------------------------------------------------------
         // Main Engine
@@ -311,12 +310,16 @@ void Game::MainLoop() {
             static const glm::mat4 model = glm::mat4(1.0f);
             const glm::mat4 view = movement.GetViewMatrix();
             const glm::mat4 proj = glm::perspective(glm::radians(FOV), aspectRatio, 0.1f, 2000.0f);
-    
-            shader.Set_Vec3(SH.Solid_Shader_Blocks, "ViewPos", Camera.Position);
-            shader.Set_Mat4(SH.Solid_Shader_Blocks, "Model", model);
-            shader.Set_Mat4(SH.Solid_Shader_Blocks, "View", view);
-            shader.Set_Mat4(SH.Solid_Shader_Blocks, "Proj", proj);
-            shader.Set_Int(SH.Solid_Shader_Blocks, "RenderDist", Camera.RenderDistance);
+
+            glUseProgram(SH.Solid_Shader_Blocks.Shader);
+            //glActiveTexture(GL_TEXTURE0);
+            //glBindTexture(GL_TEXTURE_2D, SH.Solid_Shader_Blocks.Texture0);
+            shader.Set_Int(SH.Solid_Shader_Blocks.Shader, "BaseTexture", 0);
+            shader.Set_Vec3(SH.Solid_Shader_Blocks.Shader, "ViewPos", Camera.Position);
+            shader.Set_Mat4(SH.Solid_Shader_Blocks.Shader, "Model", model);
+            shader.Set_Mat4(SH.Solid_Shader_Blocks.Shader, "View", view);
+            shader.Set_Mat4(SH.Solid_Shader_Blocks.Shader, "Proj", proj);
+            shader.Set_Int(SH.Solid_Shader_Blocks.Shader, "RenderDist", Camera.RenderDistance);
     
             const Frustum::Frust Frust = frustum.ExtractFrustum(proj*view);
     
@@ -486,12 +489,12 @@ void Game::MainLoop() {
                 PerfS.Total_Triangles += info.Triangles;
             }
         if (Camera.Draw_Selection) {
-            glUseProgram(SH.SelectionBox_Shader);
+            glUseProgram(SH.SelectionBox_Shader.Shader);
             glBindVertexArray(selection.vao);
             glBindBuffer(GL_ARRAY_BUFFER, selection.vbo);
             glBufferSubData(GL_ARRAY_BUFFER, 0, selection.boxLinesCopy.size() * sizeof(float), selection.boxLinesCopy.data());
             glm::mat4 MVP = proj * view * model;
-            shader.Set_Mat4(SH.SelectionBox_Shader, "MVP", MVP);
+            shader.Set_Mat4(SH.SelectionBox_Shader.Shader, "MVP", MVP);
             glLineWidth(1.0f);
             glDrawArrays(GL_LINES, 0, 24);
         }
@@ -502,7 +505,12 @@ void Game::MainLoop() {
         // GUI - My Own GUI Engine
         //-------------------------
         time.Reset();
-        glUseProgram(SH.General_Gui_Shader);
+        glUseProgram(SH.General_Gui_Shader.Shader);
+        //glActiveTexture(GL_TEXTURE1);
+        //glBindTexture(GL_TEXTURE_2D, SH.General_Gui_Shader.Texture1);
+        shader.Set_Int(SH.General_Gui_Shader.Shader, "BaseTexture", 0);
+        shader.Set_Int(SH.General_Gui_Shader.Shader, "GuiTexture", 1);
+        shader.Set_Int(SH.General_Gui_Shader.Shader, "FontTexture", 2);
         float guiScale = floor(game_settings.width / 320.0f);
         if (game_settings.height / 240.0f < guiScale)
             guiScale = floor(game_settings.height / 240.0f);
@@ -526,8 +534,8 @@ void Game::MainLoop() {
         //-------------------------
         // Render MyGui
         glm::mat4 projection = glm::ortho(0.0f, (float)game_settings.width/guiScale, (float)game_settings.height/guiScale, 0.0f, -1.0f, 1.0f);
-        shader.Set_Mat4(SH.General_Gui_Shader, "Model", model);
-        shader.Set_Mat4(SH.General_Gui_Shader, "Projection", projection);
+        shader.Set_Mat4(SH.General_Gui_Shader.Shader, "Model", model);
+        shader.Set_Mat4(SH.General_Gui_Shader.Shader, "Projection", projection);
 
         gui.Draw();
 

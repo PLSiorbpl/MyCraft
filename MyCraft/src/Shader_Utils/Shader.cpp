@@ -1,6 +1,7 @@
 #include "Shader.hpp"
 
-void Shader::Load_Texture(unsigned int &Texture_ID, GLenum TextureUnit) {
+unsigned int Shader::Load_Texture(const std::string &path, GLenum TextureUnit) {
+    unsigned int Texture_ID;
     glGenTextures(1, &Texture_ID);
     glBindTexture(GL_TEXTURE_2D, Texture_ID);
     //stbi_set_flip_vertically_on_load(true);
@@ -11,7 +12,7 @@ void Shader::Load_Texture(unsigned int &Texture_ID, GLenum TextureUnit) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     int width, height, nrChannels;
-    unsigned char *data = stbi_load("MyCraft/Assets/Atlas.png", &width, &height, &nrChannels, 4);
+    unsigned char *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
     if (data) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         //glGenerateMipmap(GL_TEXTURE_2D);
@@ -19,9 +20,7 @@ void Shader::Load_Texture(unsigned int &Texture_ID, GLenum TextureUnit) {
         std::cout << "Failed to load texture (skill Issue)" << std::endl;
     }
     stbi_image_free(data);
-
-    glActiveTexture(TextureUnit);
-    glBindTexture(GL_TEXTURE_2D, Texture_ID);
+    return Texture_ID;
 }
 
 std::string Shader::LoadShaderSource(const std::string& path) {
@@ -91,16 +90,22 @@ GLuint Shader::Create_Shader(const std::string& vertex, const std::string& fragm
     return ShaderProgram;
 }
 
-void Shader::Init_Shader(GLuint& ShaderProgram, GLuint& Gui_ShaderProgram, GLuint& SelectionBox_Shader) {
-    unsigned int TextureID;
-    Load_Texture(TextureID, GL_TEXTURE0);
+void Shader::Init_Shader() {
+    SH.Solid_Shader_Blocks.Shader = Create_Shader("MyCraft/shaders/vertex.glsl", "MyCraft/shaders/fragment.glsl");
+    SH.General_Gui_Shader.Shader = Create_Shader("MyCraft/shaders/Gui_vert.glsl", "MyCraft/shaders/Gui_Frag.glsl");
+    SH.SelectionBox_Shader.Shader = Create_Shader("MyCraft/shaders/Selection_Vert.glsl", "MyCraft/shaders/Selection_Frag.glsl");
 
-    ShaderProgram = Create_Shader("MyCraft/shaders/vertex.glsl", "MyCraft/shaders/fragment.glsl");
-    Gui_ShaderProgram = Create_Shader("MyCraft/shaders/Gui_vert.glsl", "MyCraft/shaders/Gui_Frag.glsl");
-    SelectionBox_Shader = Create_Shader("MyCraft/shaders/Selection_Vert.glsl", "MyCraft/shaders/Selection_Frag.glsl");
+    SH.Solid_Shader_Blocks.Texture0 = Load_Texture("MyCraft/Assets/Textures/Blocks/Atlas.png", GL_TEXTURE0);
+    SH.General_Gui_Shader.Texture0 = SH.Solid_Shader_Blocks.Texture0;
+    SH.General_Gui_Shader.Texture1 = Load_Texture("MyCraft/Assets/Textures/Gui/Gui.png", GL_TEXTURE1);
+    SH.General_Gui_Shader.Texture2 = Load_Texture("MyCraft/Assets/Textures/Gui/Font.png", GL_TEXTURE2);
 
-    glUseProgram(ShaderProgram);
-    Set_Int(ShaderProgram, "BaseTexture", 0);
-    glUseProgram(Gui_ShaderProgram);
-    Set_Int(Gui_ShaderProgram, "BaseTexture", 0);
+    glUseProgram(SH.Solid_Shader_Blocks.Shader);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, SH.Solid_Shader_Blocks.Texture0);
+    glUseProgram(SH.General_Gui_Shader.Shader);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, SH.General_Gui_Shader.Texture1);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, SH.General_Gui_Shader.Texture2);
 }
