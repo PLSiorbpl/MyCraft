@@ -2,13 +2,11 @@
 #include "Gui.hpp"
 
 void Gui::HotBar() {
-    uint32_t Flags = 0;
-
     constexpr float slotSize = 19.0f;
     constexpr float slotSpacing = 2.0f + slotSize;
 
     glm::vec2 Size = glm::vec2(190.0f, 22.0f);
-    DrawRectangle(Anchor(Anch::BottomCenter, Size, {0.0f, -2.0f}), Size, rgb(0x303030), Flags);
+    DrawRectangle({Anch::BottomCenter, Size, {0.0f, -2.0f}}, {rgb(0x303030), texture::None});
 
     if (In.ScrollY != 0) {
         Camera.HotBarSlot = wrap(Camera.HotBarSlot - In.ScrollY, 9);
@@ -19,130 +17,143 @@ void Gui::HotBar() {
     Size = glm::vec2(slotSize);
     if (!Camera.Mode) {
         for (int i = 0; i < 9; i++) {
-            DrawRectangle(Anchor(Anch::BottomCenter, Size, {-84.0f+(i*slotSpacing), -3.5f}), Size, Texture(texture::Block, i, 0, Flags), Flags);
+            DrawRectangle({Anch::BottomCenter, Size, {-84.0f+(i*slotSpacing), -3.5f}}, {{i, 0,0,0}, texture::Block});
         }
         // Selected Slot
         glm::vec4 color = rgb(0xfff072);
         Size = glm::vec2(23, 2);
-        DrawRectangle(Anchor(Anch::BottomCenter, Size, {-84.0f+(Camera.HotBarSlot*slotSpacing), -1.5f}), Size, Color(color, Flags), Flags);
-        DrawRectangle(Anchor(Anch::BottomCenter, Size, {-84.0f+(Camera.HotBarSlot*slotSpacing), -22.5f}), Size, Color(color, Flags), Flags);
+        DrawRectangle({Anch::BottomCenter, Size, {-84.0f+(Camera.HotBarSlot*slotSpacing), -1.5f}}, {color, texture::None});
+        DrawRectangle({Anch::BottomCenter, Size, {-84.0f+(Camera.HotBarSlot*slotSpacing), -22.5f}}, {color, texture::None});
         Size = glm::vec2(2, 19);
-        DrawRectangle(Anchor(Anch::BottomCenter, Size, {-94.5f+(Camera.HotBarSlot*slotSpacing), -3.5f}), Size, Color(color, Flags), Flags);
-        DrawRectangle(Anchor(Anch::BottomCenter, Size, {-73.5f+(Camera.HotBarSlot*slotSpacing), -3.5f}), Size, Color(color, Flags), Flags);
+        DrawRectangle({Anch::BottomCenter, Size, {-94.5f+(Camera.HotBarSlot*slotSpacing), -3.5f}}, {color, texture::None});
+        DrawRectangle({Anch::BottomCenter, Size, {-73.5f+(Camera.HotBarSlot*slotSpacing), -3.5f}}, {color, texture::None});
     } else {
         for (int i = 0; i < 9; i++) {
-            DrawRectangle(Anchor(Anch::BottomCenter, Size, {-84.0f+(i*slotSpacing), -3.0f}), Size, Color(rgb(0x404040), Flags), Flags);
+            DrawRectangle({Anch::BottomCenter, Size, {-84.0f+(i*slotSpacing), -3.0f}}, {rgb(0x404040), texture::None});
         }
     }
 }
 
 void Gui::Statistics() {
-    uint32_t Flags = 0;
     glm::vec4 UV = glm::vec4(0);
 
     float HalfHotBar = 188.0f/2;
     
     // Food
     glm::vec2 StatSize = glm::vec2((HalfHotBar-10)+2, 10);
-    DrawRectangle(Anchor(Anch::BottomCenter, StatSize, {(-HalfHotBar + StatSize.x/2)-1, -25.0f}), StatSize, Color(rgb(0x404040), Flags), Flags);
+    DrawRectangle({Anch::BottomCenter, StatSize, {(-HalfHotBar + StatSize.x/2)-1, -25.0f}}, {rgb(0x404040), texture::None});
     StatSize = glm::vec2(HalfHotBar-10, 8);
-    DrawProgressBar(1, Anchor(Anch::BottomCenter, StatSize, {-HalfHotBar + StatSize.x/2, -26.0f}), StatSize, Color(rgb(0xff8c00), Flags), Flags);
+    DrawProgressBar({Anch::BottomCenter, StatSize, {-HalfHotBar + StatSize.x/2, -26.0f}}, {1, rgb(0xff8c00), texture::None});
 
     // Water
     StatSize = glm::vec2((-HalfHotBar+10)-2, 10);
-    DrawRectangle(Anchor(Anch::BottomCenter, StatSize, {(HalfHotBar + StatSize.x/2)+1, -25.0f}), StatSize, Color(rgb(0x404040), Flags), Flags);
+    DrawRectangle({Anch::BottomCenter, StatSize, {(HalfHotBar + StatSize.x/2)+1, -25.0f}}, {rgb(0x404040), texture::None});
     StatSize = glm::vec2(-HalfHotBar+10, 8);
-    DrawProgressBar(1, Anchor(Anch::BottomCenter, StatSize, {HalfHotBar + StatSize.x/2, -26.0f}), StatSize, Color(rgb(0x00f7ff), Flags), Flags);
+    DrawProgressBar({Anch::BottomCenter, StatSize, {HalfHotBar + StatSize.x/2, -26.0f}}, {1, rgb(0x00f7ff), texture::None});
 }
 
 void Gui::Health() {
-    uint32_t Flags = 0;
     glm::vec2 Size = glm::vec2(100, 150);
 
-    DrawRectangle(Anchor(Anch::BottomLeft, Size, {1.0f, -1.0f}), Size, Color(rgb(0x404040), Flags), Flags);
+    DrawRectangle({Anch::BottomLeft, Size, {1.0f, -1.0f}}, {rgb(0x404040), texture::None});
+    Text(Anchor({Anch::BottomLeft, Size, {1.0f, -1.0f}}), {.text = R"( !"#$%&'()*+,.-/0123456789:;<=>?@{}~)"});
+    Text(Anchor({Anch::BottomLeft, Size, {1.0f, 10.0f}}), {.text = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"});
+    Text(Anchor({Anch::BottomLeft, Size, {1.0f, 20.0f}}), {.text = "abcdefghijklmnopqrstuvwxyz"});
 }
 
 void Gui::Crosschair() {
     uint32_t Flags = 0;
+
     glm::vec4 color = rgb(0xffffff);
 
     glm::vec2 Size = glm::vec2(0.5f, 5.0f);
-    DrawRectangle(Anchor(Anch::Center, Size), Size, Color(color, Flags), Flags);
+    DrawRectangle({.Anchor = Anch::Center, .Size = Size}, {color, texture::None});
 
     Size = glm::vec2(5.0f, 0.5f);
-    DrawRectangle(Anchor(Anch::Center, Size), Size, Color(color, Flags), Flags);
+    DrawRectangle({.Anchor = Anch::Center, .Size = Size}, {color, texture::None});
 }
 
 void Gui::Menu() {
-    uint32_t Flags = 0;
-    glm::vec2 Size = glm::vec2(width, height);
-
-    //Rectangle({0.0f, 0.0f}, Size, Color(rgb(0x404040), Flags), Flags);
-
-    glm::vec2 Pos;
-    glm::vec4 Unfocuse = Texture(texture::Gui, 0, 0, Flags, {0,0,150,20});
-    glm::vec4 Hover = Texture(texture::Gui, 0, 0, Flags, {0,21,150,41});
+    ButtonStyle Big = {{0,0,150,20}, {0,21,150,41}, texture::Gui};
+    ButtonStyle Small = {{151,0,221,20}, {151,21,221,41}, texture::Gui};
     
     // Resume
-    Size = glm::vec2(150, 20);
-    Pos = Anchor(Anch::Center, Size, {0.0f, -25.0f});
-    if (Button(Pos, Size, Flags, 1, Unfocuse, Hover)) {
+    Layout layout = {Anch::Center, {150, 20}, {0.0f, -25.0f}};
+    Label label = {"Resume", .anchor = Anch::Center};
+    if (Button(layout, Big, label)) {
         In.Key_Callback(window, GLFW_KEY_ESCAPE, 0, GLFW_PRESS, 0);
     }
-    Text(Pos, "Resume", 1, Flags, {1,0}, {53, 4});
 
     // Exit
-    Pos = Anchor(Anch::Center, Size, {0.0f, 25.0f});
-    if (Button(Pos, Size, Flags, 1, Unfocuse, Hover)) {
+    layout.Offset = {0.0f, 25.0f};
+    label.text = "Exit";
+    if (Button(layout, Big, label)) {
         glfwSetWindowShouldClose(window, true);
     }
-    Text(Pos, "Exit", 1, Flags, {1,0}, {65, 4});
-    
     // Settings
-    Unfocuse = Texture(texture::Gui, 0, 0, Flags, {151,0,221,20});
-    Hover = Texture(texture::Gui, 0, 0, Flags, {151,21,221,41});
-    Size = glm::vec2(70, 20);
-
-    Pos = Anchor(Anch::Center, Size, {-(Size.x+10)/2, 0.0f});
-    if (Button(Pos, Size, Flags, 1 , Unfocuse, Hover)) {
+    layout.Size = {70, 20};
+    layout.Offset = {-(layout.Size.x+10)/2, 0.0f};
+    label.text = "Settings";
+    if (Button(layout, Small, label)) {
         game.MenuId = 1;
     }
-    Text(Pos, "Options", 1, Flags, {1,0}, {14, 4});
 
     // idk
-    Pos = Anchor(Anch::Center, Size, {(Size.x+10)/2, 0.0f});
-    Button(Pos, Size, Flags, 1, Unfocuse, Hover);
-    Text(Pos, "Something", 1, Flags, {1,0}, {11, 4});
+    layout.Offset = {(layout.Size.x+10)/2, 0.0f};
+    label.text = "Multiplayer";
+    if (Button(layout, Small, label)) {
+        game.MenuId = 2;
+    }
 }
 
 void Gui::Settings() {
-    uint32_t Flags = 0;
-    glm::vec2 Size = glm::vec2(width, height);
+    ButtonStyle Big = {{0,0,150,20}, {0,21,150,41}, texture::Gui};
+    ButtonStyle Small = {{151,0,221,20}, {151,21,221,41}, texture::Gui};
 
-    glm::vec2 Pos;
-    glm::vec4 Unfocuse = Texture(texture::Gui, 0, 0, Flags, {151,0,221,20});
-    glm::vec4 Hover = Texture(texture::Gui, 0, 0, Flags, {151,21,221,41});
-    Size = glm::vec2(70, 20);
+    Layout layout = {Anch::Center, {70, 20}, {-(70+10)/2, -25.0f}};
+    Label label = {"???", .anchor = Anch::Center};
+    Button(layout, Small, label);
 
-    Pos = Anchor(Anch::Center, Size, {-(Size.x+10)/2, 0});
-    Button(Pos, Size, Flags, 1, Unfocuse, Hover);
-    Pos = Anchor(Anch::Center, Size, {-(Size.x+10)/2, 25});
-    Button(Pos, Size, Flags, 1, Unfocuse, Hover);
-    Pos = Anchor(Anch::Center, Size, {-(Size.x+10)/2, 50});
-    Button(Pos, Size, Flags, 1, Unfocuse, Hover);
+    layout.Offset.y = -25;
+    label.text = "???";
+    Button(layout, Small, label);
 
-    Pos = Anchor(Anch::Center, Size, {(Size.x+10)/2, 0});
-    Button(Pos, Size, Flags, 1, Unfocuse, Hover);
-    Pos = Anchor(Anch::Center, Size, {(Size.x+10)/2, 25});
-    Button(Pos, Size, Flags, 1, Unfocuse, Hover);
-    Pos = Anchor(Anch::Center, Size, {(Size.x+10)/2, 50});
-    Button(Pos, Size, Flags, 1, Unfocuse, Hover);
+    layout.Offset.y = 0;
+    label.text = "???";
+    Button(layout, Small, label);
 
-    Unfocuse = Texture(texture::Gui, 0, 0, Flags, {0,0,150,20});
-    Hover = Texture(texture::Gui, 0, 0, Flags, {0,21,150,41});
-    Size = glm::vec2(150, 20);
-    Pos = Anchor(Anch::Center, Size, {0, 75});
-    Button(Pos, Size, Flags, 1, Unfocuse, Hover);
+    layout.Offset.y = 25;
+    label.text = "???";
+    Button(layout, Small, label);
+
+
+    layout.Offset = {(layout.Size.x+10)/2, -25};
+    label.text = "???";
+    Button(layout, Small, label);
+
+    layout.Offset.y = -25;
+    label.text = "???";
+    Button(layout, Small, label);
+
+    layout.Offset.y = 0;
+    label.text = "???";
+    Button(layout, Small, label);
+
+    layout.Offset.y = 25;
+    label.text = "???";
+    Button(layout, Small, label);
+
+
+    layout.Offset = {0, 50};
+    layout.Size = {150, 20};
+    label.text = "Save";
+    if (Button(layout, Big, label)) {
+        game.MenuId = 0;
+    }
+
+    layout.Offset = {0, -50};
+    label.text = "???";
+    Button(layout, Big, label);
 }
 
 void Gui::Generate(const int width, const int heigh, const float Scale) {

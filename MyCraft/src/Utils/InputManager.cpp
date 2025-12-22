@@ -20,7 +20,7 @@ void InputManager::Key_Callback(GLFWwindow* window, int key, int scancode, int a
                 if (game.MenuId > 0) {
                     keysState[key] = false;
                     keysToggle[key] = !keysToggle[key];
-                    game.MenuId -= 1;
+                    game.MenuId = 0;
                 } else {
                     glfwSetInputMode(window, GLFW_CURSOR, keysToggle[key] ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
                     Camera.Mouse_Visible = keysToggle[key];

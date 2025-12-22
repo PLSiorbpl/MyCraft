@@ -25,14 +25,52 @@ enum class Anch {
     TopCenter,
     LeftCenter,
     RightCenter,
-    Full
+    None
 };
 
 enum class texture : int {
-    Block = 0,
-    Item = 1,
-    Gui = 2,
-    Font = 3
+    None = 0,
+    Block = 1,
+    Item = 2,
+    Gui = 3,
+    Font = 4
+};
+
+struct Layout  {
+    Anch Anchor;
+    glm::vec2 Size;
+    glm::vec2 Offset = {0.0f,0.0f};
+};
+
+struct ProgressStyle {
+    float Progress = 0;
+    glm::vec4 BgColor;
+    texture TextureId = texture::None;
+};
+
+struct BoxStyle {
+    glm::vec4 BgColor;
+    texture TextureId = texture::None;
+};
+
+struct ButtonStyle {
+    glm::vec4 BgColor = {0.25098f, 0.25098f, 0.25098f, 0.0f};
+    glm::vec4 HoverColor = {0.941176f, 0.941176f, 0.941176f, 0.0f};
+    texture TextureId = texture::None;
+};
+
+struct TextStyle {
+    glm::vec4 Color = {0.9647f, 0.9569f, 0.9255f, 0.0f};
+    float Scale = 1;
+    int PaddingX = 1;
+    int PaddingY = 0;
+};
+
+struct Label {
+    std::string text = "";
+    TextStyle Style;
+    glm::vec2 Offset = {0.0f, 0.0f};
+    Anch anchor = Anch::None;
 };
 
 enum class Block : int {
@@ -87,15 +125,17 @@ public:
     void Draw();
     void Generate(const int width, const int heigh, const float Scale);
 
-    void DrawRectangle(const glm::vec2 &Pos, const glm::vec2 &Size, const glm::vec4 &UV, uint32_t &Flags);
-    void DrawProgressBar(float Progress, const glm::vec2 &Pos, const glm::vec2 &Size, const glm::vec4 &UV, uint32_t &Flags);
+    void DrawRectangle(const Layout& layout, const BoxStyle& style);
+    void DrawProgressBar(const Layout& layout, const ProgressStyle& style);
 
-    bool Button(const glm::vec2& pos, const glm::vec2& size, uint32_t flags, int Mode = 0, const glm::vec4 &Color_1 = {0.25098, 0.25098, 0.25098, 0}, const glm::vec4 &Color_2 = {0.941176, 0.941176, 0.941176, 0});
+    bool Button(const Layout& layout, const ButtonStyle& style, const Label& label);
 
-    glm::vec2 Anchor(Anch anchor, const glm::vec2 &Size, glm::vec2 Offset = {0.0f,0.0f}) const;
-    glm::vec4 Texture(texture tex, int id, int Variant, uint32_t &Flags, const glm::vec4 &Size = {0,0,0,0});
-    void Text(const glm::vec2& Pos, const std::string& text, const float Size, uint32_t Flags, const glm::vec2& Padding = {0,0}, const glm::vec2& Offset = {0.0f, 0.0f});
-    glm::vec4 Color(const glm::vec4 color, uint32_t &Flags);
+    glm::vec2 Anchor(const Layout& layout) const;
+    glm::vec2 AnchorText(const glm::vec2& Pos, const glm::vec2& Size, const Label& label);
+    glm::vec2 MeasureText(const Label& label);
+    glm::vec4 Texture(const texture tex, const glm::vec4 &Size, uint32_t &Flags);
+    void Text(const glm::vec2& Pos, const Label& label);
+    glm::vec4 Color(const glm::vec4& color, uint32_t &Flags);
     inline const glm::vec4 rgb(const uint64_t color) const {
         const float a = (color > 0xFFFFFFu) ? (color & 0xFF) / 255.0f : 1.0f;
         return glm::vec4(
