@@ -3,9 +3,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/glm.hpp>
-#include <imgui.h>
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_opengl3.h>
 #include <iostream>
 #include <vector>
 #include <tuple>
@@ -112,9 +109,9 @@ void Game::CleanUp() {
     for (auto& [key, chunk] : World_Map::World) {
         chunk.RemoveData();
     }
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+    //ImGui_ImplOpenGL3_Shutdown();
+    //ImGui_ImplGlfw_Shutdown();
+    //ImGui::DestroyContext();
     glDeleteProgram(SH.Solid_Shader_Blocks.Shader);
     glDeleteProgram(SH.General_Gui_Shader.Shader);
     glDeleteProgram(SH.SelectionBox_Shader.Shader);
@@ -180,12 +177,12 @@ bool Game::Init_Window() {
     glfwSetScrollCallback(window, In.Scroll_Callback);
     glfwSetCursorPosCallback(window, In.Mouse_Callback);
 
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    ImGui::StyleColorsDark();
+    //ImGui::CreateContext();
+    //ImGuiIO& io = ImGui::GetIO(); (void)io;
+    //ImGui::StyleColorsDark();
 
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 330");
+    //ImGui_ImplGlfw_InitForOpenGL(window, true);
+    //ImGui_ImplOpenGL3_Init("#version 330");
 
     game.Last_Chunk = glm::ivec3(999, 999, 999);
 
@@ -205,90 +202,12 @@ void Tick_Update(GLFWwindow* window, Movement &movement, colisions &Colisions, S
     movement.Init(window, Chunk_Size, Colisions, Sel);
 }
 
-void DebugInfo(Fun &fun, const GLenum &err, PerfStats &PS) {
-//----------------------
-// Initialization
-//----------------------
-    const auto& World = World_Map::World;
-    const float ramUsedRatio = float(PS.ramUsed) / float(game.Max_Ram * 1024 * 1024);
-    const float TrianglesDrawnRatio = float(PS.Triangles) / float(PS.Total_Triangles);
-    const ImVec4 RamBarColor = (ramUsedRatio > 0.8f) ? ImVec4(1.0f, 0.2f, 0.2f, 1.0f) :
-                    (ramUsedRatio > 0.5f) ? ImVec4(1.0f, 0.7f, 0.2f, 1.0f) :
-                                             ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
-    const ImVec4 TriBarColor = (TrianglesDrawnRatio > 0.8f) ? ImVec4(1.0f, 0.2f, 0.2f, 1.0f) :
-                    (TrianglesDrawnRatio > 0.5f) ? ImVec4(1.0f, 0.7f, 0.2f, 1.0f) :
-                                             ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
-
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-    ImGui::Begin("Debug");
-
-//----------------------
-// Performance
-//----------------------
-    ImGui::Text("OpenGL Version: %i.%i Modern: %s", PS.major, PS.minor, PS.isModernGL ? "true" : "false");
-    ImGui::Text("FPS: %d", game.FPS);
-
-    ImGui::PushStyleColor(ImGuiCol_PlotHistogram, TriBarColor);
-    std::string overlay = fun.FormatNumber(PS.Triangles) + "/" + fun.FormatNumber(PS.Total_Triangles);
-    ImGui::Text("Triangles: ");
-    ImGui::SameLine();
-    ImGui::ProgressBar(TrianglesDrawnRatio, ImVec2(0.0f, 0.0f), overlay.c_str());
-    ImGui::PopStyleColor();
-
-    ImGui::Text("Chunks: %s", fun.FormatNumber(World.size()).c_str());
-    ImGui::Text("VRam Usage: %s", fun.FormatSize(PS.Mesh_Size).c_str());
-    ImGui::Text("Mesh Capacity: %s", fun.FormatSize(PS.Capacity).c_str());
-    ImGui::Text("Render Distance: %d", Camera.RenderDistance);
-
-    overlay = fun.FormatSize(PS.ramUsed) + "/" + fun.FormatSize(game.Max_Ram * 1024 * 1024);
-    ImGui::PushStyleColor(ImGuiCol_PlotHistogram, RamBarColor);
-    ImGui::Text("Ram:");
-    ImGui::SameLine();
-    ImGui::ProgressBar(ramUsedRatio, ImVec2(0.0f, 0.0f), overlay.c_str());
-    ImGui::PopStyleColor();
-
-    ImGui::Text("World Usage: %s", fun.FormatSize(fun.calculateWorldMemory(World, Chunk_Size)).c_str());
-    ImGui::Text("OpenGL error: 0x%X", err);
-    ImGui::Text("Mesh Updates: %i/%i", game.Updates, game.Mesh_Updates);
-
-//----------------------
-// Player
-//----------------------
-    ImGui::Text(" ");
-    ImGui::Text("Camera:");
-    std::string Mode;
-    if (!Camera.Mode) Mode = "Survival"; else Mode = "Spectator";
-    ImGui::Text("Mode: %s", Mode.c_str());
-    ImGui::Text("Position: X:%.1f Y:%.1f Z:%.1f", Camera.Position.x, Camera.Position.y, Camera.Position.z);
-    ImGui::Text("Chunk: X:%d Z:%d", Camera.Chunk.x, Camera.Chunk.z);
-    ImGui::Text("Sub Chunk Y: %d", static_cast<int>(std::floor(Camera.Position.y / 16.0f)));
-    
-    ImGui::End();
-
-    ImGui::Begin("CPU Performance");
-    ImGui::Text("Frame:   %.3f ms", PS.EntireTime);
-    ImGui::Text("Chunk:   %.3f ms", PS.chunk);
-    ImGui::Text("Mesh:    %.3f ms", PS.mesh);
-    ImGui::Text("Render:  %.3f ms", PS.render);
-    ImGui::Text("Remove:  %.3f ms", PS.remove);
-    ImGui::Text("Tick:    %.3f ms", PS.tick);
-    ImGui::Text("Gui:     %.3f ms", PS.gui);
-
-    ImGui::End();
-
-    ImGui::Render();
-}
-
 void Game::MainLoop() {
     ChunkGeneration GenerateChunk(game.Seed, game.basefreq, game.baseamp, game.oct, game.addfreq, game.addamp, game.biomefreq, game.biomemult, game.biomebase, game.biomepower);
     glfwGetWindowSize(window, &game_settings.width, &game_settings.height);
     selection.Init(SH.SelectionBox_Shader.Shader);
     Fps.Init();
     while (!glfwWindowShouldClose(window)) {
-        //if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        //    glfwSetWindowShouldClose(window, true);
 
             game.DeltaTime = Fps.Start();
             FrameTime.Reset();
@@ -518,18 +437,10 @@ void Game::MainLoop() {
             guiScale = 1.0f;
         GLenum err = glGetError();
 
-        if (!game.Gui_Init) {
-            // Initialize Gui
-            game.Gui_Init = true;
-            DebugInfo(fun, err, PerfS);
-        }
-
         if (game.Frame % game_settings.Gui_Update_rate == 0) {
             //-------------------------
             // Update Gui
             gui.Generate(game_settings.width/guiScale, game_settings.height/guiScale, guiScale);
-
-            DebugInfo(fun, err, PerfS);
         }
         //-------------------------
         // Render MyGui
@@ -538,8 +449,6 @@ void Game::MainLoop() {
         shader.Set_Mat4(SH.General_Gui_Shader.Shader, "Projection", projection);
 
         gui.Draw();
-
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         PerfS.gui = time.ElapsedMs();
 
         //-------------------------

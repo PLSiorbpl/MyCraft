@@ -1,5 +1,5 @@
 # MyCraft
-![Icon](./MyCraft/Assets/Icon-Client.png)
+![Icon](./MyCraft/Assets/Textures/Logo/Icon-Client.png)
 
 - MyCraft is a Clone of Minecraft programed from scrach in **c++** and **OpenGL**. Its my First c++ project so any advices/help are welcome!
 
@@ -21,7 +21,7 @@
 -  Infinite World Generation
 -  Customizable Terrain (/MyCraft/Assets/Settings.txt)
 -  Efficient mesh generation
--  Gui System
+-  Cool Gui System
 -  Game is Alredy Compiled (Windows And Linux)
 -  Settings (/MyCraft/Assets/Settings.txt)
 

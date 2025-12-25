@@ -48,14 +48,53 @@ void Gui::Text(const glm::vec2& Pos, const Label& label) {
         const int row = idx / Cols;
         const glm::vec2 px1 = glm::vec2(col * glypW, row * glypH);
         const glm::vec2 px2 = glm::vec2(px1.x + glypW, px1.y + glypH);
-        const glm::vec4 uv = glm::vec4(px1/AtlasS, px2/AtlasS);
-        const glm::vec2 Size = glm::vec2(glypW * label.Style.Scale, glypH * label.Style.Scale);
+        const glm::vec4 uv = glm::vec4((px1/AtlasS), px2/AtlasS);
+        const glm::vec2 Size = glm::vec2((glypW * label.Style.Scale), (glypH * label.Style.Scale));
         DrawRectangle(
             {.Anchor = Anch::None, .Size = Size, .Offset = Cursor},
             {.BgColor = uv, .TextureId = texture::Font}
         );
-        Cursor += glm::vec2(Size.x - label.Style.PaddingX - Advance[idx], 0);
+        Cursor += glm::vec2(Size.x - (label.Style.PaddingX * label.Style.Scale) - (Advance[idx] * label.Style.Scale), 0);
     }
+}
+
+bool Gui::UpdateText(TextCache& c, int v, const char* fmt) {
+    if (c.i == v) return false;
+    c.i = v;
+
+    char buf[128];
+    std::snprintf(buf, 64, fmt, v);
+    c.text = buf;
+    return true;
+}
+
+bool Gui::UpdateText(TextCache& cache, float value, const char* fmt) {
+    if (std::abs(cache.f - value) < 1e-5f) return false;
+    cache.f = value;
+    char buf[128];
+    std::snprintf(buf, sizeof(buf), fmt, value);
+    cache.text = buf;
+    return true;
+}
+
+bool Gui::UpdateText(TextCache& cache, double value, const char* fmt) {
+    if (std::abs(cache.d - value) < 1e-9) return false;
+    cache.d = value;
+    char buf[128];
+    std::snprintf(buf, sizeof(buf), fmt, value);
+    cache.text = buf;
+    return true;
+}
+
+std::string Gui::Format(const char* fmt, ...) {
+    char buffer[256];
+
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buffer, sizeof(buffer), fmt, args);
+    va_end(args);
+
+    return std::string(buffer);
 }
 
 glm::vec4 Gui::Color(const glm::vec4& color, uint32_t &Flags) {
@@ -92,7 +131,8 @@ void Gui::DrawRectangle(const Layout& layout, const BoxStyle& style) {
     }
 }
 
-void Gui::DrawProgressBar(const Layout& layout, const ProgressStyle& style) {
+void Gui::DrawProgressBar(const Layout& layout, const ProgressStyle& style, Label* label) {
+    const glm::vec2 Pos = Anchor(layout);
     const float Progress = glm::clamp(style.Progress, 0.0f, 1.0f);
     const float filledWidth = layout.Size.x * Progress;
 
@@ -100,6 +140,10 @@ void Gui::DrawProgressBar(const Layout& layout, const ProgressStyle& style) {
         {.Anchor = layout.Anchor, .Size = {filledWidth, layout.Size.y}, .Offset = layout.Offset},
         {.BgColor = style.BgColor, .TextureId = style.TextureId}
     );
+    if (label != nullptr) {
+        const glm::vec2 TextPos = AnchorText(Pos, layout.Size, *label);
+        Text(TextPos, *label);
+    }
 }
 
 void Gui::Push(const glm::vec2& Pos, const glm::vec3& UV, const uint32_t& Flags) {
@@ -188,7 +232,7 @@ glm::vec2 Gui::MeasureText(const Label& label) {
         if (c < ' ' || c > '~') c = '?';
         const int idx = c - ' ';
         const glm::vec2 Size = glm::vec2(glypW * label.Style.Scale, glypH * label.Style.Scale);
-        TextSize.x += Size.x - label.Style.PaddingX - Advance[idx];
+        TextSize.x += Size.x - (label.Style.PaddingX * label.Style.Scale) - (Advance[idx] * label.Style.Scale);
     }
     return TextSize;
 }
@@ -213,10 +257,24 @@ glm::vec2 Gui::AnchorText(const glm::vec2& Pos, const glm::vec2& Size, const Lab
 }
 
 bool Gui::Button(const Layout& layout, const ButtonStyle& style, const Label& label) {
+    const int id = ID;
+    ID += 1;
+    bool clicked = false;
     const glm::vec2 Pos = Anchor(layout);
     const bool hover = MouseInRect(Pos, layout.Size);
 
     glm::vec4 Col = hover ? style.HoverColor : style.BgColor;
+    
+    if (hover && In.MouseState[GLFW_MOUSE_BUTTON_1] && ActiveId == -1) {
+        ActiveId = id;
+    }
+    if (!In.MouseState[GLFW_MOUSE_BUTTON_1]) {
+        if (ActiveId == id && hover)
+            clicked = true;
+
+        if (ActiveId == id)
+            ActiveId = -1;
+    }
 
     DrawRectangle(
         layout,
@@ -225,11 +283,24 @@ bool Gui::Button(const Layout& layout, const ButtonStyle& style, const Label& la
     const glm::vec2 TextPos = AnchorText(Pos, layout.Size, label);
     Text(TextPos, label);
     
-    return hover && In.MouseState[GLFW_MOUSE_BUTTON_1];
+    return clicked;
+}
+
+glm::vec4 Gui::Gradient(float x, const glm::vec4& a, const glm::vec4& b) {
+    x = glm::clamp(x, 0.0f, 1.0f);
+    return glm::mix(a, b, x);
+}
+
+glm::vec4 Gui::Gradient(float x, const glm::vec4& a, const glm::vec4& b, const glm::vec4& c) {
+    x = glm::clamp(x, 0.0f, 1.0f);
+    if (x < 0.5f)
+        return glm::mix(a, b, x * 2.0f);
+    else
+        return glm::mix(b, c, (x - 0.5f) * 2.0f);
 }
 
 const int Gui::Advance[('~'-' ')+1] = {
-    /* ' ' */ 0,
+    /* ' ' */ 1,
     /* '!' */ 4,
     /* '"' */ 2,
     /* '#' */ 0,
@@ -255,8 +326,8 @@ const int Gui::Advance[('~'-' ')+1] = {
     /* '7' */ 0,
     /* '8' */ 0,
     /* '9' */ 0,
-    /* ':' */ 3,
-    /* ';' */ 3,
+    /* ':' */ 4,
+    /* ';' */ 4,
     /* '<' */ 2,
     /* '=' */ 2,
     /* '>' */ 2,

@@ -25,10 +25,8 @@ void main() {
             color = texture(GuiTexture, TexCoord.xy);
         } else if (Get(Flags, 2)) {
             // Font
-            color = texture(FontTexture, TexCoord.xy);
-            if (color.a > 0) {
-                color.rgb = vec3(0.9647f, 0.9569f, 0.9255f);
-            }
+            float tex = texture2D(FontTexture, TexCoord.xy).a;
+            color = vec4(vec3(0.9647f, 0.9569f, 0.9255f), tex);
         }
     } else {
         color = vec4(TexCoord, 0.85);

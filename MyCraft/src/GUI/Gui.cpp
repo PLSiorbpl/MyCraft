@@ -74,8 +74,9 @@ void Gui::Crosschair() {
 }
 
 void Gui::Menu() {
-    ButtonStyle Big = {{0,0,150,20}, {0,21,150,41}, texture::Gui};
-    ButtonStyle Small = {{151,0,221,20}, {151,21,221,41}, texture::Gui};
+    ID = 0;
+    static ButtonStyle Big = {{0,0,150,20}, {0,21,150,41}, texture::Gui};
+    static ButtonStyle Small = {{151,0,221,20}, {151,21,221,41}, texture::Gui};
     
     // Resume
     Layout layout = {Anch::Center, {150, 20}, {0.0f, -25.0f}};
@@ -107,8 +108,9 @@ void Gui::Menu() {
 }
 
 void Gui::Settings() {
-    ButtonStyle Big = {{0,0,150,20}, {0,21,150,41}, texture::Gui};
-    ButtonStyle Small = {{151,0,221,20}, {151,21,221,41}, texture::Gui};
+    ID = 0;
+    static ButtonStyle Big = {{0,0,150,20}, {0,21,150,41}, texture::Gui};
+    static ButtonStyle Small = {{151,0,221,20}, {151,21,221,41}, texture::Gui};
 
     Layout layout = {Anch::Center, {70, 20}, {-(70+10)/2, -25.0f}};
     Label label = {"???", .anchor = Anch::Center};
@@ -156,18 +158,141 @@ void Gui::Settings() {
     Button(layout, Big, label);
 }
 
+void Gui::Multiplayer() {
+    ID = 0;
+    static ButtonStyle Big = {{0,0,150,20}, {0,21,150,41}, texture::Gui};
+    static ButtonStyle Small = {{151,0,221,20}, {151,21,221,41}, texture::Gui};
+
+    Layout layout = {Anch::Center, {150, 20}, {0, 50}};
+    Label label = {.anchor = Anch::Center};
+    
+    label.text = "Back";
+    if (Button(layout, Big, label)) {
+        game.MenuId = 0;
+    }
+
+    layout.Offset.y = 25;
+    label.text = "Last (wip)";
+    if (Button(layout, Big, label)) {
+
+    }
+
+    layout.Offset.y = -25;
+    label.text = "Host";
+    if (Button(layout, Big, label)) {
+
+    }
+
+    layout.Offset.y = 0;
+    layout.Size.x = 70;
+    label.text = "Join";
+    if (Button(layout, Small, label)) {
+        game.MenuId = 3;
+    }
+}
+
+void Gui::MultiplayerJoin() {
+    ID = 0;
+    static ButtonStyle Big = {{0,0,150,20}, {0,21,150,41}, texture::Gui};
+    static ButtonStyle Small = {{151,0,221,20}, {151,21,221,41}, texture::Gui};
+
+    Layout layout = {Anch::Center, {70, 20}, {0, 25}};
+    Label label = {.anchor = Anch::Center};
+
+    label.text = "Join";
+    if (Button(layout, Small, label)) {
+        // lol scary stuff here
+    }
+
+    layout.Size = {150, 20};
+    layout.Offset.y = 50;
+    label.text = "Back";
+    if (Button(layout, Big, label)) {
+        game.MenuId = 2;
+    }
+
+    layout.Offset.y = 0;
+    label.anchor = Anch::LeftCenter;
+    label.Offset.x = 3;
+    label.text = "Port:";
+    Button(layout, Big, label);
+
+    layout.Offset.y = -25;
+    label.text = "Ip:";
+    Button(layout, Big, label);
+}
+
+void Gui::Performance() {
+    Layout layout = {Anch::TopLeft, {60, 50}, {1,1}};
+
+    DrawRectangle(layout, {{rgb(0x101010)}});
+
+    static TextCache fps;
+    UpdateText(fps, game.FPS, "FPS: %d");
+    layout.Offset = {2,1};
+    Text(Anchor(layout), {.text = fps.text, .Style = {.Scale = 0.5}});
+
+    layout.Offset.y = 6;
+    Text(Anchor(layout), {.text = "Cpu Times:", .Style = {.Scale = 0.5}});
+    static TextCache FrameTime;
+    UpdateText(FrameTime, PerfS.EntireTime, "Frame Time: %.3fms");
+    layout.Offset.y = 11;
+    Text(Anchor(layout), {.text = FrameTime.text, .Style = {.Scale = 0.5}});
+
+    static TextCache MeshTime;
+    UpdateText(MeshTime, PerfS.mesh, "Mesh Time: %.3fms");
+    layout.Offset.y = 16;
+    Text(Anchor(layout), {.text = MeshTime.text, .Style = {.Scale = 0.5}});
+
+    static TextCache RenderTime;
+    UpdateText(RenderTime, PerfS.render, "Render Time: %.3fms");
+    layout.Offset.y = 21;
+    Text(Anchor(layout), {.text = RenderTime.text, .Style = {.Scale = 0.5}});
+
+    static TextCache GuiTime;
+    UpdateText(GuiTime, PerfS.gui, "Gui Time: %.3fms");
+    layout.Offset.y = 26;
+    Text(Anchor(layout), {.text = GuiTime.text, .Style = {.Scale = 0.5}});
+
+    static TextCache TickTime;
+    UpdateText(TickTime, PerfS.tick, "Tick Time: %.3fms");
+    layout.Offset.y = 31;
+    Text(Anchor(layout), {.text = TickTime.text, .Style = {.Scale = 0.5}});
+
+    static size_t LastRam;
+    const float ramUsedRatio = float(PerfS.ramUsed) / float(game.Max_Ram * 1024 * 1024);
+    static ProgressStyle style = {.Progress = (ramUsedRatio), .TextureId = texture::None};
+    static Label label = {.Style = {.Scale = 0.5}, .anchor = Anch::Center};
+    if (LastRam != PerfS.ramUsed) {
+        style.BgColor = Gradient(ramUsedRatio, rgb(0x00ff00), rgb(0xffff00), rgb(0xff0000));
+        label.text = Format("%s/%s", fun.FormatSize(PerfS.ramUsed).c_str(),fun.FormatSize(game.Max_Ram * 1024 * 1024).c_str());
+        LastRam = PerfS.ramUsed;
+    }
+    layout.Offset.y = 37;
+    layout.Size = {53, 10};
+    DrawProgressBar(layout, style, &label);
+}
+
 void Gui::Generate(const int width, const int heigh, const float Scale) {
     Clear(width, heigh, Scale);
 
+    if (!In.keysToggle[GLFW_KEY_F3]) Performance();
+
     HotBar();
+
     if (!Camera.Mode) Statistics();
+
     Crosschair();
+
     if (In.keysState[GLFW_KEY_TAB] && !In.keysToggle[GLFW_KEY_ESCAPE]) { Health(); }
+
     if (In.keysToggle[GLFW_KEY_ESCAPE]) {
-        if (game.MenuId == 0) { Menu(); Camera.Can_Move = false; }
-        else if (game.MenuId == 1) { Settings(); Camera.Can_Move = false; }
-    }
-    else { Camera.Can_Move = true; }
+        Camera.Can_Move = false;
+        if (game.MenuId == 0) { Menu(); }
+        else if (game.MenuId == 1) { Settings(); }
+        else if (game.MenuId == 2) { Multiplayer(); }
+        else if (game.MenuId == 3) { MultiplayerJoin(); }
+    } else { Camera.Can_Move = true; }
 
     Send_Data();
 }

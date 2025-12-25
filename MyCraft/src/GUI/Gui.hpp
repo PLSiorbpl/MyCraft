@@ -8,6 +8,7 @@
 
 #include "Utils/Globals.hpp"
 #include "Utils/InputManager.hpp"
+#include "Utils/Function.hpp"
 
 struct GuiVertex {
     glm::vec2 Pos; // Position
@@ -68,9 +69,16 @@ struct TextStyle {
 
 struct Label {
     std::string text = "";
-    TextStyle Style;
+    TextStyle Style = {{0.9647f, 0.9569f, 0.9255f, 0.0f}, 1, 1, 0};
     glm::vec2 Offset = {0.0f, 0.0f};
     Anch anchor = Anch::None;
+};
+
+struct TextCache {
+    int i = 0;
+    float f = 0.0001f;
+    double d = std::numeric_limits<double>::quiet_NaN();
+    std::string text = "";
 };
 
 enum class Block : int {
@@ -110,6 +118,7 @@ public:
 class Gui {
 public:
     Flags32 F32;
+    Fun fun;
     std::vector<GuiVertex> Mesh;
     GLuint vao = 0;
     GLuint vbo = 0;
@@ -117,6 +126,8 @@ public:
 
     glm::vec2 Mouse;
     float width, height;
+    int ActiveId = 0;
+    int ID = 0;
     static const int Advance[('~'-' ')+1];
 
     void Clear(const int w, const int h, const float Scale);
@@ -126,7 +137,7 @@ public:
     void Generate(const int width, const int heigh, const float Scale);
 
     void DrawRectangle(const Layout& layout, const BoxStyle& style);
-    void DrawProgressBar(const Layout& layout, const ProgressStyle& style);
+    void DrawProgressBar(const Layout& layout, const ProgressStyle& style, Label* label = nullptr);
 
     bool Button(const Layout& layout, const ButtonStyle& style, const Label& label);
 
@@ -135,7 +146,14 @@ public:
     glm::vec2 MeasureText(const Label& label);
     glm::vec4 Texture(const texture tex, const glm::vec4 &Size, uint32_t &Flags);
     void Text(const glm::vec2& Pos, const Label& label);
+    bool UpdateText(TextCache& cache, int value, const char* fmt = "");
+    bool UpdateText(TextCache& cache, float value, const char* fmt = "");
+    bool UpdateText(TextCache& cache, double value, const char* fmt = "");
+
+    glm::vec4 Gradient(float x, const glm::vec4& a, const glm::vec4& b);
+    glm::vec4 Gradient(float x, const glm::vec4& a, const glm::vec4& b, const glm::vec4& c);
     glm::vec4 Color(const glm::vec4& color, uint32_t &Flags);
+    std::string Format(const char* fmt, ...);
     inline const glm::vec4 rgb(const uint64_t color) const {
         const float a = (color > 0xFFFFFFu) ? (color & 0xFF) / 255.0f : 1.0f;
         return glm::vec4(
@@ -157,5 +175,8 @@ public:
     void Statistics();
     void Menu();
     void Settings();
+    void Multiplayer();
+    void MultiplayerJoin();
     void Crosschair();
+    void Performance();
 };
