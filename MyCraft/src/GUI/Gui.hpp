@@ -5,6 +5,7 @@
 #include <vector>
 #include <array>
 #include <string>
+#include <cstdarg>
 
 #include "Utils/Globals.hpp"
 #include "Utils/InputManager.hpp"

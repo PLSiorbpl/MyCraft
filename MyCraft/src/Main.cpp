@@ -12,6 +12,9 @@
 #if defined(_WIN32) // Windows
     #include <windows.h>
     #include <psapi.h>
+    
+    #define _CRTDBG_MAP_ALLOC
+    #include <crtdbg.h>
 #elif defined(__linux__) // Linux
     #include <unistd.h>
     #include <sys/types.h>
@@ -22,9 +25,6 @@
 #include <filesystem>
 #include "FastNoiseLite.h"
 #define STB_IMAGE_IMPLEMENTATION
-
-#define _CRTDBG_MAP_ALLOC
-#include <crtdbg.h>
 
 // My Files
 #include "GUI/Gui.hpp"
@@ -110,6 +110,7 @@ void Game::Init_Settings(const std::string Path) {
 }
 
 void Game::CleanUp() {
+    glFinish();
     for (auto& [key, chunk] : World_Map::World) {
         chunk.RemoveData();
     }
@@ -273,20 +274,22 @@ void Game::MainLoop() {
             PerfS.tick = time.ElapsedMs();
             //-------------------------
             // Mesh Generation
-            for (int i = World_Map::Render_List.size() - 1; i >= 0; --i) {
-                auto& info = World_Map::Render_List[i];
-                if (info.Delete == 5) {
-                
-                    auto& chunk = World_Map::World.find({info.chunkX, info.chunkZ})->second;
-                    chunk.InRender = false;
-                
-                    glDeleteBuffers(1, &info.vbo);
-                    glDeleteVertexArrays(1, &info.vao);
-                
-                    if (i != World_Map::Render_List.size() - 1)
-                        std::swap(World_Map::Render_List[i], World_Map::Render_List.back());
-                
-                    World_Map::Render_List.pop_back();
+            if (!World_Map::Render_List.empty()) {
+                for (size_t i = World_Map::Render_List.size(); i-- > 0;) {
+                    auto& info = World_Map::Render_List[i];
+                    if (info.Delete == 5) {
+                    
+                        auto& chunk = World_Map::World.find({info.chunkX, info.chunkZ})->second;
+                        chunk.InRender = false;
+                    
+                        glDeleteBuffers(1, &info.vbo);
+                        glDeleteVertexArrays(1, &info.vao);
+                    
+                        if (i != World_Map::Render_List.size() - 1)
+                            std::swap(World_Map::Render_List[i], World_Map::Render_List.back());
+                    
+                        World_Map::Render_List.pop_back();
+                    }
                 }
             }
 
@@ -357,15 +360,17 @@ void Game::MainLoop() {
             }
             PerfS.mesh = time.ElapsedMs();
             // Delete already done chunks
-            for (int i = World_Map::Mesh_Queue.size() - 1; i-- > 0;) {
-                Chunk* chunk = World_Map::Mesh_Queue[i];
+            if (!World_Map::Mesh_Queue.empty()) {
+                for (size_t i = World_Map::Mesh_Queue.size(); i-- > 0;) {
+                    Chunk* chunk = World_Map::Mesh_Queue[i];
 
-                if (!chunk->Ready_Render)
-                    continue;
+                    if (!chunk->Ready_Render)
+                        continue;
 
-                if (i != World_Map::Mesh_Queue.size() - 1)
-                    std::swap(World_Map::Mesh_Queue[i], World_Map::Mesh_Queue.back());
-                World_Map::Mesh_Queue.pop_back();
+                    if (i != World_Map::Mesh_Queue.size() - 1)
+                        std::swap(World_Map::Mesh_Queue[i], World_Map::Mesh_Queue.back());
+                    World_Map::Mesh_Queue.pop_back();
+                }
             }
 
         //-------------------------
@@ -396,7 +401,7 @@ void Game::MainLoop() {
             for (auto& info : World_Map::Render_List) {
                 if (info.Delete > 0) {
                     info.Delete++;
-                    continue;
+                    //continue;
                 }
 
                 const glm::vec3 chunkMin = glm::vec3(info.chunkX * Chunk_Size.x, 0, info.chunkZ * Chunk_Size.z);

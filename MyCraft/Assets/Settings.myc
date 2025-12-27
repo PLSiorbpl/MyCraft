@@ -1,5 +1,5 @@
 // Graphics:
-RAM=4096 // in MB
+RAM=8192 // in MB
 Render Distance=4
 Out Of ram=1 // 1 - Dont Exit Program and change RenderDist by -1 | 0 - Exit Program (Crash)
 V-Sync=1

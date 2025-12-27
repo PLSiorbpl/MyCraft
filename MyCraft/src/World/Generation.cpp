@@ -50,32 +50,36 @@ void ChunkGeneration::RemoveChunks() {
             toRemove.push_back(key);
         }
     }
-    glFinish();
+    if (!RL.empty()) glFinish();
     for (const auto& key : toRemove) {
         const int cx = key.first;
         const int cz = key.second;
-        for (int i = RL.size() - 1; i-- > 0;) {
-            if (RL[i].chunkX == cx && RL[i].chunkZ == cz) {
-                auto& chunk = World_Map::World.find({RL[i].chunkX, RL[i].chunkZ})->second;
-                chunk.InRender = false;
-                glDeleteBuffers(1, &RL[i].vbo);
-                glDeleteVertexArrays(1, &RL[i].vao);
-                // Fast delete by moving chunk to back
-                RL[i] = RL.back();
-                RL.pop_back();
-                break;
+        if (!RL.empty()) {
+            for (int i = RL.size(); i-- > 0;) {
+                if (RL[i].chunkX == cx && RL[i].chunkZ == cz) {
+                    auto& chunk = World_Map::World.find({RL[i].chunkX, RL[i].chunkZ})->second;
+                    chunk.InRender = false;
+                    glDeleteBuffers(1, &RL[i].vbo);
+                    glDeleteVertexArrays(1, &RL[i].vao);
+                    // Fast delete by moving chunk to back
+                    RL[i] = RL.back();
+                    RL.pop_back();
+                    break;
+                }
             }
         }
 
-        for (int i = chunk.size() - 1; i-- > 0;) {
-            if (chunk[i]->chunkX == cx && chunk[i]->chunkZ == cz) {
-                // Fast delete by moving chunk to back
-                chunk[i] = chunk.back();
-                chunk.pop_back();
-                break;
+        if (!chunk.empty()){
+            for (int i = chunk.size(); i-- > 0;) {
+                if (chunk[i]->chunkX == cx && chunk[i]->chunkZ == cz) {
+                    // Fast delete by moving chunk to back
+                    chunk[i] = chunk.back();
+                    chunk.pop_back();
+                    break;
+                }
             }
         }
-        
+
         auto it = World.find(key);
         if (it != World.end()) {
             it->second.RemoveData();

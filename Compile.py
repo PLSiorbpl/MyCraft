@@ -6,17 +6,17 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 # Settings
 Compiler = "g++"
-Optimization = "-O0"
-Debug = "-g" # -g
+Optimization = ['-O3']
+Debug = "" # -g '-D_GLIBCXX_DEBUG', '-fno-omit-frame-pointer'
 Open_Game = True
 Last_Compiled = "Last_Compiled.txt"
 Source_Includes = ['-I', 'MyCraft/src', '-I', 'MyCraft/src/Render', '-I', 'MyCraft/src/World', '-I', 'MyCraft/src/Player', '-I', 'MyCraft/src/Utils', '-I', 'MyCraft/src/Shader_Utils',
                     '-IMyCraft/Include']#, '-IMyCraft/Include/ImGui', '-IMyCraft/Include/ImGui/backends']
 if sys.platform == "win32": # Windows
-    Flags = ['-g', '-D_GLIBCXX_DEBUG', '-fno-omit-frame-pointer', '-std=c++17', '-LMyCraft/lib', '-lglfw3', '-lgdi32', '-lopengl32', '-static-libstdc++', '-static-libgcc', '-static']
+    Flags = ['-Wall', '-Wextra', '-Wpedantic', '-std=c++17', '-LMyCraft/lib', '-lglfw3', '-lgdi32', '-lopengl32', '-static-libstdc++', '-static-libgcc', '-static']
     Destination = ["../Mycraft.exe"]
 if sys.platform == "linux": # Linux
-    Flags = ['-std=c++17', '-LMyCraft/lib', '-lglfw', '-lGL', '-lpthread', '-ldl', '-lX11', '-static-libstdc++', '-static-libgcc']
+    Flags = ['-std=c++17', '-Wall', '-Wextra', '-Wpedantic','-D_GLIBCXX_DEBUG', '-LMyCraft/lib','-fsanitize=address,undefined', '-fno-omit-frame-pointer','-fno-sanitize=signed-integer-overflow', '-lglfw', '-lGL', '-lpthread', '-ldl', '-lX11', '-static-libstdc++', '-static-libgcc']
     Destination = ["../Mycraft-Linux"]
 Error = False
 
@@ -111,7 +111,7 @@ def Set_Last_Modified(File, Clean):
 # Compile Files
 def Compile_File(File, PreCompile):
     obj_file = os.path.join(Base, PreCompile, os.path.splitext(os.path.basename(File))[0] + ".o")
-    cmd_Command = [Compiler] + Source_Includes + ["-c", File, "-o", obj_file] + [Debug] + [Optimization] + Flags
+    cmd_Command = [Compiler] + Source_Includes + ["-c", File, "-o", obj_file] + Optimization + Flags
     result = subprocess.run(cmd_Command, capture_output=True, text=True)
     if result.returncode == 0:
         Print_Green(f"Object {File} was compiled to {obj_file} with {Optimization} flag")
@@ -145,7 +145,7 @@ def Link(Destination_exe, PreCompile):
         return
     
     output_exe = os.path.join(Base, Destination_exe)
-    cmd = [Compiler] + objects + [Optimization] + Flags + ["-o", output_exe]
+    cmd = [Compiler] + objects + Optimization + Flags + ["-o", output_exe]
     small_cmd = [Compiler] + objects + ["-o", output_exe]
     
     Print_Cyan(f"Linking: {small_cmd}")
