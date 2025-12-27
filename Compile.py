@@ -6,14 +6,14 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 # Settings
 Compiler = "g++"
-Optimization = "-O3"
-Debug = "" # -g
+Optimization = "-O0"
+Debug = "-g" # -g
 Open_Game = True
 Last_Compiled = "Last_Compiled.txt"
 Source_Includes = ['-I', 'MyCraft/src', '-I', 'MyCraft/src/Render', '-I', 'MyCraft/src/World', '-I', 'MyCraft/src/Player', '-I', 'MyCraft/src/Utils', '-I', 'MyCraft/src/Shader_Utils',
                     '-IMyCraft/Include']#, '-IMyCraft/Include/ImGui', '-IMyCraft/Include/ImGui/backends']
 if sys.platform == "win32": # Windows
-    Flags = ['-std=c++17', '-LMyCraft/lib', '-lglfw3', '-lgdi32', '-lopengl32', '-static-libstdc++', '-static-libgcc', '-static']
+    Flags = ['-g', '-D_GLIBCXX_DEBUG', '-fno-omit-frame-pointer', '-std=c++17', '-LMyCraft/lib', '-lglfw3', '-lgdi32', '-lopengl32', '-static-libstdc++', '-static-libgcc', '-static']
     Destination = ["../Mycraft.exe"]
 if sys.platform == "linux": # Linux
     Flags = ['-std=c++17', '-LMyCraft/lib', '-lglfw', '-lGL', '-lpthread', '-ldl', '-lX11', '-static-libstdc++', '-static-libgcc']
@@ -111,7 +111,7 @@ def Set_Last_Modified(File, Clean):
 # Compile Files
 def Compile_File(File, PreCompile):
     obj_file = os.path.join(Base, PreCompile, os.path.splitext(os.path.basename(File))[0] + ".o")
-    cmd_Command = [Compiler] + Source_Includes + ["-c", File, "-o", obj_file] + [Optimization] + Flags
+    cmd_Command = [Compiler] + Source_Includes + ["-c", File, "-o", obj_file] + [Debug] + [Optimization] + Flags
     result = subprocess.run(cmd_Command, capture_output=True, text=True)
     if result.returncode == 0:
         Print_Green(f"Object {File} was compiled to {obj_file} with {Optimization} flag")

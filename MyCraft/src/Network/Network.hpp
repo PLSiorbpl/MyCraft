@@ -2,13 +2,18 @@
 
 #include <asio.hpp>
 #include <thread>
+#include <array>
 #include <atomic>
+#include <mutex>
+
+#include "TsQueue.hpp"
 
 class Network {
     public:
     enum class PacketType : uint8_t {
         HELLO = 1,
         WELCOME = 2,
+        CHAT = 3
     };
 
     struct PacketHeader {
@@ -19,48 +24,43 @@ class Network {
     struct Packet {
         PacketHeader h;
         std::vector<uint8_t> data;
-
         size_t size() const {
             return sizeof(PacketHeader) + data.size();
         }
     };
 
-    template<typename T, size_t N>
-    struct RingQueue {
-        std::array<T, N> buf;
-        std::atomic<size_t> head = 0;
-        std::atomic<size_t> tail = 0;
+    struct Client {
+        asio::ip::tcp::socket socket;
+        std::string Name;
+        Packet packet;
 
-        bool push(const T& v) {
-            size_t h = head.load();
-            size_t next = (h + 1) % N;
-            if (next == tail.load()) return false;
-            buf[h] = v;
-            head.store(next);
-            return true;
-        }
-
-        bool pop(T& out) {
-            size_t t = tail.load();
-            if (t == head.load()) return false;
-            out = buf[t];
-            tail.store((t + 1) % N);
-            return true;
-        }
+        Client(asio::io_context& io, std::string& name) : socket(io), Name(name) {}
     };
 
     // Queue for 256 packets
-    RingQueue<Packet, 256> In;
-    RingQueue<Packet, 256> Out;
+    TsQueue<Packet, 256> In;
+    TsQueue<Packet, 256> Out;
+    // List of Clients alive
+    std::vector<std::shared_ptr<Client>> clients;
 
+    // Client
     asio::io_context context;
-    asio::ip::udp::socket socket;
+    asio::ip::tcp::resolver resolver;
     std::thread netThread;
-    asio::ip::udp::endpoint server;
+    // Server
+    asio::ip::tcp::acceptor acceptor;
+    asio::io_context context_serv;
+    std::thread servThread;
 
-    void InitClient(const std::string& Ip, const uint16_t Port);
+    // Client
+    void InitClient(const std::string& Ip, const uint16_t Port, std::string& Name);
+    void Disconect(std::shared_ptr<Client> player);
+    void Connect_To_Server(std::shared_ptr<Client> player);
+    void ReciveHeader(std::shared_ptr<Client> player);
+    void RecivePayLoad(std::shared_ptr<Client> player);
+    // Server
+    void Disconect_Player(std::shared_ptr<Client> player);
     void InitServer(uint16_t Port);
-
-    void ReciveHeader();
-    void RecivePayLoad(const PacketHeader& header);
+    void Accept_Players();
+    void Verify_Player(std::shared_ptr<Client> player);
 };

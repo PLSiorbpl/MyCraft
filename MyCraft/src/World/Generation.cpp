@@ -1,5 +1,6 @@
 #include <glad/glad.h>
 #include "Generation.hpp"
+#include <iostream>
 
 void ChunkGeneration::GenerateChunks(const glm::ivec3 ChunkSize) {
     auto& World = World_Map::World;
@@ -49,11 +50,10 @@ void ChunkGeneration::RemoveChunks() {
             toRemove.push_back(key);
         }
     }
-
+    glFinish();
     for (const auto& key : toRemove) {
         const int cx = key.first;
         const int cz = key.second;
-        
         for (int i = RL.size() - 1; i-- > 0;) {
             if (RL[i].chunkX == cx && RL[i].chunkZ == cz) {
                 auto& chunk = World_Map::World.find({RL[i].chunkX, RL[i].chunkZ})->second;
@@ -66,6 +66,7 @@ void ChunkGeneration::RemoveChunks() {
                 break;
             }
         }
+
         for (int i = chunk.size() - 1; i-- > 0;) {
             if (chunk[i]->chunkX == cx && chunk[i]->chunkZ == cz) {
                 // Fast delete by moving chunk to back
@@ -74,6 +75,7 @@ void ChunkGeneration::RemoveChunks() {
                 break;
             }
         }
+        
         auto it = World.find(key);
         if (it != World.end()) {
             it->second.RemoveData();

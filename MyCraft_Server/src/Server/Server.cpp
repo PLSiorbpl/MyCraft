@@ -102,6 +102,7 @@ class Server {
         void RemoveClient(std::shared_ptr<Client> Player) {
             auto it = std::find(Players.begin(), Players.end(), Player);
             if (it != Players.end()) {
+                Player->socket.close();
                 Players.erase(it);
             }
         }

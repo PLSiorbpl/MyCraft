@@ -81,8 +81,10 @@ void Mesh::GenerateMesh(const Chunk& chunk, std::vector<Chunk::Vertex>& vertices
             } else {
                 uint32_t bits = 0;
                 for (int x = 0; x < ChunkSize.x; x++) {
-                    if (IsBlockAt(worldOffsetX + x, y + 1, worldOffsetZ + z, ChunkSize)) {
-                        bits |= (uint32_t(1) << x);
+                    if (y+1 < ChunkSize.y) {
+                        if (IsBlockAt(worldOffsetX + x, y + 1, worldOffsetZ + z, ChunkSize)) {
+                            bits |= (uint32_t(1) << x);
+                        }
                     }
                 }
                 nextY = bits;

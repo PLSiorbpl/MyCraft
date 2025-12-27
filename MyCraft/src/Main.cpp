@@ -22,6 +22,10 @@
 #include <filesystem>
 #include "FastNoiseLite.h"
 #define STB_IMAGE_IMPLEMENTATION
+
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+
 // My Files
 #include "GUI/Gui.hpp"
 
@@ -392,7 +396,7 @@ void Game::MainLoop() {
             for (auto& info : World_Map::Render_List) {
                 if (info.Delete > 0) {
                     info.Delete++;
-                    //continue;
+                    continue;
                 }
 
                 const glm::vec3 chunkMin = glm::vec3(info.chunkX * Chunk_Size.x, 0, info.chunkZ * Chunk_Size.z);

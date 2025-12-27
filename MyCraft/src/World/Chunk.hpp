@@ -44,9 +44,16 @@ public:
 
     Chunk() : width(0), height(0), depth(0), chunkX(0), chunkZ(0), blocks(0) {}
 
-    inline int index(int x, int y, int z) const noexcept {
-        return x + z * width + y * width * depth;
-    }
+    inline int index(int x, int y, int z) const {
+    assert(x >= 0 && x < width);
+    assert(y >= 0 && y < height);
+    assert(z >= 0 && z < depth);
+
+    const int idx = x + z * width + y * width * depth;
+    assert(idx >= 0 && idx < (int)blocks.size());
+    return idx;
+}
+
 
     inline const Block& get(int x, int y, int z) const noexcept {
         return blocks[index(x, y, z)];

@@ -1,6 +1,6 @@
 // Graphics:
 RAM=4096 // in MB
-Render Distance=24
+Render Distance=4
 Out Of ram=1 // 1 - Dont Exit Program and change RenderDist by -1 | 0 - Exit Program (Crash)
 V-Sync=1
 Gui Update Rate=4 // 0 will crash 8 is good enough

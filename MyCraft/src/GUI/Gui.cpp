@@ -108,17 +108,18 @@ void Gui::Menu() {
 }
 
 void Gui::Settings() {
+    static int renderd = 0;
     ID = 0;
     static ButtonStyle Big = {{0,0,150,20}, {0,21,150,41}, texture::Gui};
     static ButtonStyle Small = {{151,0,221,20}, {151,21,221,41}, texture::Gui};
 
     Layout layout = {Anch::Center, {70, 20}, {-(70+10)/2, -25.0f}};
-    Label label = {"???", .anchor = Anch::Center};
-    Button(layout, Small, label);
+    Label label = {"Render +", .anchor = Anch::Center};
 
-    layout.Offset.y = -25;
-    label.text = "???";
-    Button(layout, Small, label);
+    if (Button(layout, Small, label)) {
+        renderd += 1;
+        if (Camera.RenderDistance+renderd > 48) renderd -= 1;
+    }
 
     layout.Offset.y = 0;
     label.text = "???";
@@ -130,12 +131,11 @@ void Gui::Settings() {
 
 
     layout.Offset = {(layout.Size.x+10)/2, -25};
-    label.text = "???";
-    Button(layout, Small, label);
-
-    layout.Offset.y = -25;
-    label.text = "???";
-    Button(layout, Small, label);
+    label.text = "Render -";
+    if (Button(layout, Small, label)) {
+        renderd -= 1;
+        if (Camera.RenderDistance+renderd < 2) renderd += 1;
+    }
 
     layout.Offset.y = 0;
     label.text = "???";
@@ -150,11 +150,16 @@ void Gui::Settings() {
     layout.Size = {150, 20};
     label.text = "Save";
     if (Button(layout, Big, label)) {
+        Camera.RenderDistance += renderd;
+        renderd = 0;
         game.MenuId = 0;
+        game.Last_Chunk = glm::ivec3(9999);
     }
 
+    static TextCache rd;
+    UpdateText(rd, Camera.RenderDistance+renderd, "Render Dist: %d");
     layout.Offset = {0, -50};
-    label.text = "???";
+    label.text = rd.text;
     Button(layout, Big, label);
 }
 
