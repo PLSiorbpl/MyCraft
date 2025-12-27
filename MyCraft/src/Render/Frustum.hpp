@@ -12,6 +12,7 @@ class Frustum {
         Plane planes[6];
     };
 
-    Frust ExtractFrustum(const glm::mat4& clip);
-    bool IsAABBVisible(const Frust& f, const glm::vec3& min, const glm::vec3& max);
+    static Frust ExtractFrustum(const glm::mat4& clip);
+
+    static bool IsAABBVisible(const Frust& f, const glm::vec3& min, const glm::vec3& max);
 };

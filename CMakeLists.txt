@@ -6,7 +6,14 @@ set(CMAKE_CXX_STANDARD 17)
 add_subdirectory(MyCraft/Include/glad)
 
 file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/src/*.cpp")
-add_executable(${CMAKE_PROJECT_NAME} ${MY_SOURCES})
+
+set(WINDOWS_ICON "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/src/Utils/resource.rc")
+
+if(WIN32)
+    add_executable(${CMAKE_PROJECT_NAME} WIN32 ${MY_SOURCES} ${WINDOWS_ICON})
+else()
+    add_executable(${CMAKE_PROJECT_NAME} ${MY_SOURCES})
+endif()
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/Include"

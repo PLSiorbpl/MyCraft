@@ -57,8 +57,8 @@ void ChunkGeneration::RemoveChunks() {
         if (!RL.empty()) {
             for (int i = RL.size(); i-- > 0;) {
                 if (RL[i].chunkX == cx && RL[i].chunkZ == cz) {
-                    auto& chunk = World_Map::World.find({RL[i].chunkX, RL[i].chunkZ})->second;
-                    chunk.InRender = false;
+                    auto& chunk1 = World_Map::World.find({RL[i].chunkX, RL[i].chunkZ})->second;
+                    chunk1.InRender = false;
                     glDeleteBuffers(1, &RL[i].vbo);
                     glDeleteVertexArrays(1, &RL[i].vao);
                     // Fast delete by moving chunk to back

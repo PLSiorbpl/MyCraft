@@ -1,12 +1,7 @@
-*.log
-*.user
+# IDEs
+.idea/
+.vs/
 .vscode/
-*.sdf
-*.db
-*.suo
-*.vcxproj.*
-CMakeFiles/
-CMakeCache.txt
-Makefile
-cmake_install.cmake
-idk/
+
+# Windows
+Thumbs.db

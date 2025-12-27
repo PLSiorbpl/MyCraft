@@ -10,7 +10,7 @@ public:
         start = std::chrono::steady_clock::now();
     }
 
-    double ElapsedMs() {
+    double ElapsedMs() const {
         return std::chrono::duration<double, std::milli>(
             std::chrono::steady_clock::now() - start
         ).count();

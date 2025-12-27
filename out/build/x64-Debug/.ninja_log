@@ -1,0 +1,20 @@
+# ninja log v6
+8	26	7885305093422117	C:/Users/Grzegorz/OneDrive/Desktop/MyCraft/out/build/x64-Debug/CMakeFiles/cmake.verify_globs	9a287c97bb7cf842
+71	450	7885304833062796	CMakeFiles/MyCraft.dir/MyCraft/src/Utils/FPS.cpp.obj	24ee4e0d3b2d7053
+29	459	7885304832642797	MyCraft/Include/glad/CMakeFiles/glad.dir/src/glad.c.obj	8b042d2b5d30bf55
+65	961	7885304832992797	CMakeFiles/MyCraft.dir/MyCraft/src/Render/SelectionBox.cpp.obj	394c608156d91ee
+467	1304	7885304837018029	CMakeFiles/MyCraft.dir/MyCraft/src/Utils/InputManager.cpp.obj	8261cc0d08bfe789
+59	466	7885304832932800	CMakeFiles/MyCraft.dir/MyCraft/src/Render/Frustum.cpp.obj	44e16a0287ac3a4e
+55	473	7885304832902793	CMakeFiles/MyCraft.dir/MyCraft/src/Render/Camera.cpp.obj	5a774c8f9e5cb2a5
+49	924	7885304832842795	CMakeFiles/MyCraft.dir/MyCraft/src/Player/Colisions.cpp.obj	576837c84934f400
+62	952	7885304832962807	CMakeFiles/MyCraft.dir/MyCraft/src/Render/Mesh.cpp.obj	c54209fb0c0fb599
+46	970	7885304832802801	CMakeFiles/MyCraft.dir/MyCraft/src/Player/Breaking.cpp.obj	a3c286ea8adf3b1e
+68	1187	7885304833032795	CMakeFiles/MyCraft.dir/MyCraft/src/Shader_Utils/Shader.cpp.obj	b4482faf517f40ce
+52	1196	7885304832872792	CMakeFiles/MyCraft.dir/MyCraft/src/Player/Movement.cpp.obj	ee770c8333b79652
+473	1201	7885304837088033	CMakeFiles/MyCraft.dir/MyCraft/src/Utils/Settings.cpp.obj	34d4f7caa94320d4
+459	1252	7885304836938022	CMakeFiles/MyCraft.dir/MyCraft/src/Utils/Globals.cpp.obj	6aa2a5253fe898ee
+925	1461	7885304841598107	CMakeFiles/MyCraft.dir/MyCraft/src/World/Chunk.cpp.obj	e46d9102982d4302
+971	1489	7885304842058116	CMakeFiles/MyCraft.dir/MyCraft/src/World/World.cpp.obj	232236475ccb711b
+961	1520	7885304841968103	CMakeFiles/MyCraft.dir/MyCraft/src/World/Terrain.cpp.obj	8558185573b4ee6f
+42	2188	7885304832772798	CMakeFiles/MyCraft.dir/MyCraft/src/Network/Network.cpp.obj	8b902633fb1c725f
+52	98	7885304954409952	MyCraft/Include/glad/glad.lib	1a75e354f82718cb

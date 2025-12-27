@@ -1,7 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
-#include <cinttypes>
 #if defined(_WIN32) // Windows
     #include <windows.h>
     #include <psapi.h>
@@ -19,7 +18,7 @@ struct Game_Variables {
     float TickRate;
     float Tick_Timer = 0.0f;
     int V_Sync;
-    int FOV;
+    float FOV;
     int FPS = 0;
     int Mesh_Updates;
     int Lazy_Mesh_Updates;
@@ -57,16 +56,16 @@ struct PerfStats {
     double EntireTime = 0;
     // OpenGL Version
     int major = 0, minor = 0;
-    bool isModernGL;
+    bool isModernGL = false;
     // Rendering Stats
-    uint64_t Triangles;
-    uint64_t Total_Triangles;
-    size_t Capacity;
-    size_t Mesh_Size;
+    uint64_t Triangles = 0;
+    uint64_t Total_Triangles = 0;
+    size_t Capacity = 0;
+    size_t Mesh_Size = 0;
     // Os specific Ram stats
     #if defined(_WIN32) // Windows
-        PROCESS_MEMORY_COUNTERS meminfo;
-        SIZE_T ramUsed;
+        PROCESS_MEMORY_COUNTERS meminfo{};
+        SIZE_T ramUsed = 0;
     #elif defined(__linux__) // Linux
         size_t ramUsed;
     #endif

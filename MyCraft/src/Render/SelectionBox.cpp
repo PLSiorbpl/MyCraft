@@ -1,8 +1,7 @@
 #include <glad/glad.h>
 #include "SelectionBox.hpp"
-#include <iostream>
 
-void Selection::Init(GLuint& id) {
+void Selection::Init(const GLuint& id) {
     ID = id;
     glUseProgram(ID);
     glGenVertexArrays(1, &vao);
@@ -11,7 +10,7 @@ void Selection::Init(GLuint& id) {
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 72, nullptr, GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void *>(nullptr));
     glEnableVertexAttribArray(0);
 }
 

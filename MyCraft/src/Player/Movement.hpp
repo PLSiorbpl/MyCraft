@@ -23,9 +23,11 @@ class Movement {
 
     void Init(GLFWwindow* window, const glm::ivec3 ChunkSize, colisions &Colisions, Selection& Sel);
     void Input(GLFWwindow* window, glm::ivec3 ChunkSize, Selection& Sel);
-    void Special_Keys(GLFWwindow* window);
-    void TestColisions(const glm::ivec3 ChunkSize, colisions &Colisions);
-    void Damp();
 
-    glm::mat4 GetViewMatrix() const;
+    static void Special_Keys(GLFWwindow* window);
+    void TestColisions(const glm::ivec3 ChunkSize, colisions &Colisions);
+
+    static void Damp();
+
+    static glm::mat4 GetViewMatrix();
 };

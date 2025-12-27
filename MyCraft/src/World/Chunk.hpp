@@ -15,7 +15,7 @@ public:
         // Flags: Solid, Transparent, ...
         uint8_t Flags;
 
-        Block(uint8_t id = 0, uint8_t Flags = 0)
+        explicit Block(const uint8_t id = 0, const uint8_t Flags = 0)
             : id(id), Flags(Flags) {}
     };
 
@@ -42,12 +42,12 @@ public:
     GLuint vbo = 0;
     GLsizei indexCount = 0;
 
-    Chunk() : width(0), height(0), depth(0), chunkX(0), chunkZ(0), blocks(0) {}
+    Chunk() : blocks(0), width(0), height(0), depth(0), chunkX(0), chunkZ(0) {}
 
-    inline int index(int x, int y, int z) const {
-    assert(x >= 0 && x < width);
+    inline int index(const int x, const int y, const int z) const {
+    /*assert(x >= 0 && x < width);
     assert(y >= 0 && y < height);
-    assert(z >= 0 && z < depth);
+    assert(z >= 0 && z < depth);*/
 
     const int idx = x + z * width + y * width * depth;
     assert(idx >= 0 && idx < (int)blocks.size());
@@ -55,15 +55,15 @@ public:
 }
 
 
-    inline const Block& get(int x, int y, int z) const noexcept {
+    inline const Block& get(const int x, const int y, const int z) const noexcept {
         return blocks[index(x, y, z)];
     }
 
-    void set(int x, int y, int z, const Block& block) {
+    void set(const int x, const int y, const int z, const Block& block) {
         blocks.at(index(x, y, z)) = block;
     }
 
-    void setID(int x, int y, int z, uint8_t id) {
+    void setID(const int x, const int y, const int z, const uint8_t id) {
         blocks.at(index(x, y, z)).id = id;
     }
 

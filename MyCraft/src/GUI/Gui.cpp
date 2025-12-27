@@ -5,13 +5,13 @@ void Gui::HotBar() {
     constexpr float slotSize = 19.0f;
     constexpr float slotSpacing = 2.0f + slotSize;
 
-    glm::vec2 Size = glm::vec2(190.0f, 22.0f);
+    auto Size = glm::vec2(190.0f, 22.0f);
     DrawRectangle({Anch::BottomCenter, Size, {0.0f, -2.0f}}, {rgb(0x303030), texture::None});
 
-    if (In.ScrollY != 0) {
-        Camera.HotBarSlot = wrap(Camera.HotBarSlot - In.ScrollY, 9);
+    if (InputManager::ScrollY != 0) {
+        Camera.HotBarSlot = wrap(Camera.HotBarSlot - InputManager::ScrollY, 9);
         Camera.ItemHeld = (Camera.HotBarSlot % 6) + 1;
-        In.ScrollY = 0;
+        InputManager::ScrollY = 0;
     }
 
     Size = glm::vec2(slotSize);
@@ -20,7 +20,7 @@ void Gui::HotBar() {
             DrawRectangle({Anch::BottomCenter, Size, {-84.0f+(i*slotSpacing), -3.5f}}, {{i, 0,0,0}, texture::Block});
         }
         // Selected Slot
-        glm::vec4 color = rgb(0xfff072);
+        const glm::vec4 color = rgb(0xfff072);
         Size = glm::vec2(23, 2);
         DrawRectangle({Anch::BottomCenter, Size, {-84.0f+(Camera.HotBarSlot*slotSpacing), -1.5f}}, {color, texture::None});
         DrawRectangle({Anch::BottomCenter, Size, {-84.0f+(Camera.HotBarSlot*slotSpacing), -22.5f}}, {color, texture::None});
@@ -35,12 +35,10 @@ void Gui::HotBar() {
 }
 
 void Gui::Statistics() {
-    glm::vec4 UV = glm::vec4(0);
-
-    float HalfHotBar = 188.0f/2;
+    constexpr float HalfHotBar = 188.0f/2;
     
     // Food
-    glm::vec2 StatSize = glm::vec2((HalfHotBar-10)+2, 10);
+    auto StatSize = glm::vec2((HalfHotBar-10)+2, 10);
     DrawRectangle({Anch::BottomCenter, StatSize, {(-HalfHotBar + StatSize.x/2)-1, -25.0f}}, {rgb(0x404040), texture::None});
     StatSize = glm::vec2(HalfHotBar-10, 8);
     DrawProgressBar({Anch::BottomCenter, StatSize, {-HalfHotBar + StatSize.x/2, -26.0f}}, {1, rgb(0xff8c00), texture::None});
@@ -53,7 +51,7 @@ void Gui::Statistics() {
 }
 
 void Gui::Health() {
-    glm::vec2 Size = glm::vec2(100, 150);
+    constexpr auto Size = glm::vec2(100, 150);
 
     DrawRectangle({Anch::BottomLeft, Size, {1.0f, -1.0f}}, {rgb(0x404040), texture::None});
     Text(Anchor({Anch::BottomLeft, Size, {1.0f, -1.0f}}), {.text = R"( !"#$%&'()*+,.-/0123456789:;<=>?@{}~)"});
@@ -62,11 +60,9 @@ void Gui::Health() {
 }
 
 void Gui::Crosschair() {
-    uint32_t Flags = 0;
+    const glm::vec4 color = rgb(0xffffff);
 
-    glm::vec4 color = rgb(0xffffff);
-
-    glm::vec2 Size = glm::vec2(0.5f, 5.0f);
+    auto Size = glm::vec2(0.5f, 5.0f);
     DrawRectangle({.Anchor = Anch::Center, .Size = Size}, {color, texture::None});
 
     Size = glm::vec2(5.0f, 0.5f);
@@ -82,7 +78,7 @@ void Gui::Menu() {
     Layout layout = {Anch::Center, {150, 20}, {0.0f, -25.0f}};
     Label label = {"Resume", .anchor = Anch::Center};
     if (Button(layout, Big, label)) {
-        In.Key_Callback(window, GLFW_KEY_ESCAPE, 0, GLFW_PRESS, 0);
+        InputManager::Key_Callback(window, GLFW_KEY_ESCAPE, 0, GLFW_PRESS, 0);
     }
 
     // Exit
@@ -118,7 +114,7 @@ void Gui::Settings() {
 
     if (Button(layout, Small, label)) {
         renderd += 1;
-        if (Camera.RenderDistance+renderd > 48) renderd -= 1;
+        if (Camera.RenderDistance+renderd > 64) renderd -= 1;
     }
 
     layout.Offset.y = 0;
@@ -157,7 +153,7 @@ void Gui::Settings() {
     }
 
     static TextCache rd;
-    UpdateText(rd, Camera.RenderDistance+renderd, "Render Dist: %d");
+    UpdateText(rd, Camera.RenderDistance+renderd, "Render Distance: %d");
     layout.Offset = {0, -50};
     label.text = rd.text;
     Button(layout, Big, label);
@@ -265,7 +261,7 @@ void Gui::Performance() {
     Text(Anchor(layout), {.text = TickTime.text, .Style = {.Scale = 0.5}});
 
     static size_t LastRam;
-    const float ramUsedRatio = float(PerfS.ramUsed) / float(game.Max_Ram * 1024 * 1024);
+    const float ramUsedRatio = static_cast<float>(PerfS.ramUsed) / static_cast<float>(game.Max_Ram * 1024 * 1024);
     static ProgressStyle style = {.Progress = (ramUsedRatio), .TextureId = texture::None};
     static Label label = {.Style = {.Scale = 0.5}, .anchor = Anch::Center};
     if (LastRam != PerfS.ramUsed) {
@@ -278,10 +274,10 @@ void Gui::Performance() {
     DrawProgressBar(layout, style, &label);
 }
 
-void Gui::Generate(const int width, const int heigh, const float Scale) {
+void Gui::Generate(const int width, const int heigh, const int Scale) {
     Clear(width, heigh, Scale);
 
-    if (!In.keysToggle[GLFW_KEY_F3]) Performance();
+    if (!InputManager::keysToggle[GLFW_KEY_F3]) Performance();
 
     HotBar();
 
@@ -289,9 +285,9 @@ void Gui::Generate(const int width, const int heigh, const float Scale) {
 
     Crosschair();
 
-    if (In.keysState[GLFW_KEY_TAB] && !In.keysToggle[GLFW_KEY_ESCAPE]) { Health(); }
+    if (InputManager::keysState[GLFW_KEY_TAB] && !InputManager::keysToggle[GLFW_KEY_ESCAPE]) { Health(); }
 
-    if (In.keysToggle[GLFW_KEY_ESCAPE]) {
+    if (InputManager::keysToggle[GLFW_KEY_ESCAPE]) {
         Camera.Can_Move = false;
         if (game.MenuId == 0) { Menu(); }
         else if (game.MenuId == 1) { Settings(); }

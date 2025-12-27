@@ -68,19 +68,19 @@ GLuint Shader::Create_Shader(const std::string& vertex, const std::string& fragm
     char infoLog[512];
     glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &Success);
     if(!Success) {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        glGetShaderInfoLog(vertexShader, 512, nullptr, infoLog);
         std::cerr << "VERTEX COMPILATION ERROR\n" << infoLog << std::endl;
     }
 
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &Success);
     if(!Success) {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        glGetShaderInfoLog(fragmentShader, 512, nullptr, infoLog);
         std::cerr << "FRAGMENT COMPILATION ERROR\n" << infoLog << std::endl;
     }
 
     glGetProgramiv(ShaderProgram, GL_LINK_STATUS, &Success);
     if(!Success) {
-        glGetProgramInfoLog(ShaderProgram, 512, NULL, infoLog);
+        glGetProgramInfoLog(ShaderProgram, 512, nullptr, infoLog);
         std::cerr << "SHADER LINKING ERROR\n" << infoLog << std::endl;
     }
 

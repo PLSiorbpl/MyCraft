@@ -5,7 +5,6 @@
 #include <glm/glm.hpp>
 #include <iostream>
 #include <vector>
-#include <tuple>
 #include <cmath>
 #include <cinttypes>
 #include <algorithm>
@@ -13,17 +12,14 @@
     #include <windows.h>
     #include <psapi.h>
     
-    #define _CRTDBG_MAP_ALLOC
-    #include <crtdbg.h>
+    //#define _CRTDBG_MAP_ALLOC
+    //#include <crtdbg.h>
 #elif defined(__linux__) // Linux
     #include <unistd.h>
     #include <sys/types.h>
     #include <sys/sysinfo.h>
 #endif
 #include <fstream>
-#include <sstream>
-#include <filesystem>
-#include "FastNoiseLite.h"
 #define STB_IMAGE_IMPLEMENTATION
 
 // My Files
@@ -45,13 +41,13 @@
 #include "Utils/Globals.hpp"
 
 #include "World/Chunk.hpp"
-#include "World/Terrain.hpp"
+//#include "World/Terrain.hpp"
 #include "World/Generation.hpp"
 #include "World/World.hpp"
 
 glm::ivec3 Chunk_Size = glm::ivec3(16);
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+void framebuffer_size_callback(GLFWwindow* window, const int width, const int height) {
     glViewport(0, 0, width, height);
 }
 
@@ -71,14 +67,14 @@ private:
 public:
     Settings_Loader Settings;
 
-    bool Init_Window();
-    void Init_Shader();
+    static bool Init_Window();
+    void Init_Shader() const;
     void MainLoop();
-    void CleanUp();
-    void Init_Settings(const std::string Path);
+    static void CleanUp();
+    void Init_Settings(const std::string& Path);
 };
 
-void Game::Init_Settings(const std::string Path) {
+void Game::Init_Settings(const std::string& Path) {
     Settings.Load_Settings(Path);
 
     Camera.RenderDistance = Settings.Get<int>("Render Distance", 0);
@@ -89,7 +85,7 @@ void Game::Init_Settings(const std::string Path) {
     Chunk_Size.z = Settings.Get<int>("Chunk Depth", 0);
     game.V_Sync = Settings.Get<int>("V-Sync", 0);
     game.TickRate = 1.0f / Settings.Get<float>("Tick Rate", 0.0f);
-    game.FOV = Settings.Get<int>("FOV", 0);
+    game.FOV = Settings.Get<float>("FOV", 0);
     Camera.Speed = Settings.Get<float>("Speed", 0.0f);
     Camera.SprintSpeed = Settings.Get<float>("Sprint Speed", 0.0f);
     game_settings.Gui_Update_rate = Settings.Get<int>("Gui Update Rate", 0.0);
@@ -126,7 +122,7 @@ void Game::CleanUp() {
 
 bool Game::Init_Window() {
      if (!glfwInit()) {
-        std::cerr << "Cant Initalize GLFW (skill issue)!\n";
+        std::cerr << "Cant Initialize GLFW (skill issue)!\n";
         return true;
     }
 
@@ -166,7 +162,7 @@ bool Game::Init_Window() {
     glfwSwapInterval(game.V_Sync); // V-sync
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
         std::cerr << "Skill Issue of OpenGl and Glad!\n";
         return false;
     }
@@ -177,10 +173,10 @@ bool Game::Init_Window() {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     
     glfwSetWindowUserPointer(window, &Camera);
-    glfwSetMouseButtonCallback(window, In.Mouse_Key_Callback);
-    glfwSetKeyCallback(window, In.Key_Callback);
-    glfwSetScrollCallback(window, In.Scroll_Callback);
-    glfwSetCursorPosCallback(window, In.Mouse_Callback);
+    glfwSetMouseButtonCallback(window, InputManager::Mouse_Key_Callback);
+    glfwSetKeyCallback(window, InputManager::Key_Callback);
+    glfwSetScrollCallback(window, InputManager::Scroll_Callback);
+    glfwSetCursorPosCallback(window, InputManager::Mouse_Callback);
 
     //ImGui::CreateContext();
     //ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -199,7 +195,7 @@ bool Game::Init_Window() {
     return false;
 }
 
-void Game::Init_Shader() {
+void Game::Init_Shader() const {
     shader.Init_Shader();
 }
 
@@ -228,10 +224,10 @@ void Game::MainLoop() {
             //-------------------------
             // Uniforms
             //-------------------------
-            const float aspectRatio = (float)game_settings.width / (float)std::max(game_settings.height, 1);
+            const float aspectRatio = static_cast<float>(game_settings.width) / static_cast<float>(std::max(game_settings.height, 1));
             const float FOV = fun.ConvertHorizontalFovToVertical(game.FOV, aspectRatio);
-    
-            static const glm::mat4 model = glm::mat4(1.0f);
+
+            static constexpr auto model = glm::mat4(1.0f);
             const glm::mat4 view = movement.GetViewMatrix();
             const glm::mat4 proj = glm::perspective(glm::radians(FOV), aspectRatio, 0.1f, 2000.0f);
 
@@ -247,9 +243,9 @@ void Game::MainLoop() {
     
             const Frustum::Frust Frust = frustum.ExtractFrustum(proj*view);
     
-            Camera.Chunk.x = static_cast<int>(std::floor(Camera.Position.x / Chunk_Size.x));
+            Camera.Chunk.x = static_cast<int>(std::floor(Camera.Position.x / static_cast<float>(Chunk_Size.x)));
             Camera.Chunk.y = 0;
-            Camera.Chunk.z = static_cast<int>(std::floor(Camera.Position.z / Chunk_Size.z));
+            Camera.Chunk.z = static_cast<int>(std::floor(Camera.Position.z / static_cast<float>(Chunk_Size.z)));
             game.Tick_Timer += game.DeltaTime;
             game.Frame += 1;
 
@@ -301,7 +297,7 @@ void Game::MainLoop() {
                 if (game.Updates >= game.Mesh_Updates)
                     break;
             
-                const glm::vec3 chunkMin = glm::vec3(chunk->chunkX * Chunk_Size.x, 0, chunk->chunkZ * Chunk_Size.z);
+                const auto chunkMin = glm::vec3(chunk->chunkX * Chunk_Size.x, 0, chunk->chunkZ * Chunk_Size.z);
                 const glm::vec3 chunkMax = chunkMin + glm::vec3(Chunk_Size);
             
                 const bool visible = frustum.IsAABBVisible(Frust, chunkMin, chunkMax);
@@ -420,7 +416,8 @@ void Game::MainLoop() {
             glUseProgram(SH.SelectionBox_Shader.Shader);
             glBindVertexArray(selection.vao);
             glBindBuffer(GL_ARRAY_BUFFER, selection.vbo);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, selection.boxLinesCopy.size() * sizeof(float), selection.boxLinesCopy.data());
+            const auto size = static_cast<GLsizeiptr>(selection.boxLinesCopy.size() * sizeof(float));
+            glBufferSubData(GL_ARRAY_BUFFER, 0, size, selection.boxLinesCopy.data());
             glm::mat4 MVP = proj * view * model;
             shader.Set_Mat4(SH.SelectionBox_Shader.Shader, "MVP", MVP);
             glLineWidth(1.0f);
@@ -439,11 +436,14 @@ void Game::MainLoop() {
         shader.Set_Int(SH.General_Gui_Shader.Shader, "BaseTexture", 0);
         shader.Set_Int(SH.General_Gui_Shader.Shader, "GuiTexture", 1);
         shader.Set_Int(SH.General_Gui_Shader.Shader, "FontTexture", 2);
-        float guiScale = floor(game_settings.width / 320.0f);
-        if (game_settings.height / 240.0f < guiScale)
-            guiScale = floor(game_settings.height / 240.0f);
-        if (guiScale < 1.0f)
-            guiScale = 1.0f;
+
+        int guiScaleX = game_settings.width  / 320;
+        int guiScaleY = game_settings.height / 240;
+
+        int guiScale = std::min(guiScaleX, guiScaleY);
+        if (guiScale < 1)
+            guiScale = 1;
+
         GLenum err = glGetError();
 
         if (game.Frame % game_settings.Gui_Update_rate == 0) {
@@ -453,7 +453,8 @@ void Game::MainLoop() {
         }
         //-------------------------
         // Render MyGui
-        glm::mat4 projection = glm::ortho(0.0f, (float)game_settings.width/guiScale, (float)game_settings.height/guiScale, 0.0f, -1.0f, 1.0f);
+        glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(game_settings.width)/static_cast<float>(guiScale),
+            static_cast<float>(game_settings.height)/static_cast<float>(guiScale), 0.0f, -1.0f, 1.0f);
         shader.Set_Mat4(SH.General_Gui_Shader.Shader, "Model", model);
         shader.Set_Mat4(SH.General_Gui_Shader.Shader, "Projection", projection);
 
@@ -497,13 +498,13 @@ int main() {
 
     std::cout << "Initializing Settings:\n";
     main.Init_Settings("MyCraft/Assets/Settings.myc");
-    if (main.Init_Window()) return -1;
+    if (Game::Init_Window()) return -1;
     std::cout << "Initializing Shaders:\n";
     main.Init_Shader();
     std::cout << "Launching Game:\n";
     main.MainLoop();
     std::cout << "Cleaning:\n";
-    main.CleanUp();
+    Game::CleanUp();
     std::cout << "Safely Closed Game";
     return 0;
 }

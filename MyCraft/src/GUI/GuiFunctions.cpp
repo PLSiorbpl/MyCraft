@@ -9,27 +9,27 @@ glm::vec4 Gui::Texture(const texture tex, const glm::vec4 &UV, uint32_t &Flags) 
         case texture::Block: {
             int id = UV.x;
             const int Variant = UV.y;
-            F32.Set(Flags, static_cast<int>(Flag::UseTexture));
-            F32.SetTextureId(Flags, 0);
+            Flags32::Set(Flags, static_cast<int>(Flag::UseTexture));
+            Flags32::SetTextureId(Flags, 0);
             id %= 6;
-            return glm::vec4(id*Tile, Variant*Tile, (id+1)*Tile, (Variant+1)*Tile);
+            return {id*Tile, Variant*Tile, (id+1)*Tile, (Variant+1)*Tile};
         }
         case texture::Item: {
 
         }
         case texture::Gui: {
-            F32.Set(Flags, static_cast<int>(Flag::UseTexture));
-            F32.SetTextureId(Flags, 1);
+            Flags32::Set(Flags, static_cast<int>(Flag::UseTexture));
+            Flags32::SetTextureId(Flags, 1);
             return (UV / glm::vec4(512));
         }
         case texture::Font: {
-            F32.Set(Flags, static_cast<int>(Flag::UseTexture));
-            F32.SetTextureId(Flags, 2);
+            Flags32::Set(Flags, static_cast<int>(Flag::UseTexture));
+            Flags32::SetTextureId(Flags, 2);
             return UV;
         }
         default: {
-            F32.Set(Flags, static_cast<int>(Flag::UseTexture));
-            F32.SetTextureId(Flags, 0);
+            Flags32::Set(Flags, static_cast<int>(Flag::UseTexture));
+            Flags32::SetTextureId(Flags, 0);
             return glm::vec4(0);
         }
     }
@@ -46,10 +46,10 @@ void Gui::Text(const glm::vec2& Pos, const Label& label) {
         const int idx = c - ' ';
         const int col = idx % Cols;
         const int row = idx / Cols;
-        const glm::vec2 px1 = glm::vec2(col * glypW, row * glypH);
-        const glm::vec2 px2 = glm::vec2(px1.x + glypW, px1.y + glypH);
-        const glm::vec4 uv = glm::vec4((px1/AtlasS), px2/AtlasS);
-        const glm::vec2 Size = glm::vec2((glypW * label.Style.Scale), (glypH * label.Style.Scale));
+        const auto px1 = glm::vec2(col * glypW, row * glypH);
+        const auto px2 = glm::vec2(px1.x + glypW, px1.y + glypH);
+        const auto uv = glm::vec4((px1/AtlasS), px2/AtlasS);
+        const auto Size = glm::vec2((glypW * label.Style.Scale), (glypH * label.Style.Scale));
         DrawRectangle(
             {.Anchor = Anch::None, .Size = Size, .Offset = Cursor},
             {.BgColor = uv, .TextureId = texture::Font}
@@ -58,17 +58,17 @@ void Gui::Text(const glm::vec2& Pos, const Label& label) {
     }
 }
 
-bool Gui::UpdateText(TextCache& c, int v, const char* fmt) {
-    if (c.i == v) return false;
-    c.i = v;
+bool Gui::UpdateText(TextCache& cache, const int value, const char* fmt) {
+    if (cache.i == value) return false;
+    cache.i = value;
 
     char buf[128];
-    std::snprintf(buf, 64, fmt, v);
-    c.text = buf;
+    std::snprintf(buf, 64, fmt, value);
+    cache.text = buf;
     return true;
 }
 
-bool Gui::UpdateText(TextCache& cache, float value, const char* fmt) {
+bool Gui::UpdateText(TextCache& cache, const float value, const char* fmt) {
     if (std::abs(cache.f - value) < 1e-5f) return false;
     cache.f = value;
     char buf[128];
@@ -77,7 +77,7 @@ bool Gui::UpdateText(TextCache& cache, float value, const char* fmt) {
     return true;
 }
 
-bool Gui::UpdateText(TextCache& cache, double value, const char* fmt) {
+bool Gui::UpdateText(TextCache& cache, const double value, const char* fmt) {
     if (std::abs(cache.d - value) < 1e-9) return false;
     cache.d = value;
     char buf[128];
@@ -98,7 +98,7 @@ std::string Gui::Format(const char* fmt, ...) {
 }
 
 glm::vec4 Gui::Color(const glm::vec4& color, uint32_t &Flags) {
-    F32.Clear(Flags, static_cast<int>(Flag::UseTexture));
+    Flags32::Clear(Flags, static_cast<int>(Flag::UseTexture));
     return color;
 }
 
@@ -131,7 +131,7 @@ void Gui::DrawRectangle(const Layout& layout, const BoxStyle& style) {
     }
 }
 
-void Gui::DrawProgressBar(const Layout& layout, const ProgressStyle& style, Label* label) {
+void Gui::DrawProgressBar(const Layout& layout, const ProgressStyle& style, const Label* label) {
     const glm::vec2 Pos = Anchor(layout);
     const float Progress = glm::clamp(style.Progress, 0.0f, 1.0f);
     const float filledWidth = layout.Size.x * Progress;
@@ -147,7 +147,7 @@ void Gui::DrawProgressBar(const Layout& layout, const ProgressStyle& style, Labe
 }
 
 void Gui::Push(const glm::vec2& Pos, const glm::vec3& UV, const uint32_t& Flags) {
-        GuiVertex ver;
+        GuiVertex ver{};
         ver.Pos = Pos;
         ver.UV = UV;
         ver.Flags = Flags;
@@ -183,7 +183,7 @@ void Gui::Send_Data() {
     IndexCount = Mesh.size();
 }
 
-void Gui::Draw() {
+void Gui::Draw() const {
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
 
@@ -196,10 +196,10 @@ void Gui::Draw() {
     glDisable(GL_BLEND);
 }
 
-void Gui::Clear(const int w, const int h, const float Scale) {
+void Gui::Clear(const int w, const int h, const int Scale) {
     Mouse = glm::vec2(
-        In.MouseX/Scale,
-        In.MouseY/Scale
+        InputManager::MouseX/Scale,
+        InputManager::MouseY/Scale
     );
     width = w;
     height = h;
@@ -219,7 +219,7 @@ glm::vec2 Gui::Anchor(const Layout& layout) const {
         case Anch::TopCenter:    return glm::vec2((width-Size.x)/2, 0) + Offset;
         case Anch::LeftCenter:   return glm::vec2(0, (height - Size.y)/2) + Offset;
         case Anch::RightCenter:  return glm::vec2(width-Size.x, (height - Size.y)/2) + Offset;
-        case Anch::None:         return glm::vec2(Offset);
+        case Anch::None:         return Offset;
     }
     return glm::vec2(0);
 }
@@ -231,7 +231,7 @@ glm::vec2 Gui::MeasureText(const Label& label) {
     for (unsigned char c : label.text) {
         if (c < ' ' || c > '~') c = '?';
         const int idx = c - ' ';
-        const glm::vec2 Size = glm::vec2(glypW * label.Style.Scale, glypH * label.Style.Scale);
+        const auto Size = glm::vec2(glypW * label.Style.Scale, glypH * label.Style.Scale);
         TextSize.x += Size.x - (label.Style.PaddingX * label.Style.Scale) - (Advance[idx] * label.Style.Scale);
     }
     return TextSize;
@@ -251,7 +251,7 @@ glm::vec2 Gui::AnchorText(const glm::vec2& Pos, const glm::vec2& Size, const Lab
         case Anch::TopCenter:    return glm::vec2((Size.x-TextSize.x)/2, 0) + Offset;
         case Anch::LeftCenter:   return glm::vec2(0, (Size.y - TextSize.y)/2) + Offset;
         case Anch::RightCenter:  return glm::vec2(Size.x-TextSize.x, (Size.y - TextSize.y)/2) + Offset;
-        case Anch::None:         return glm::vec2(Offset);
+        case Anch::None:         return Offset;
     }
     return glm::vec2(0);
 }
@@ -263,12 +263,12 @@ bool Gui::Button(const Layout& layout, const ButtonStyle& style, const Label& la
     const glm::vec2 Pos = Anchor(layout);
     const bool hover = MouseInRect(Pos, layout.Size);
 
-    glm::vec4 Col = hover ? style.HoverColor : style.BgColor;
+    const glm::vec4 Col = hover ? style.HoverColor : style.BgColor;
     
-    if (hover && In.MouseState[GLFW_MOUSE_BUTTON_1] && ActiveId == -1) {
+    if (hover && InputManager::MouseState[GLFW_MOUSE_BUTTON_1] && ActiveId == -1) {
         ActiveId = id;
     }
-    if (!In.MouseState[GLFW_MOUSE_BUTTON_1]) {
+    if (!InputManager::MouseState[GLFW_MOUSE_BUTTON_1]) {
         if (ActiveId == id && hover)
             clicked = true;
 

@@ -1,9 +1,7 @@
 #pragma once
-#include "Chunk.hpp"
 #include "FastNoiseLite.h"
 #include <glm/glm.hpp>
-#include <algorithm>
-#include <unordered_map>
+
 #include "World.hpp"
 
 class TerrainGen {
@@ -33,5 +31,5 @@ public:
         biomeNoise.SetSeed(seed + 420);
     }
 
-    void Generate_Terrain_Chunk(const int ChunkX, const int ChunkZ, const glm::ivec3 ChunkSize);
+    void Generate_Terrain_Chunk(const int ChunkX, const int ChunkZ, const glm::ivec3 ChunkSize) const;
 };

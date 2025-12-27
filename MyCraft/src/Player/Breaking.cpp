@@ -42,7 +42,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
         direction.z > 0 ? 1 : -1);
 
     glm::vec3 safeDir = direction;
-    const glm::vec3 eps(1e-6f);
+    constexpr glm::vec3 eps(1e-6f);
         
     if (fabs(safeDir.x) < eps.x) safeDir.x = (safeDir.x >= 0 ? eps.x : -eps.x);
     if (fabs(safeDir.y) < eps.x) safeDir.y = (safeDir.y >= 0 ? eps.x : -eps.x);
@@ -65,8 +65,8 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
     // RayCast
     while(distance < MaxDistance) {
         if (distance > MaxDistance) break;
-        const int cx = floor(Block.x / float(ChunkSize.x));
-        const int cz = floor(Block.z / float(ChunkSize.z));
+        const int cx = floor(Block.x / static_cast<float>(ChunkSize.x));
+        const int cz = floor(Block.z / static_cast<float>(ChunkSize.z));
 
         const int LocalX = Block.x - cx * ChunkSize.x;
         const int LocalZ = Block.z - cz * ChunkSize.z;

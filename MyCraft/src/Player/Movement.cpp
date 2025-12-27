@@ -102,8 +102,8 @@ void Movement::Damp() {
     damp(Camera.Vel.z);
 }
 
-glm::mat4 Movement::GetViewMatrix() const {
-    const glm::vec3 direction = glm::vec3(
+glm::mat4 Movement::GetViewMatrix() {
+    const auto direction = glm::vec3(
         cos(glm::radians(Camera.Yaw)) * cos(glm::radians(Camera.Pitch)),
         sin(glm::radians(Camera.Pitch)),
         sin(glm::radians(Camera.Yaw)) * cos(glm::radians(Camera.Pitch))

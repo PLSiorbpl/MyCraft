@@ -16,7 +16,7 @@ void Mesh::GenerateMesh(const Chunk& chunk, std::vector<Chunk::Vertex>& vertices
 
     const int H = ChunkSize.y;
     const int D = ChunkSize.z;
-    const int W = ChunkSize.x;
+    //const int W = ChunkSize.x;
 
     std::vector<uint32_t> Visible;
     Visible.resize(static_cast<size_t>(H) * static_cast<size_t>(D));
@@ -30,9 +30,8 @@ void Mesh::GenerateMesh(const Chunk& chunk, std::vector<Chunk::Vertex>& vertices
         for (int z = 0; z < ChunkSize.z; z++) {
             uint32_t bits = 0;
             for (int x = 0; x < ChunkSize.x; x++) {
-                const bool vis = chunk.get(x, y, z).Flags & 0b10'00'00'00;
-                if (vis) {
-                    bits |= (uint32_t(1) << x);
+                if (chunk.get(x, y, z).Flags & 0b10'00'00'00) {
+                    bits |= (static_cast<uint32_t>(1) << x);
                 }
             }
             VisibleAt(y, z) = bits;
@@ -52,7 +51,7 @@ void Mesh::GenerateMesh(const Chunk& chunk, std::vector<Chunk::Vertex>& vertices
                 uint32_t bits = 0;
                 for (int x = 0; x < ChunkSize.x; x++) {
                     if (IsBlockAt(worldOffsetX + x, y, worldOffsetZ + z+1, ChunkSize)) {
-                        bits |= (uint32_t(1) << x);
+                        bits |= (static_cast<uint32_t>(1) << x);
                     }
                 }
                 next = bits;
@@ -67,7 +66,7 @@ void Mesh::GenerateMesh(const Chunk& chunk, std::vector<Chunk::Vertex>& vertices
                 uint32_t bits = 0;
                 for (int x = 0; x < ChunkSize.x; x++) {
                     if (IsBlockAt(worldOffsetX + x, y, worldOffsetZ + z - 1, ChunkSize)) {
-                        bits |= (uint32_t(1) << x);
+                        bits |= (static_cast<uint32_t>(1) << x);
                     }
                 }
                 prev = bits;
@@ -83,7 +82,7 @@ void Mesh::GenerateMesh(const Chunk& chunk, std::vector<Chunk::Vertex>& vertices
                 for (int x = 0; x < ChunkSize.x; x++) {
                     if (y+1 < ChunkSize.y) {
                         if (IsBlockAt(worldOffsetX + x, y + 1, worldOffsetZ + z, ChunkSize)) {
-                            bits |= (uint32_t(1) << x);
+                            bits |= (static_cast<uint32_t>(1) << x);
                         }
                     }
                 }
@@ -100,11 +99,11 @@ void Mesh::GenerateMesh(const Chunk& chunk, std::vector<Chunk::Vertex>& vertices
             for (int x = 0; x < ChunkSize.x; x++) {
                 const auto block = chunk.get(x, y, z);
                 if (!(block.Flags & 0b10'00'00'00)) continue;
-                const glm::vec3 w = {worldOffsetX + x, float(y), worldOffsetZ + z};
+                const glm::vec3 w = {worldOffsetX + x, static_cast<float>(y), worldOffsetZ + z};
 
                 const glm::ivec2 tex = BlockUVs[block.id];
 
-                uint32_t mask = (uint32_t(1) << x);
+                const uint32_t mask = (static_cast<uint32_t>(1) << x);
                 if (visibleZp & mask) MeshZFace(vertices, w, 1, tex,  1);
                 if (visibleZm & mask) MeshZFace(vertices, w, 1, tex, -1);
                 if (visibleYp & mask) MeshYFace(vertices, w, 1, tex,  1);
@@ -142,7 +141,7 @@ inline void getUVs(std::array<glm::vec2, 4>& outUV, const glm::ivec2& BaseCoord,
 };
 
 void Mesh::MeshXFace(std::vector<Chunk::Vertex>& vertices, const glm::vec3& w, const int width, const glm::ivec2& texCoord, const int dir) {
-    const float size = 1.0f;
+    constexpr float size = 1.0f;
     const float z1 = w.z;
     const float y1 = w.y;
     const float z2 = w.z + width * size;
@@ -150,7 +149,6 @@ void Mesh::MeshXFace(std::vector<Chunk::Vertex>& vertices, const glm::vec3& w, c
 
     const float x = w.x + (dir > 0 ? size : 0.0f); // X+ lub X-
 
-    const glm::vec3 normal(static_cast<float>(dir), 0, 0);
     std::array<glm::vec2, 4> uv;
     getUVs(uv, texCoord, 1);
 
@@ -175,7 +173,7 @@ void Mesh::MeshXFace(std::vector<Chunk::Vertex>& vertices, const glm::vec3& w, c
 }
 
 void Mesh::MeshYFace(std::vector<Chunk::Vertex>& vertices, const glm::vec3& w, const int width, const glm::ivec2& texCoord, const int dir) {
-    const float size = 1.0f;
+    constexpr float size = 1.0f;
     const float x1 = w.x;
     const float z1 = w.z;
     const float x2 = w.x + width * size;
@@ -207,7 +205,7 @@ void Mesh::MeshYFace(std::vector<Chunk::Vertex>& vertices, const glm::vec3& w, c
 }
 
 void Mesh::MeshZFace(std::vector<Chunk::Vertex>& vertices, const glm::vec3& w, const int width, const glm::ivec2& texCoord, const int dir) {
-    const float size = 1.0f;
+    constexpr float size = 1.0f;
     const float x1 = w.x;
     const float y1 = w.y;
     const float x2 = w.x + width * size;
@@ -239,7 +237,6 @@ void Mesh::MeshZFace(std::vector<Chunk::Vertex>& vertices, const glm::vec3& w, c
 }
 
 inline bool Mesh::IsBlockAt(int WorldX, int y, int WorldZ, const glm::ivec3& ChunkSize) {
-    // użyj dzielenia całkowitego zamiast floata
     const int chunkX = (WorldX >= 0) ? WorldX / ChunkSize.x : (WorldX - ChunkSize.x + 1) / ChunkSize.x;
     const int chunkZ = (WorldZ >= 0) ? WorldZ / ChunkSize.z : (WorldZ - ChunkSize.z + 1) / ChunkSize.z;
 
@@ -247,7 +244,7 @@ inline bool Mesh::IsBlockAt(int WorldX, int y, int WorldZ, const glm::ivec3& Chu
     const int localZ = WorldZ - chunkZ * ChunkSize.z;
 
     const auto it = World_Map::World.find({chunkX, chunkZ});
-    if (it == World_Map::World.end()) return true; // poza światem traktuj jako "blok"
+    if (it == World_Map::World.end()) return true;
 
     const Chunk& chunk = it->second;
     return chunk.get(localX, y, localZ).id != 0;

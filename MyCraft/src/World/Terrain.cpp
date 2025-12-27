@@ -1,21 +1,21 @@
 #include "Terrain.hpp"
 
-void TerrainGen::Generate_Terrain_Chunk(int Chunk_x, int Chunk_z, glm::ivec3 ChunkSize) {
+void TerrainGen::Generate_Terrain_Chunk(int ChunkX, int ChunkZ, const glm::ivec3 ChunkSize) const {
     auto& World = World_Map::World;
     Chunk Chunk;
     Chunk.width = ChunkSize.x;
     Chunk.height = ChunkSize.y;
     Chunk.depth = ChunkSize.z;
-    Chunk.chunkX = Chunk_x;
-    Chunk.chunkZ = Chunk_z;
+    Chunk.chunkX = ChunkX;
+    Chunk.chunkZ = ChunkZ;
     Chunk.blocks.resize(ChunkSize.x * ChunkSize.y * ChunkSize.z);
 
     for (int x = 0; x < ChunkSize.x; ++x) {
         for (int z = 0; z < ChunkSize.z; ++z) {
-            const float worldX = Chunk_x * ChunkSize.x + x;
-            const float worldZ = Chunk_z * ChunkSize.z + z;
+            const float worldX = ChunkX * ChunkSize.x + x;
+            const float worldZ = ChunkZ * ChunkSize.z + z;
 
-            float Noise_Biome = (biomeNoise.GetNoise(worldX * BiomeFreq, worldZ * BiomeFreq)+1)*0.5;
+            const float Noise_Biome = (biomeNoise.GetNoise(worldX * BiomeFreq, worldZ * BiomeFreq)+1)*0.5;
             const float biomeFactor = pow(Noise_Biome, BiomePower);
 
             float baseHeight = 0.0f;
@@ -44,5 +44,5 @@ void TerrainGen::Generate_Terrain_Chunk(int Chunk_x, int Chunk_z, glm::ivec3 Chu
         }
     }
 
-    World[{Chunk_x, Chunk_z}] = std::move(Chunk);
+    World[{ChunkX, ChunkZ}] = std::move(Chunk);
 }

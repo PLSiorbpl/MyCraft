@@ -4,7 +4,7 @@
 
 class Selection {
 public:
-    void Init(GLuint& id);
+    void Init(const GLuint& id);
     void Draw(const glm::vec3& pos);
 
     unsigned int vao, vbo;
