@@ -34,7 +34,7 @@ class Network {
         std::string Name;
         Packet packet;
 
-        Client(asio::io_context& io, std::string& name) : socket(io), Name(name) {}
+        Client(asio::io_context& io, const std::string& name) : socket(io), Name(name) {}
     };
 
     // Queue for 256 packets
