@@ -2,6 +2,7 @@
 
 #include <array>
 #include <atomic>
+#include <mutex>
 
 template<typename T, size_t N>
 class TsQueue {
@@ -12,7 +13,7 @@ class TsQueue {
 
     bool push(const T& v) {
         size_t h = head.load();
-        size_t next = (h + 1) % N;
+        const size_t next = (h + 1) % N;
         if (next == tail.load()) return false;
         buf[h] = v;
         head.store(next);

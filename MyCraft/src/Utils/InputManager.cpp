@@ -1,4 +1,6 @@
 #include "InputManager.hpp"
+#include "Globals.hpp"
+#include <algorithm>
 
 bool InputManager::keysToggle[512] = {false};
 bool InputManager::keysState[512] = {false};
@@ -8,6 +10,9 @@ float InputManager::MouseX = 0.0f;
 float InputManager::MouseY = 0.0f;
 int InputManager::ScrollX = 0;
 int InputManager::ScrollY = 0;
+std::deque<char> InputManager::charBuffer;
+bool InputManager::MouseVisible = false;
+bool InputManager::InputActive = false;
 
 void InputManager::Key_Callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key >= 0 && key <= GLFW_KEY_LAST) {
@@ -16,10 +21,11 @@ void InputManager::Key_Callback(GLFWwindow* window, int key, int scancode, int a
         if (action == GLFW_PRESS) {
             keysToggle[key] = !keysToggle[key];
 
-            if (key == GLFW_KEY_ESCAPE) {
+            if (key == GLFW_KEY_ESCAPE || key == GLFW_KEY_T) {
                 if (game.MenuId > 0) {
                     keysState[key] = false;
                     keysToggle[key] = !keysToggle[key];
+                    InputActive = false;
                     game.MenuId = 0;
                 } else {
                     glfwSetInputMode(window, GLFW_CURSOR, keysToggle[key] ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
@@ -33,7 +39,20 @@ void InputManager::Key_Callback(GLFWwindow* window, int key, int scancode, int a
     }
 }
 
-void InputManager::Mouse_Callback(GLFWwindow* window, double xpos, double ypos) {
+void InputManager::Char_Callback(GLFWwindow *window, const unsigned int codepoint) {
+    if (!InputActive) {
+        if (!charBuffer.empty()) charBuffer.clear();
+        return;
+    }
+    if (charBuffer.size() > 255) { return; }
+
+    if (codepoint >= 32 && codepoint <= 126) {
+        charBuffer.push_back(static_cast<char>(codepoint));
+    }
+}
+
+
+void InputManager::Mouse_Callback(GLFWwindow* window, const double xpos, double ypos) {
     MouseX = xpos;
     MouseY = ypos;
     if (!Camera.Mouse_Visible) {

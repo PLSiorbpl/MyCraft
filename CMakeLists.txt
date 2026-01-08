@@ -10,7 +10,7 @@ file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/MyCr
 set(WINDOWS_ICON "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/src/Utils/resource.rc")
 
 if(WIN32)
-    add_executable(${CMAKE_PROJECT_NAME} WIN32 ${MY_SOURCES} ${WINDOWS_ICON})
+    add_executable(${CMAKE_PROJECT_NAME} ${MY_SOURCES} ${WINDOWS_ICON})
 else()
     add_executable(${CMAKE_PROJECT_NAME} ${MY_SOURCES})
 endif()
@@ -44,6 +44,12 @@ add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/MyCraft/shaders
         $<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/MyCraft/shaders
+)
+
+target_link_options(MyCraft PRIVATE
+        -static
+        -static-libgcc
+        -static-libstdc++
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE glad

@@ -2,6 +2,7 @@
 .idea/
 .vs/
 .vscode/
+out
 
 # Windows
 Thumbs.db

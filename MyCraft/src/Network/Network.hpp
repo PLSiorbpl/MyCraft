@@ -1,66 +1,26 @@
 #pragma once
 
-#include <asio.hpp>
-#include <thread>
-#include <array>
-#include <atomic>
-#include <mutex>
+#include "Client.hpp"
+#include "Server.hpp"
+#include "Net_Common.hpp"
 
-#include "TsQueue.hpp"
-
-class Network {
-    public:
-    enum class PacketType : uint8_t {
-        HELLO = 1,
-        WELCOME = 2,
-        CHAT = 3
+class Net {
+public:
+    enum class As : uint8_t {
+        Client = 0,
+        Server = 1
     };
 
-    struct PacketHeader {
-        PacketType type;
-        uint16_t size = 0;
-    };
+    Net_Client client;
+    Net_Server server;
 
-    struct Packet {
-        PacketHeader h;
-        std::vector<uint8_t> data;
-        size_t size() const {
-            return sizeof(PacketHeader) + data.size();
-        }
-    };
+    void Start_Server(uint16_t Port);
+    void Start_Client(const std::string &Ip, uint16_t Port, const std::string &Name);
 
-    struct Client {
-        asio::ip::tcp::socket socket;
-        std::string Name;
-        Packet packet;
+    bool Client_Read(Packet&);
+    bool Client_Send(const Packet&);
 
-        Client(asio::io_context& io, const std::string& name) : socket(io), Name(name) {}
-    };
+    bool Server_Read(Packet&);
+    bool Server_Send(const Packet&, std::shared_ptr<Client> &client);
 
-    // Queue for 256 packets
-    TsQueue<Packet, 256> In;
-    TsQueue<Packet, 256> Out;
-    // List of Clients alive
-    std::vector<std::shared_ptr<Client>> clients;
-
-    // Client
-    asio::io_context context;
-    asio::ip::tcp::resolver resolver;
-    std::thread netThread;
-    // Server
-    asio::ip::tcp::acceptor acceptor;
-    asio::io_context context_serv;
-    std::thread servThread;
-
-    // Client
-    void InitClient(const std::string& Ip, const uint16_t Port, std::string& Name);
-    void Disconect(std::shared_ptr<Client> player);
-    void Connect_To_Server(std::shared_ptr<Client> player);
-    void ReciveHeader(std::shared_ptr<Client> player);
-    void RecivePayLoad(std::shared_ptr<Client> player);
-    // Server
-    void Disconect_Player(std::shared_ptr<Client> player);
-    void InitServer(uint16_t Port);
-    void Accept_Players();
-    void Verify_Player(std::shared_ptr<Client> player);
 };

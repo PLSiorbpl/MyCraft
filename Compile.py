@@ -10,10 +10,10 @@ Optimization = ['-O3']
 Debug = "" # -g '-D_GLIBCXX_DEBUG', '-fno-omit-frame-pointer'
 Open_Game = True
 Last_Compiled = "Last_Compiled.txt"
-Source_Includes = ['-I', 'MyCraft/src', '-I', 'MyCraft/src/Render', '-I', 'MyCraft/src/World', '-I', 'MyCraft/src/Player', '-I', 'MyCraft/src/Utils', '-I', 'MyCraft/src/Shader_Utils',
-                    '-IMyCraft/Include']#, '-IMyCraft/Include/ImGui', '-IMyCraft/Include/ImGui/backends']
+Source_Includes = ['-I', 'MyCraft/src', '-I', 'MyCraft/src/Render', '-I', 'MyCraft/src/World', '-I', 'MyCraft/src/Player', '-I', 'MyCraft/src/Network', '-IMyCraft/src/Utils', '-I', 'MyCraft/src/Shader_Utils',
+                    '-IMyCraft/Include', '-IMyCraft/Include/glad/include', '-IMyCraft/src/GUI', '-IMyCraft/src/GUI/Common', '-IMyCraft/src/GUI/Backend']
 if sys.platform == "win32": # Windows
-    Flags = ['-Wall', '-Wextra', '-Wpedantic', '-std=c++17', '-LMyCraft/lib', '-lglfw3', '-lgdi32', '-lopengl32', '-static-libstdc++', '-static-libgcc', '-static']
+    Flags = ['-Wall', '-Wextra', '-Wpedantic', '-std=c++17', '-LMyCraft/lib', '-lglfw3', '-lgdi32', '-lopengl32', '-static-libstdc++', '-static-libgcc', '-static', '-lws2_32', '-lmswsock']
     Destination = ["../Mycraft.exe"]
 if sys.platform == "linux": # Linux
     Flags = ['-std=c++17', '-Wall', '-Wextra', '-Wpedantic','-D_GLIBCXX_DEBUG', '-LMyCraft/lib','-fsanitize=address,undefined', '-fno-omit-frame-pointer','-fno-sanitize=signed-integer-overflow', '-lglfw', '-lGL', '-lpthread', '-ldl', '-lX11', '-static-libstdc++', '-static-libgcc']
@@ -23,7 +23,7 @@ Error = False
 # Paths
 Base = "MyCraft/"
 PreCompiled = ["src/PreCompiled"]
-Source_Folders = [["src/Player", "src/Render", "src/Shader_Utils", "src/Utils", "src/World", "src/GUI"]]
+Source_Folders = [["src/Player", "src/Render", "src/Shader_Utils", "src/Utils", "src/World", "src/GUI", "src/Network", "src/GUI/Common", "src/GUI/Backend"]]
 Source_Files = [["src/Main.cpp"]]#, "Include/ImGui/imgui_demo.cpp", "Include/ImGui/imgui_draw.cpp", "Include/ImGui/backends/imgui_impl_glfw.cpp",
                  #"Include/ImGui/backends/imgui_impl_opengl3.cpp", "Include/ImGui/imgui_tables.cpp", "Include/ImGui/imgui_widgets.cpp", "Include/ImGui/imgui.cpp"]]
 

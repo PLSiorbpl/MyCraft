@@ -21,11 +21,11 @@ class Movement {
     glm::vec2 Sin;
     glm::vec3 testPos;
 
-    void Init(GLFWwindow* window, const glm::ivec3 ChunkSize, colisions &Colisions, Selection& Sel);
+    void Init(GLFWwindow* window, glm::ivec3 ChunkSize, Selection& Sel);
     void Input(GLFWwindow* window, glm::ivec3 ChunkSize, Selection& Sel);
 
     static void Special_Keys(GLFWwindow* window);
-    void TestColisions(const glm::ivec3 ChunkSize, colisions &Colisions);
+    void TestColisions(glm::ivec3 ChunkSize);
 
     static void Damp();
 

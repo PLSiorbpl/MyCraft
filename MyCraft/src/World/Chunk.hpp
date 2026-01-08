@@ -11,7 +11,7 @@ typedef int GLsizei;
 class Chunk {
 public:
     struct Block {
-        int8_t id;
+        uint8_t id;
         // Flags: Solid, Transparent, ...
         uint8_t Flags;
 
@@ -44,26 +44,26 @@ public:
 
     Chunk() : blocks(0), width(0), height(0), depth(0), chunkX(0), chunkZ(0) {}
 
-    inline int index(const int x, const int y, const int z) const {
+    [[nodiscard]] inline int index(const int x, const int y, const int z) const {
     /*assert(x >= 0 && x < width);
     assert(y >= 0 && y < height);
     assert(z >= 0 && z < depth);*/
 
     const int idx = x + z * width + y * width * depth;
-    assert(idx >= 0 && idx < (int)blocks.size());
+    //assert(idx >= 0 && idx < (int)blocks.size());
     return idx;
 }
 
 
-    inline const Block& get(const int x, const int y, const int z) const noexcept {
+    [[nodiscard]] inline const Block& get(const int x, const int y, const int z) const noexcept {
         return blocks[index(x, y, z)];
     }
 
-    void set(const int x, const int y, const int z, const Block& block) {
+    inline void set(const int x, const int y, const int z, const Block& block) {
         blocks.at(index(x, y, z)) = block;
     }
 
-    void setID(const int x, const int y, const int z, const uint8_t id) {
+    inline void setID(const int x, const int y, const int z, const uint8_t id) {
         blocks.at(index(x, y, z)).id = id;
     }
 

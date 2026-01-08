@@ -1,34 +1,38 @@
 #include <glad/glad.h>
 #include "Gui.hpp"
+#include "Common/Gui_Types.hpp"
+#include <Utils/InputManager.hpp>
 
-glm::vec4 Gui::Texture(const texture tex, const glm::vec4 &UV, uint32_t &Flags) {
+using namespace gui;
+
+glm::vec4 Gui::Texture(const Texture_Id tex, const glm::vec4 &UV, uint32_t &Flags) {
     constexpr float Pixel = 1.0f / 128.0f;
     constexpr float Tile  = 16 * Pixel;
 
     switch (tex) {
-        case texture::Block: {
+        case Texture_Id::Block: {
             int id = UV.x;
             const int Variant = UV.y;
-            Flags32::Set(Flags, static_cast<int>(Flag::UseTexture));
+            Flags32::Set(Flags, static_cast<int>(FlagBit::UseTexture));
             Flags32::SetTextureId(Flags, 0);
             id %= 6;
             return {id*Tile, Variant*Tile, (id+1)*Tile, (Variant+1)*Tile};
         }
-        case texture::Item: {
+        case Texture_Id::Item: {
 
         }
-        case texture::Gui: {
-            Flags32::Set(Flags, static_cast<int>(Flag::UseTexture));
+        case Texture_Id::Gui: {
+            Flags32::Set(Flags, static_cast<int>(FlagBit::UseTexture));
             Flags32::SetTextureId(Flags, 1);
             return (UV / glm::vec4(512));
         }
-        case texture::Font: {
-            Flags32::Set(Flags, static_cast<int>(Flag::UseTexture));
+        case Texture_Id::Font: {
+            Flags32::Set(Flags, static_cast<int>(FlagBit::UseTexture));
             Flags32::SetTextureId(Flags, 2);
             return UV;
         }
         default: {
-            Flags32::Set(Flags, static_cast<int>(Flag::UseTexture));
+            Flags32::Set(Flags, static_cast<int>(FlagBit::UseTexture));
             Flags32::SetTextureId(Flags, 0);
             return glm::vec4(0);
         }
@@ -52,7 +56,7 @@ void Gui::Text(const glm::vec2& Pos, const Label& label) {
         const auto Size = glm::vec2((glypW * label.Style.Scale), (glypH * label.Style.Scale));
         DrawRectangle(
             {.Anchor = Anch::None, .Size = Size, .Offset = Cursor},
-            {.BgColor = uv, .TextureId = texture::Font}
+            {.BgColor = uv, .TextureId = Texture_Id::Font}
         );
         Cursor += glm::vec2(Size.x - (label.Style.PaddingX * label.Style.Scale) - (Advance[idx] * label.Style.Scale), 0);
     }
@@ -94,11 +98,11 @@ std::string Gui::Format(const char* fmt, ...) {
     vsnprintf(buffer, sizeof(buffer), fmt, args);
     va_end(args);
 
-    return std::string(buffer);
+    return buffer;
 }
 
 glm::vec4 Gui::Color(const glm::vec4& color, uint32_t &Flags) {
-    Flags32::Clear(Flags, static_cast<int>(Flag::UseTexture));
+    Flags32::Clear(Flags, static_cast<int>(FlagBit::UseTexture));
     return color;
 }
 
@@ -108,26 +112,26 @@ void Gui::DrawRectangle(const Layout& layout, const BoxStyle& style) {
     const glm::vec2 Size = layout.Size;
 
     glm::vec4 UV;
-    if (style.TextureId == texture::None) {
+    if (style.TextureId == Texture_Id::None) {
         // Solid Color
         UV = Color(style.BgColor, Flags);
-        Push(Pos, {UV.x, UV.y, UV.z}, Flags);
-        Push(Pos + glm::vec2(Size.x, 0.0f), {UV.x, UV.y, UV.z}, Flags);
-        Push(Pos + glm::vec2(0.0f, Size.y), {UV.x, UV.y, UV.z}, Flags);
+        backend.PushToMesh({Pos, UV, Flags});
+        backend.PushToMesh({Pos + glm::vec2(Size.x, 0.0f), UV, Flags});
+        backend.PushToMesh({Pos + glm::vec2(0.0f, Size.y), UV, Flags});
 
-        Push(Pos + Size, {UV.x, UV.y, UV.z}, Flags);
-        Push(Pos + glm::vec2(Size.x, 0.0f), {UV.x, UV.y, UV.z}, Flags);
-        Push(Pos + glm::vec2(0.0f, Size.y), {UV.x, UV.y, UV.z}, Flags);
+        backend.PushToMesh({Pos + Size, UV, Flags});
+        backend.PushToMesh({Pos + glm::vec2(Size.x, 0.0f), UV, Flags});
+        backend.PushToMesh({Pos + glm::vec2(0.0f, Size.y), UV, Flags});
     } else {
         // Texture
         UV = Texture(style.TextureId, style.BgColor, Flags);
-        Push(Pos, {UV.x, UV.y, 0}, Flags);
-        Push(Pos + glm::vec2(Size.x, 0.0f), {UV.z, UV.y, 0}, Flags);
-        Push(Pos + glm::vec2(0.0f, Size.y), {UV.x, UV.w, 0}, Flags);
+        backend.PushToMesh({Pos, {UV.x, UV.y, 0}, Flags});
+        backend.PushToMesh({Pos + glm::vec2(Size.x, 0.0f), {UV.z, UV.y, 0}, Flags});
+        backend.PushToMesh({Pos + glm::vec2(0.0f, Size.y), {UV.x, UV.w, 0}, Flags});
 
-        Push(Pos + Size, {UV.z, UV.w, 0}, Flags);
-        Push(Pos + glm::vec2(Size.x, 0.0f), {UV.z, UV.y, 0}, Flags);
-        Push(Pos + glm::vec2(0.0f, Size.y), {UV.x, UV.w, 0}, Flags);
+        backend.PushToMesh({Pos + Size, {UV.z, UV.w, 0}, Flags});
+        backend.PushToMesh({Pos + glm::vec2(Size.x, 0.0f), {UV.z, UV.y, 0}, Flags});
+        backend.PushToMesh({Pos + glm::vec2(0.0f, Size.y), {UV.x, UV.w, 0}, Flags});
     }
 }
 
@@ -146,67 +150,71 @@ void Gui::DrawProgressBar(const Layout& layout, const ProgressStyle& style, cons
     }
 }
 
-void Gui::Push(const glm::vec2& Pos, const glm::vec3& UV, const uint32_t& Flags) {
-        GuiVertex ver{};
-        ver.Pos = Pos;
-        ver.UV = UV;
-        ver.Flags = Flags;
-        Mesh.push_back(ver);
-}
+void Gui::TextInput(const Layout &layout, const TextInputStyle &style, Label& label) {
+    const int id = ID;
+    ID += 1;
+    const glm::vec2 Pos = Anchor(layout);
+    const bool hover = MouseInRect(Pos, layout.Size);
 
-void Gui::Send_Data() {
-    if (vao == 0) {
-        glGenVertexArrays(1, &vao);
-        glGenBuffers(1, &vbo);
+    const glm::vec4 Col = hover ? style.style.HoverColor : style.style.BgColor;
 
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        // aPos (location = 0)
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GuiVertex), (void*)offsetof(GuiVertex, Pos));
-        glEnableVertexAttribArray(0);
-
-        // atexture (location = 1)
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GuiVertex), (void*)offsetof(GuiVertex, UV));
-        glEnableVertexAttribArray(1);
-
-        // aFlags (location = 2)
-        glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(GuiVertex), (void*)offsetof(GuiVertex, Flags));
-        glEnableVertexAttribArray(2);
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
+    if (hover && InputManager::MouseState[GLFW_MOUSE_BUTTON_1]) {
+        if (ActiveId == -1) {
+            ActiveId = id;
+            InputManager::InputActive = true;
+        } else if (ActiveId == id) {
+            ActiveId = -1;
+            InputManager::InputActive = false;
+        }
     }
 
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, Mesh.size() * sizeof(GuiVertex), Mesh.data(), GL_STATIC_DRAW);
+    // ToDo: InputManager::charBuffer as an ring buffer not deque
+    // Input Logic
+    if (InputManager::InputActive && !InputManager::charBuffer.empty()) {
+        if (style.max_chars > label.text.size()) {
 
-    IndexCount = Mesh.size();
+            const char c = InputManager::charBuffer.front();
+
+            if (style.Input_Mode == 0) {
+                label.text += c;
+            } else if (style.Input_Mode == 1 && std::isdigit(c)) {
+                label.text += c;
+            } // ToDo More Modes
+        }
+        InputManager::charBuffer.pop_front();
+    }
+
+    // ToDo More QoL futures
+    if (!label.text.empty()) {
+        if (InputManager::keysState[GLFW_KEY_BACKSPACE]) {
+            label.text.pop_back();
+            InputManager::keysState[GLFW_KEY_BACKSPACE] = false;
+        }
+    }
+
+    DrawRectangle(layout,{.BgColor = Col, .TextureId = style.style.TextureId});
+
+    if (!label.text.empty() || InputManager::InputActive) {
+        // ToDo Actual timing system not this shit
+        if (game.Frame % game.FPS <= (style.timing*game.FPS)/2) {
+            label.text.push_back(style.Cursor);
+            const glm::vec2 TextPos = AnchorText(Pos, layout.Size, label);
+            Text(TextPos, label);
+            label.text.pop_back();
+        } else {
+            const glm::vec2 TextPos = AnchorText(Pos, layout.Size, label);
+            Text(TextPos, label);
+        }
+    } else {
+        const glm::vec2 TextPos = AnchorText(Pos, layout.Size, {style.Default_str, label.Style, label.Offset, label.anchor});
+        Text(TextPos, {style.Default_str, label.Style, label.Offset, label.anchor});
+    }
 }
 
-void Gui::Draw() const {
-    glDisable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glBindVertexArray(vao);
-    glDrawArrays(GL_TRIANGLES, 0, IndexCount);
-    
-    // Render ImGui
-    glEnable(GL_DEPTH_TEST);
-    glDisable(GL_BLEND);
-}
-
-void Gui::Clear(const int w, const int h, const int Scale) {
-    Mouse = glm::vec2(
-        InputManager::MouseX/Scale,
-        InputManager::MouseY/Scale
-    );
-    width = w;
-    height = h;
-    Mesh.clear();
-}
 
 glm::vec2 Gui::Anchor(const Layout& layout) const {
+    const float width = game_settings.Scaled_w;
+    const float height = game_settings.Scaled_h;
     const glm::vec2 Size = layout.Size;
     const glm::vec2 Offset = layout.Offset;
     switch (layout.Anchor) {
@@ -298,6 +306,8 @@ glm::vec4 Gui::Gradient(float x, const glm::vec4& a, const glm::vec4& b, const g
     else
         return glm::mix(b, c, (x - 0.5f) * 2.0f);
 }
+
+std::vector<std::string> Gui::chat;
 
 const int Gui::Advance[('~'-' ')+1] = {
     /* ' ' */ 1,

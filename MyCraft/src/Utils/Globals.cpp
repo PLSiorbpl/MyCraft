@@ -6,3 +6,4 @@ camera Camera;
 Game_Settings game_settings;
 PerfStats PerfS;
 Shaders SH;
+Net net;

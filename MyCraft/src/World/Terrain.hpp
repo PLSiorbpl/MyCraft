@@ -1,7 +1,6 @@
 #pragma once
 #include "FastNoiseLite.h"
 #include <glm/glm.hpp>
-
 #include "World.hpp"
 
 class TerrainGen {
@@ -15,12 +14,12 @@ private:
     float BiomeFreq = 0.03f;
     float BiomeMult = 0.5f;
     float BiomeBase = 1.5f;
-    int BiomePower = 4;
+    float BiomePower = 4;
     FastNoiseLite terrainNoise;
     FastNoiseLite biomeNoise;
 
 public:
-    TerrainGen(int seed, float basefreq, float baseamp, int oct, float addfreq, float addamp, float biomefreq, float biomemult, float biomebase, int biomepower)
+    TerrainGen(int seed, float basefreq, float baseamp, int oct, float addfreq, float addamp, float biomefreq, float biomemult, float biomebase, float biomepower)
     : Seed(seed), baseFreq(basefreq), baseAmp(baseamp), octaves(oct),
       AddedFreq(addfreq), AddedAmp(addamp), BiomeFreq(biomefreq),
       BiomeMult(biomemult), BiomeBase(biomebase), BiomePower(biomepower)
@@ -31,5 +30,5 @@ public:
         biomeNoise.SetSeed(seed + 420);
     }
 
-    void Generate_Terrain_Chunk(const int ChunkX, const int ChunkZ, const glm::ivec3 ChunkSize) const;
+    Chunk Generate_Terrain_Chunk(int ChunkX, int ChunkZ, glm::ivec3 ChunkSize) const;
 };

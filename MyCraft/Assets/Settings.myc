@@ -1,9 +1,8 @@
 // Graphics:
 RAM=8192 // in MB
-Render Distance=4
+Render Distance=24
 Out Of ram=1 // 1 - Dont Exit Program and change RenderDist by -1 | 0 - Exit Program (Crash)
 V-Sync=1
-Gui Update Rate=4 // 0 will crash 8 is good enough
 // if Updates are set to 0 it will Update Mesh/World in 1 Frame
 Mesh Updates=32
 Lazy Mesh Updates=8
@@ -12,6 +11,7 @@ Lazy Mesh Updates=8
 Chunk Width=16
 Chunk Height=256
 Chunk Depth=16
+Generation Type=3 // 2 - 2d | 3 - 3d
 
 // Info: Biome Multiplier is kinda bad use Biome power instead (pow(power, height);)
 Seed=6969
