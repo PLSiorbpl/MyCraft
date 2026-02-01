@@ -52,12 +52,12 @@ public:
 
     // Primitive
     void DrawRectangle(const gui::Layout& layout, const gui::BoxStyle& style);
-    void DrawProgressBar(const gui::Layout& layout, const gui::ProgressStyle& style, const gui::Label* label = nullptr);
 
     // Widgets
-    bool Button(const gui::Layout& layout, const gui::ButtonStyle& style, const gui::Label& label);
+    bool Button(const gui::Layout &layout, const gui::ButtonStyle &style, const gui::Label &label, gui::Animation_State<glm::vec2>* state = nullptr);
+    void ProgressBar(const gui::Layout& layout, const gui::ProgressStyle& style, const gui::Label* label = nullptr);
     void Text(const glm::vec2& Pos, const gui::Label& label);
-    void TextInput(const gui::Layout& layout, const gui::TextInputStyle& style, gui::Label& label);
+    void TextInput(const gui::Layout& layout, const gui::TextInputStyle& style, gui::Label& label, gui::Animation_State<glm::vec2>* state = nullptr);
 
     // Layout | Metrics
     [[nodiscard]] glm::vec2 Anchor(const gui::Layout& layout) const;
@@ -100,7 +100,7 @@ public:
     void Menu();
     void Settings();
     void Chat();
-    void Multiplayer();
+    void Multiplayer(bool Initialize);
     void MultiplayerJoin();
     void MultiplayerHost();
     void Crosschair();

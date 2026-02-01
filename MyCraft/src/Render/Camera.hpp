@@ -18,6 +18,7 @@ public:
     float JumpStrength = 0.15f;
     float Sensitivity = 0.1f;
     bool Mode = false;
+    bool crouching = false;
 
     bool FirstMouse = true;
     float LastX = 400, LastY = 300;

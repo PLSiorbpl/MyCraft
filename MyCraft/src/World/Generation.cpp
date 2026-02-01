@@ -28,7 +28,7 @@ void ChunkGeneration::LookForChunks() {
             }
         }
     }
-    GenCV.notify_one();
+    GenCV.notify_all();
 }
 
 void ChunkGeneration::GenerateChunk(const glm::ivec3 ChunkSize) {
@@ -114,7 +114,3 @@ void ChunkGeneration::RemoveChunks() {
         }
     }
 }
-
-ChunkGeneration::ChunkGeneration(int seed, float basefreq, float baseamp, int oct, float addfreq, float addamp, float biomefreq, float biomemult, float biomebase, float biomepower)
-    : Terrain(seed, basefreq, baseamp, oct, addfreq, addamp, biomefreq, biomemult, biomebase, biomepower)
-{}

@@ -41,7 +41,6 @@
 #include "Utils/Globals.hpp"
 
 #include "World/Chunk.hpp"
-//#include "World/Terrain.hpp"
 #include "World/Generation.hpp"
 #include "World/World.hpp"
 
@@ -51,8 +50,8 @@ void framebuffer_size_callback(GLFWwindow* window, const int width, const int he
     const auto* ctx = static_cast<window_context*>(
         glfwGetWindowUserPointer(window)
     );
-    ctx->game_settings->width = width;//std::max(1, width);
-    ctx->game_settings->height = height;//std::max(1, height);
+    ctx->game_settings->width = width;
+    ctx->game_settings->height = height;
     glViewport(0, 0, width, height);
 }
 
@@ -85,34 +84,42 @@ window_context Game::ctx = {&Camera, &game_settings};
 void Game::Init_Settings(const std::string& Path) {
     Settings.Load_Settings(Path);
 
-    Camera.RenderDistance = Settings.Get<int>("Render Distance", 0);
-    game.Max_Ram = Settings.Get<int>("RAM", 0);
-    game.ramHandle = Settings.Get<int>("Out Of ram", 0);
-    Chunk_Size.x = Settings.Get<int>("Chunk Width", 0);
-    Chunk_Size.y = Settings.Get<int>("Chunk Height", 0);
-    Chunk_Size.z = Settings.Get<int>("Chunk Depth", 0);
+    // General Options:
+    Camera.RenderDistance = Settings.Get<int>("Render Distance", 2);
+    game_settings.Generation_Threads = Settings.Get<unsigned int>("Generation Threads", 2);
+
+    game.Max_Ram = Settings.Get<int>("RAM", 2048);
     game.V_Sync = Settings.Get<int>("V-Sync", 0);
-    game.TickRate = 1.0f / Settings.Get<float>("Tick Rate", 0.0f);
-    game.FOV = Settings.Get<float>("FOV", 0);
+
+    game.Mesh_Updates = Settings.Get<int>("Mesh Updates", 0);
+    game.Lazy_Mesh_Updates = Settings.Get<int>("Lazy Mesh Updates", 0);
+    game.ramHandle = Settings.Get<int>("Out Of ram", 1);
+
+    // World Generation:
+    Chunk_Size.x = Settings.Get<int>("Chunk Width", 16);
+    Chunk_Size.y = Settings.Get<int>("Chunk Height", 256);
+    Chunk_Size.z = Settings.Get<int>("Chunk Depth", 16);
+    game_settings.World_Generation_Type = Settings.Get<int>("Generation Type", 0);
+
+    terrain_settings.Seed = Settings.Get<int>("Seed", 0);
+    terrain_settings.basefreq = Settings.Get<float>("Base Frequency", 0.0f);
+    terrain_settings.baseamp = Settings.Get<float>("Base Amplitude", 0.0f);
+    terrain_settings.oct = Settings.Get<int>("Octave", 0);
+    terrain_settings.addfreq = Settings.Get<float>("Add Frequency", 0.0f);
+    terrain_settings.addamp = Settings.Get<float>("Add Amplitude", 0.0f);
+
+    terrain_settings.biomefreq = Settings.Get<float>("Biome Frequency", 0.0f);
+    terrain_settings.biomemult = Settings.Get<float>("Biome Multiplier", 0.0f);
+    terrain_settings.biomebase = Settings.Get<float>("Biome Add Amplitude", 0.0f);
+    terrain_settings.biomepower = Settings.Get<float>("Biome Power", 0.0f);
+
+    // Game:
+    game.TickRate = 1.0f / Settings.Get<float>("Tick Rate", 60.0f);
+
+    // Player:
+    game.FOV = Settings.Get<float>("FOV", 80);
     Camera.Speed = Settings.Get<float>("Speed", 0.0f);
     Camera.SprintSpeed = Settings.Get<float>("Sprint Speed", 0.0f);
-    game_settings.Gui_Update_rate = Settings.Get<int>("Gui Update Rate", 0.0);
-
-    game.Seed = Settings.Get<int>("Seed", 0);
-    game.basefreq = Settings.Get<float>("Base Frequency", 0.0f);
-    game.baseamp = Settings.Get<float>("Base Amplitude", 0.0f);
-    game.oct = Settings.Get<int>("Octave", 0);
-    game.addfreq = Settings.Get<float>("Add Frequency", 0.0f);
-    game.addamp = Settings.Get<float>("Add Amplitude", 0.0f);
-    game.biomefreq = Settings.Get<float>("Biome Frequency", 0.0f);
-    game.biomemult = Settings.Get<float>("Biome Multiplier", 0.0f);
-    game.biomebase = Settings.Get<float>("Biome Add Amplitude", 0.0f);
-    game.biomepower = Settings.Get<float>("Biome Power", 0.0f);
-    game.Mesh_Updates = Settings.Get<int>("Mesh Updates", 0);
-    game.World_Updates = Settings.Get<int>("World Updates", 0);
-    game.Lazy_Mesh_Updates = Settings.Get<int>("Lazy Mesh Updates", 0);
-
-    game_settings.Generation_Type = Settings.Get<int>("Generation Type", 0);
 }
 
 void Game::CleanUp() {
@@ -148,7 +155,7 @@ bool Game::Init_Window() {
     window = glfwCreateWindow(game_settings.width, game_settings.height, "MyCraft", monitor, nullptr);
 
     if (!window) {
-        std::cerr << "You Dont Support OpenGl 4.6 Trying 3.3...\n";
+        std::cerr << "Your GPU doesnt Support OpenGl 4.6. Trying 3.3\n";
 
         // Fallback to 3.3 Core
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -157,28 +164,24 @@ bool Game::Init_Window() {
         window = glfwCreateWindow(game_settings.width, game_settings.height, "MyCraft", monitor, nullptr);
 
         if (!window) {
-            std::cerr << "You Dont Support OpenGl 3.3  Get New Card Or Update Drivers\n";
+            std::cerr << "Your GPU doesnt Support OpenGl 3.3. Try updating Drivers\n";
             glfwTerminate();
             return false;
         }
     }
-    //glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
     glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
     glfwSetWindowPos(window, 0, 0);
-    //glfwSetWindowSize(window, game_settings.width, game_settings.height);
 
     glfwMakeContextCurrent(window);
     glfwSwapInterval(game.V_Sync); // V-sync
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-        std::cerr << "Skill Issue of OpenGl and Glad!\n";
+        std::cerr << "Glad loader error\n";
         return false;
     }
 
     glEnable(GL_DEPTH_TEST);
-    //glEnable(GL_BLEND);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     glfwSetMouseButtonCallback(window, InputManager::Mouse_Key_Callback);
@@ -208,16 +211,15 @@ void Tick_Update(GLFWwindow* window, Movement &movement, Selection &Sel) {
 }
 
 void Game::MainLoop() {
-    ChunkGeneration GenerateChunk(game.Seed, game.basefreq, game.baseamp, game.oct, game.addfreq, game.addamp, game.biomefreq, game.biomemult, game.biomebase, game.biomepower);
+    ChunkGeneration GenerateChunk;
     glfwGetWindowSize(window, &game_settings.width, &game_settings.height);
     selection.Init(SH.SelectionBox_Shader.Shader);
     Fps.Init();
-    GenerateChunk.Start(Chunk_Size);
+    GenerateChunk.Start(game_settings.Generation_Threads, Chunk_Size);
     while (!glfwWindowShouldClose(window)) {
 
             game.DeltaTime = Fps.Start();
             FrameTime.Reset();
-            //glfwGetWindowSize(window, &game_settings.width, &game_settings.height);
             if (game_settings.width == 0 || game_settings.height == 0) {
                 glfwPollEvents();
                 continue;
@@ -238,8 +240,6 @@ void Game::MainLoop() {
             const glm::mat4 proj = glm::perspective(glm::radians(FOV), aspectRatio, 0.1f, 2000.0f);
 
             glUseProgram(SH.Solid_Shader_Blocks.Shader);
-            //glActiveTexture(GL_TEXTURE0);
-            //glBindTexture(GL_TEXTURE_2D, SH.Solid_Shader_Blocks.Texture0);
             Shader::Set_Int(SH.Solid_Shader_Blocks.Shader, "BaseTexture", 0);
             Shader::Set_Vec3(SH.Solid_Shader_Blocks.Shader, "ViewPos", Camera.Position);
             Shader::Set_Mat4(SH.Solid_Shader_Blocks.Shader, "Model", model);
@@ -394,7 +394,6 @@ void Game::MainLoop() {
                     game.Updates++;
                 }
             }
-            PerfS.mesh = time.ElapsedMs();
             // Delete already done chunks
             if (!World_Map::Mesh_Queue.empty()) {
                 for (size_t i = World_Map::Mesh_Queue.size(); i-- > 0;) {
@@ -408,6 +407,7 @@ void Game::MainLoop() {
                     World_Map::Mesh_Queue.pop_back();
                 }
             }
+            PerfS.mesh = time.ElapsedMs();
 
         //-------------------------
         // Clearing Screen
@@ -415,8 +415,9 @@ void Game::MainLoop() {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         //-------------------------
-        // World/Mesh Generation
+        // World Generation
         //-------------------------
+        time.Reset();
         {
                 std::lock_guard lock(GenerateChunk.ResultMutex);
                 for (auto& r : GenerateChunk.ReadyChunks) {
@@ -425,11 +426,10 @@ void Game::MainLoop() {
                 }
                 GenerateChunk.ReadyChunks.clear();
         }
+
             if (game.ChunkUpdated) {
                 if (game.World_Updates == 0) {
-                    time.Reset();
                     GenerateChunk.LookForChunks();
-                    //GenerateChunk.GenerateChunks(Chunk_Size);
                     PerfS.chunk = time.ElapsedMs();
                 }
                 time.Reset();
@@ -479,7 +479,6 @@ void Game::MainLoop() {
         // GUI - My Own GUI Engine
         //-------------------------
             time.Reset();
-            //GLenum err = glGetError();
             gui.backend.ResetFrame();
             gui.Generate();
             gui.backend.SendMesh();

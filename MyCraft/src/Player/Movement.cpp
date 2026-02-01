@@ -55,6 +55,7 @@ void Movement::Input(GLFWwindow* window, const glm::ivec3 ChunkSize, Selection& 
 
 void Movement::Special_Keys(GLFWwindow* window) {
     Camera.Mode = InputManager::keysToggle[GLFW_KEY_1] ? true : false;
+    Camera.crouching = InputManager::keysState[GLFW_KEY_LEFT_CONTROL];
 }
 
 void Movement::TestColisions(const glm::ivec3 ChunkSize) {
@@ -65,13 +66,6 @@ void Movement::TestColisions(const glm::ivec3 ChunkSize) {
 
     if (!Camera.Mode) Camera.Vel.y -= Camera.Gravity;
 
-    testPos = Camera.Position + glm::vec3(Camera.Vel.x, 0, 0);
-    if (!colisions::isSolidAround(testPos, ChunkSize) || Camera.Mode) {
-        Camera.Position.x = testPos.x;
-    } else if (Camera.Mode) {
-        Camera.Vel.x = 0.0f;
-    }
-
     testPos = Camera.Position + glm::vec3(0, Camera.Vel.y, 0);
     if (!colisions::isSolidAround(testPos, ChunkSize) || Camera.Mode) {
         Camera.Position.y = testPos.y;
@@ -81,6 +75,13 @@ void Movement::TestColisions(const glm::ivec3 ChunkSize) {
             Camera.onGround = true;
         }
         Camera.Vel.y = 0.0f;
+    }
+
+    testPos = Camera.Position + glm::vec3(Camera.Vel.x, 0, 0);
+    if (!colisions::isSolidAround(testPos, ChunkSize) || Camera.Mode) {
+        Camera.Position.x = testPos.x;
+    } else if (Camera.Mode) {
+        Camera.Vel.x = 0.0f;
     }
 
     testPos = Camera.Position + glm::vec3(0, 0, Camera.Vel.z);

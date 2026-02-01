@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <cinttypes>
 #include <string>
+#include "Utils/Interpolater.hpp"
 
 /*
 Contains:
@@ -75,10 +76,23 @@ namespace gui {
         Texture_Id TextureId = Texture_Id::None;
     };
 
+    enum class State {
+        Idle,
+        Hover,
+        Click,
+    };
+
+    template<typename T>
+    struct Animation_State {
+        Interpolate<T> inter{};
+        State state = State::Idle;
+    };
+
     struct ButtonStyle {
         glm::vec4 BgColor = {0.25098f, 0.25098f, 0.25098f, 0.0f};
         glm::vec4 HoverColor = {0.941176f, 0.941176f, 0.941176f, 0.0f};
         Texture_Id TextureId = Texture_Id::None;
+        bool show = true;
     };
 
     struct TextInputStyle {

@@ -2,8 +2,7 @@
 #include "World.hpp"
 #include "Utils/Globals.hpp"
 
-Chunk TerrainGen::Generate_Terrain_Chunk(int ChunkX, int ChunkZ, const glm::ivec3 ChunkSize) const {
-    //auto& World = World_Map::World;
+Chunk TerrainGen::Generate_Terrain_Chunk(const int ChunkX, const int ChunkZ, const glm::ivec3 ChunkSize) const {
     Chunk chunk;
     chunk.width = ChunkSize.x;
     chunk.height = ChunkSize.y;
@@ -12,7 +11,7 @@ Chunk TerrainGen::Generate_Terrain_Chunk(int ChunkX, int ChunkZ, const glm::ivec
     chunk.chunkZ = ChunkZ;
     chunk.blocks.resize(ChunkSize.x * ChunkSize.y * ChunkSize.z);
 
-    if (game_settings.Generation_Type == 3) {
+    if (game_settings.World_Generation_Type == 3) {
         for (int x = 0; x < ChunkSize.x; x++) {
             for (int z = 0; z < ChunkSize.z; z++) {
                 const float worldX = ChunkX * ChunkSize.x + x;
@@ -50,7 +49,7 @@ Chunk TerrainGen::Generate_Terrain_Chunk(int ChunkX, int ChunkZ, const glm::ivec
                 }
             }
         }
-    } else if (game_settings.Generation_Type == 2) {
+    } else if (game_settings.World_Generation_Type == 2) {
         for (int x = 0; x < ChunkSize.x; ++x) {
             for (int z = 0; z < ChunkSize.z; ++z) {
                 const float worldX = ChunkX * ChunkSize.x + x;

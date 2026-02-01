@@ -1,11 +1,13 @@
-// Graphics:
-RAM=8192 // in MB
+// General Options:
 Render Distance=24
-Out Of ram=1 // 1 - Dont Exit Program and change RenderDist by -1 | 0 - Exit Program (Crash)
+Generation Threads=2 // Recommended 1-4 not more
+
+RAM=8192 // in MB
 V-Sync=1
-// if Updates are set to 0 it will Update Mesh/World in 1 Frame
+
 Mesh Updates=32
 Lazy Mesh Updates=8
+Out Of ram=1 // 1 - Dont Exit Program and change RenderDist by -1 | 0 - Exit Program (Crash)
 
 // World Generation:
 Chunk Width=16
@@ -14,7 +16,7 @@ Chunk Depth=16
 Generation Type=3 // 2 - 2d | 3 - 3d
 
 // Info: Biome Multiplier is kinda bad use Biome power instead (pow(power, height);)
-Seed=6969
+Seed=1234
 Base Frequency=0.02f
 Base Amplitude=0.4f
 Octave=4

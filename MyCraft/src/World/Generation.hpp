@@ -20,29 +20,37 @@ public:
     std::mutex GenMutex;
     std::mutex ResultMutex;
     std::condition_variable GenCV;
-    bool Running = true;
+    std::atomic<bool> Running{false};
     std::queue<std::pair<int, int>> GenQueue;
     std::deque<Chunk> ReadyChunks;
-    std::thread WorkerThread;
+    std::vector<std::thread> Workers;
     std::unordered_set<std::pair<int,int>, World_Map::pair_hash> GeneratingChunks;
-
-    ChunkGeneration(int seed, float basefreq, float baseamp, int oct, float addfreq, float addamp, float biomefreq, float biomemult, float biomebase, float biomepower);
 
     void LookForChunks();
     void GenerateChunk(glm::ivec3 ChunkSize);
 
-    void Start(const glm::ivec3& ChunkSize) {
-        WorkerThread = std::thread(&ChunkGeneration::GenerateChunk, this, ChunkSize);
-        std::cout << "Created Generation Thread\n";
+    void Start(const int Threads, const glm::ivec3& ChunkSize) {
+        Running = true;
+        for (int n = 0; n < Threads; ++n) {
+            Workers.emplace_back(
+                &ChunkGeneration::GenerateChunk,
+                this,
+                ChunkSize
+            );
+        }
+        std::cout << "Created " << Threads << " Generation Threads\n";
     }
 
     void Stop() {
         Running = false;
         GenCV.notify_all();
-        if (WorkerThread.joinable()) {
-            WorkerThread.join();
-            std::cout << "Stopped Generation Thread\n";
+        for (auto& worker : Workers) {
+            if (worker.joinable()) {
+                worker.join();
+            }
         }
+        std::cout << "Stopped " << Workers.size() << " Generation Threads\n";
+        Workers.clear();
     }
 
     static void RemoveChunks();

@@ -1,3 +1,4 @@
+#include <iostream>
 #include <glad/glad.h>
 #include "Gui.hpp"
 #include "Common/Gui_Types.hpp"
@@ -135,7 +136,7 @@ void Gui::DrawRectangle(const Layout& layout, const BoxStyle& style) {
     }
 }
 
-void Gui::DrawProgressBar(const Layout& layout, const ProgressStyle& style, const Label* label) {
+void Gui::ProgressBar(const Layout& layout, const ProgressStyle& style, const Label* label) {
     const glm::vec2 Pos = Anchor(layout);
     const float Progress = glm::clamp(style.Progress, 0.0f, 1.0f);
     const float filledWidth = layout.Size.x * Progress;
@@ -150,11 +151,19 @@ void Gui::DrawProgressBar(const Layout& layout, const ProgressStyle& style, cons
     }
 }
 
-void Gui::TextInput(const Layout &layout, const TextInputStyle &style, Label& label) {
+void Gui::TextInput(const Layout &layout, const TextInputStyle &style, Label& label, Animation_State<glm::vec2>* state) {
     const int id = ID;
     ID += 1;
-    const glm::vec2 Pos = Anchor(layout);
-    const bool hover = MouseInRect(Pos, layout.Size);
+    bool hover;
+    glm::vec2 Pos;
+
+    if (state != nullptr) {
+        Pos = Anchor({layout.Anchor, state->inter.getValue(), layout.Offset});
+        hover = MouseInRect(Pos, state->inter.getValue());
+    } else {
+        Pos = Anchor(layout);
+        hover = MouseInRect(Pos, layout.Size);
+    }
 
     const glm::vec4 Col = hover ? style.style.HoverColor : style.style.BgColor;
 
@@ -184,7 +193,6 @@ void Gui::TextInput(const Layout &layout, const TextInputStyle &style, Label& la
         InputManager::charBuffer.pop_front();
     }
 
-    // ToDo More QoL futures
     if (!label.text.empty()) {
         if (InputManager::keysState[GLFW_KEY_BACKSPACE]) {
             label.text.pop_back();
@@ -264,12 +272,20 @@ glm::vec2 Gui::AnchorText(const glm::vec2& Pos, const glm::vec2& Size, const Lab
     return glm::vec2(0);
 }
 
-bool Gui::Button(const Layout& layout, const ButtonStyle& style, const Label& label) {
+bool Gui::Button(const Layout &layout, const ButtonStyle &style, const Label &label, Animation_State<glm::vec2> *state) {
     const int id = ID;
     ID += 1;
     bool clicked = false;
-    const glm::vec2 Pos = Anchor(layout);
-    const bool hover = MouseInRect(Pos, layout.Size);
+    bool hover;
+    glm::vec2 Pos;
+
+    if (state != nullptr) {
+        Pos = Anchor({layout.Anchor, state->inter.getValue(), layout.Offset});
+        hover = MouseInRect(Pos, state->inter.getValue());
+    } else {
+        Pos = Anchor(layout);
+        hover = MouseInRect(Pos, layout.Size);
+    }
 
     const glm::vec4 Col = hover ? style.HoverColor : style.BgColor;
     
@@ -277,20 +293,49 @@ bool Gui::Button(const Layout& layout, const ButtonStyle& style, const Label& la
         ActiveId = id;
     }
     if (!InputManager::MouseState[GLFW_MOUSE_BUTTON_1]) {
-        if (ActiveId == id && hover)
-            clicked = true;
+        if (ActiveId == id && hover) {
+            if (state != nullptr) {
+                state->state = State::Click;
+                state->inter.setEasing(ease::easing::EaseOutBack);
+                state->inter.setValue(layout.Size + glm::vec2(5));
+                state->inter.setDuration(0.1);
+            } else {
+                clicked = true;
+            }
+        }
 
         if (ActiveId == id)
             ActiveId = -1;
     }
 
-    DrawRectangle(
-        layout,
-        {.BgColor = Col, .TextureId = style.TextureId}
-    );
-    const glm::vec2 TextPos = AnchorText(Pos, layout.Size, label);
-    Text(TextPos, label);
-    
+    if (state != nullptr) {
+        if (state->inter.ended) {
+            if (state->state == State::Click) {
+                clicked = true;
+            } else if (hover) {
+                state->state = State::Hover;
+                state->inter.setEasing(ease::easing::EaseOutSine);
+                state->inter.setValue(layout.Size + glm::vec2(2));
+                state->inter.setDuration(0.1);
+            } else {
+                state->state = State::Idle;
+                state->inter.setEasing(ease::easing::EaseOutSine);
+                state->inter.setValue(layout.Size);
+                state->inter.setDuration(0.1);
+            }
+        }
+    }
+
+    if (state != nullptr) {
+        const glm::vec2 TextPos = AnchorText(Pos, state->inter.getValue(), label);
+        DrawRectangle({layout.Anchor, state->inter.getValue(), layout.Offset},{.BgColor = Col, .TextureId = style.TextureId});
+        Text(TextPos, label);
+    } else {
+        const glm::vec2 TextPos = AnchorText(Pos, layout.Size, label);
+        DrawRectangle(layout,{.BgColor = Col, .TextureId = style.TextureId});
+        Text(TextPos, label);
+    }
+
     return clicked;
 }
 
@@ -303,8 +348,7 @@ glm::vec4 Gui::Gradient(float x, const glm::vec4& a, const glm::vec4& b, const g
     x = glm::clamp(x, 0.0f, 1.0f);
     if (x < 0.5f)
         return glm::mix(a, b, x * 2.0f);
-    else
-        return glm::mix(b, c, (x - 0.5f) * 2.0f);
+    return glm::mix(b, c, (x - 0.5f) * 2.0f);
 }
 
 std::vector<std::string> Gui::chat;

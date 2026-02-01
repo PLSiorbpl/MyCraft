@@ -45,13 +45,13 @@ void Gui::Statistics() {
     auto StatSize = glm::vec2((HalfHotBar-10)+2, 10);
     DrawRectangle({Anch::BottomCenter, StatSize, {(-HalfHotBar + StatSize.x/2)-1, -25.0f}}, {rgb(0x404040), Texture_Id::None});
     StatSize = glm::vec2(HalfHotBar-10, 8);
-    DrawProgressBar({Anch::BottomCenter, StatSize, {-HalfHotBar + StatSize.x/2, -26.0f}}, {1, rgb(0xff8c00), Texture_Id::None});
+    ProgressBar({Anch::BottomCenter, StatSize, {-HalfHotBar + StatSize.x/2, -26.0f}}, {1, rgb(0xff8c00), Texture_Id::None});
 
     // Water
     StatSize = glm::vec2((-HalfHotBar+10)-2, 10);
     DrawRectangle({Anch::BottomCenter, StatSize, {(HalfHotBar + StatSize.x/2)+1, -25.0f}}, {rgb(0x404040), Texture_Id::None});
     StatSize = glm::vec2(-HalfHotBar+10, 8);
-    DrawProgressBar({Anch::BottomCenter, StatSize, {HalfHotBar + StatSize.x/2, -26.0f}}, {1, rgb(0x00f7ff), Texture_Id::None});
+    ProgressBar({Anch::BottomCenter, StatSize, {HalfHotBar + StatSize.x/2, -26.0f}}, {1, rgb(0x00f7ff), Texture_Id::None});
 }
 
 void Gui::Health() {
@@ -77,32 +77,41 @@ void Gui::Menu() {
     ID = 0;
     static ButtonStyle Big = {{0,0,150,20}, {0,21,150,41}, Texture_Id::Gui};
     static ButtonStyle Small = {{151,0,221,20}, {151,21,221,41}, Texture_Id::Gui};
+    static Animation_State<glm::vec2> Resume_State;
+    static Animation_State<glm::vec2> Exit_State;
+    static Animation_State<glm::vec2> Settings_State;
+    static Animation_State<glm::vec2> Multiplayer_State;
     
     // Resume
     Layout layout = {Anch::Center, {150, 20}, {0.0f, -25.0f}};
     Label label = {"Resume", .anchor = Anch::Center};
-    if (Button(layout, Big, label)) {
+    if (Button(layout, Big, label, &Resume_State)) {
+        Resume_State.state = State::Idle;
         InputManager::Key_Callback(window, GLFW_KEY_ESCAPE, 0, GLFW_PRESS, 0);
     }
 
     // Exit
     layout.Offset = {0.0f, 25.0f};
     label.text = "Exit";
-    if (Button(layout, Big, label)) {
+    if (Button(layout, Big, label, &Exit_State)) {
+        Exit_State.state = State::Idle;
         glfwSetWindowShouldClose(window, true);
     }
     // Settings
     layout.Size = {70, 20};
     layout.Offset = {-(layout.Size.x+10)/2, 0.0f};
     label.text = "Settings";
-    if (Button(layout, Small, label)) {
+    if (Button(layout, Small, label, &Settings_State)) {
+        Settings_State.state = State::Idle;
         game.MenuId = 1;
     }
 
-    // idk
+    // Multiplayer
     layout.Offset = {(layout.Size.x+10)/2, 0.0f};
     label.text = "Multiplayer";
-    if (Button(layout, Small, label)) {
+    if (Button(layout, Small, label, &Multiplayer_State)) {
+        Multiplayer_State.state = State::Idle;
+        Multiplayer(true);
         game.MenuId = 2;
     }
 }
@@ -112,11 +121,15 @@ void Gui::Settings() {
     ID = 0;
     static ButtonStyle Big = {{0,0,150,20}, {0,21,150,41}, Texture_Id::Gui};
     static ButtonStyle Small = {{151,0,221,20}, {151,21,221,41}, Texture_Id::Gui};
+    static Animation_State<glm::vec2> Render1_State;
+    static Animation_State<glm::vec2> Render2_State;
+    static Animation_State<glm::vec2> Save_State;
+    static Animation_State<glm::vec2> VSync_State;
 
     Layout layout = {Anch::Center, {70, 20}, {-(70+10)/2, -25.0f}};
     Label label = {"Render +", .anchor = Anch::Center};
-
-    if (Button(layout, Small, label)) {
+    if (Button(layout, Small, label, &Render1_State)) {
+        Render1_State.state = State::Idle;
         renderd += 1;
         if (Camera.RenderDistance+renderd > 64) renderd -= 1;
     }
@@ -127,7 +140,8 @@ void Gui::Settings() {
     } else {
         label.text = "V-Sync Off";
     }
-    if (Button(layout, Small, label)) {
+    if (Button(layout, Small, label, &VSync_State)) {
+        VSync_State.state = State::Idle;
         if (game.V_Sync == 1) {
             game.V_Sync = 0;
         } else {
@@ -142,7 +156,8 @@ void Gui::Settings() {
 
     layout.Offset = {(layout.Size.x+10)/2, -25};
     label.text = "Render -";
-    if (Button(layout, Small, label)) {
+    if (Button(layout, Small, label, &Render2_State)) {
+        Render2_State.state = State::Idle;
         renderd -= 1;
         if (Camera.RenderDistance+renderd < 2) renderd += 1;
     }
@@ -159,7 +174,8 @@ void Gui::Settings() {
     layout.Offset = {0, 50};
     layout.Size = {150, 20};
     label.text = "Save";
-    if (Button(layout, Big, label)) {
+    if (Button(layout, Big, label, &Save_State)) {
+        Save_State.state = State::Idle;
         Camera.RenderDistance += renderd;
         renderd = 0;
         game.MenuId = 0;
@@ -225,7 +241,7 @@ void Gui::DebugScreen() {
     }
     layout.Offset.y = 37;
     layout.Size = {53, 10};
-    DrawProgressBar(layout, style, &label_ram);
+    ProgressBar(layout, style, &label_ram);
 
     static uint64_t LastTris;
     const float TrisVisibleRatio = static_cast<float>(PerfS.Triangles) / static_cast<float>(PerfS.Total_Triangles);
@@ -236,7 +252,7 @@ void Gui::DebugScreen() {
         LastTris = PerfS.Triangles;
     }
     layout.Offset.y = 47;
-    DrawProgressBar(layout, style, &label_tris);
+    ProgressBar(layout, style, &label_tris);
 }
 
 void Gui::Chat() {
@@ -294,7 +310,7 @@ void Gui::Generate() {
         Camera.Can_Move = false;
         if (game.MenuId == 0) { Menu(); }
         else if (game.MenuId == 1) { Settings(); }
-        else if (game.MenuId == 2) { Multiplayer(); }
+        else if (game.MenuId == 2) { Multiplayer(false); }
         else if (game.MenuId == 3) { MultiplayerJoin(); }
         else if (game.MenuId == 4) { MultiplayerHost(); }
     } else if (!InputManager::keysToggle[GLFW_KEY_T]) { Camera.Can_Move = true; }

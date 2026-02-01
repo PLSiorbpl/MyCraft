@@ -32,7 +32,9 @@ struct Game_Variables {
     bool InServer = false;
     bool Hosting = false;
     bool Joined = false;
+};
 
+struct Terrain_Settings {
     int Seed;
     float basefreq;
     float baseamp;
@@ -46,8 +48,8 @@ struct Game_Variables {
 };
 
 struct Game_Settings {
-    int Generation_Type;
-    int Gui_Update_rate;
+    unsigned int Generation_Threads;
+    int World_Generation_Type;
     int width, height;
     int Scaled_w, Scaled_h;
     int Scale;
@@ -102,6 +104,7 @@ struct window_context {
 extern GLFWwindow* window;
 extern camera Camera;
 extern Game_Variables game;
+extern Terrain_Settings terrain_settings;
 extern Game_Settings game_settings;
 extern PerfStats PerfS;
 extern Shaders SH;
