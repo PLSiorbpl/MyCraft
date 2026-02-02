@@ -3,7 +3,7 @@
 
 class camera {
 public:
-    glm::vec3 Position = glm::vec3(0.0f, 100.0f, 0.0f);
+    glm::vec3 Position = glm::vec3(0.0f, 150.0f, 0.0f);
     float Pitch = 0.0f;
     float Yaw = -90.0f;
     bool Mouse_Visible = false;

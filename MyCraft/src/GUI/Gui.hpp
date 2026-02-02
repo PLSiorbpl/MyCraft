@@ -57,7 +57,7 @@ public:
     bool Button(const gui::Layout &layout, const gui::ButtonStyle &style, const gui::Label &label, gui::Animation_State<glm::vec2>* state = nullptr);
     void ProgressBar(const gui::Layout& layout, const gui::ProgressStyle& style, const gui::Label* label = nullptr);
     void Text(const glm::vec2& Pos, const gui::Label& label);
-    void TextInput(const gui::Layout& layout, const gui::TextInputStyle& style, gui::Label& label, gui::Animation_State<glm::vec2>* state = nullptr);
+    bool TextInput(const gui::Layout& layout, const gui::TextInputStyle& style, gui::Label& label, gui::Animation_State<glm::vec2>* state = nullptr);
 
     // Layout | Metrics
     [[nodiscard]] glm::vec2 Anchor(const gui::Layout& layout) const;

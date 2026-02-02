@@ -151,9 +151,10 @@ void Gui::ProgressBar(const Layout& layout, const ProgressStyle& style, const La
     }
 }
 
-void Gui::TextInput(const Layout &layout, const TextInputStyle &style, Label& label, Animation_State<glm::vec2>* state) {
+bool Gui::TextInput(const Layout &layout, const TextInputStyle &style, Label& label, Animation_State<glm::vec2>* state) {
     const int id = ID;
     ID += 1;
+    bool clicked = false;
     bool hover;
     glm::vec2 Pos;
 
@@ -167,17 +168,56 @@ void Gui::TextInput(const Layout &layout, const TextInputStyle &style, Label& la
 
     const glm::vec4 Col = hover ? style.style.HoverColor : style.style.BgColor;
 
-    if (hover && InputManager::MouseState[GLFW_MOUSE_BUTTON_1]) {
-        if (ActiveId == -1) {
-            ActiveId = id;
-            InputManager::InputActive = true;
-        } else if (ActiveId == id) {
-            ActiveId = -1;
-            InputManager::InputActive = false;
+    if (hover && InputManager::MouseState[GLFW_MOUSE_BUTTON_1] && ActiveId == -1) {
+        // Select widget
+        ActiveId = id;
+    }
+
+    if (!InputManager::MouseState[GLFW_MOUSE_BUTTON_1]) {
+        if (hover && ActiveId == id) {
+            // Clicked
+            if (state != nullptr) {
+                if (state->state != State::Click) {
+                    state->state = State::Click;
+                    state->inter.setEasing(ease::easing::EaseOutBack);
+                    state->inter.setValue(layout.Size + glm::vec2(5));
+                    state->inter.setDuration(0.2);
+                } else {
+                    state->state = State::Click;
+                    state->inter.setEasing(ease::easing::EaseOutBack);
+                    state->inter.setValue(layout.Size);
+                    state->inter.setDuration(0.1);
+                }
+            } else {
+                clicked = true;
+            }
         }
     }
 
-    // ToDo: InputManager::charBuffer as an ring buffer not deque
+    if (!hover && InputManager::MouseState[GLFW_MOUSE_BUTTON_1] && ActiveId == id) {
+        ActiveId = -1;
+        InputManager::InputActive = false;
+    }
+
+    if (state != nullptr) {
+        if (state->inter.ended) {
+            if (state->state == State::Click) {
+                InputManager::InputActive = true;
+                clicked = true;
+            } else if (hover) {
+                state->state = State::Hover;
+                state->inter.setEasing(ease::easing::EaseOutSine);
+                state->inter.setValue(layout.Size + glm::vec2(2));
+                state->inter.setDuration(0.1);
+            } else {
+                state->state = State::Idle;
+                state->inter.setEasing(ease::easing::EaseOutSine);
+                state->inter.setValue(layout.Size);
+                state->inter.setDuration(0.1);
+            }
+        }
+    }
+
     // Input Logic
     if (InputManager::InputActive && !InputManager::charBuffer.empty()) {
         if (style.max_chars > label.text.size()) {
@@ -188,7 +228,7 @@ void Gui::TextInput(const Layout &layout, const TextInputStyle &style, Label& la
                 label.text += c;
             } else if (style.Input_Mode == 1 && std::isdigit(c)) {
                 label.text += c;
-            } // ToDo More Modes
+            }
         }
         InputManager::charBuffer.pop_front();
     }
@@ -200,23 +240,42 @@ void Gui::TextInput(const Layout &layout, const TextInputStyle &style, Label& la
         }
     }
 
-    DrawRectangle(layout,{.BgColor = Col, .TextureId = style.style.TextureId});
+    if (state != nullptr) {
+        DrawRectangle({layout.Anchor, state->inter.getValue(), layout.Offset},{.BgColor = Col, .TextureId = style.style.TextureId});
+    } else {
+        DrawRectangle(layout,{.BgColor = Col, .TextureId = style.style.TextureId});
+    }
 
-    if (!label.text.empty() || InputManager::InputActive) {
-        // ToDo Actual timing system not this shit
-        if (game.Frame % game.FPS <= (style.timing*game.FPS)/2) {
+    if (!label.text.empty()) {
+        if (InputManager::InputActive) {
             label.text.push_back(style.Cursor);
-            const glm::vec2 TextPos = AnchorText(Pos, layout.Size, label);
+            glm::vec2 TextPos;
+            if (state != nullptr) {
+                TextPos = AnchorText(Pos, state->inter.getValue(), label);
+            } else {
+                TextPos = AnchorText(Pos, layout.Size, label);
+            }
             Text(TextPos, label);
             label.text.pop_back();
         } else {
-            const glm::vec2 TextPos = AnchorText(Pos, layout.Size, label);
+            glm::vec2 TextPos;
+            if (state != nullptr) {
+                TextPos = AnchorText(Pos, state->inter.getValue(), label);
+            } else {
+                TextPos = AnchorText(Pos, layout.Size, label);
+            }
             Text(TextPos, label);
         }
     } else {
-        const glm::vec2 TextPos = AnchorText(Pos, layout.Size, {style.Default_str, label.Style, label.Offset, label.anchor});
+        glm::vec2 TextPos;
+        if (state != nullptr) {
+            TextPos = AnchorText(Pos, state->inter.getValue(), {style.Default_str, label.Style, label.Offset, label.anchor});
+        } else {
+            TextPos = AnchorText(Pos, layout.Size, {style.Default_str, label.Style, label.Offset, label.anchor});
+        }
         Text(TextPos, {style.Default_str, label.Style, label.Offset, label.anchor});
     }
+    return clicked;
 }
 
 

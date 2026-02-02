@@ -57,9 +57,14 @@ void Gui::MultiplayerJoin() {
 
     Layout layout = {Anch::Center, {70, 20}, {0, 25}};
     Label label = {.anchor = Anch::Center};
+    static Animation_State<glm::vec2> Join_State;
+    static Animation_State<glm::vec2> Back_State;
+    static Animation_State<glm::vec2> Port_State;
+    static Animation_State<glm::vec2> Ip_State;
 
     label.text = (!game.Joined) ? "Join" : "Disconect";
-    if (Button(layout, Small, label)) {
+    if (Button(layout, Small, label, &Join_State)) {
+        Join_State.state = State::Idle;
         if (game.Joined) {
             net.client.Request_Stop();
             game.Joined = false;
@@ -72,7 +77,8 @@ void Gui::MultiplayerJoin() {
     layout.Size = {150, 20};
     layout.Offset.y = 50;
     label.text = "Back";
-    if (Button(layout, Big, label)) {
+    if (Button(layout, Big, label, &Back_State)) {
+        Back_State.state = State::Idle;
         game.MenuId = 2;
     }
 
@@ -80,11 +86,15 @@ void Gui::MultiplayerJoin() {
     label.anchor = Anch::LeftCenter;
     label.Offset.x = 3;
     label.text = "Port:";
-    Button(layout, Big, label);
+    if (Button(layout, Big, label, &Port_State)) {
+        Port_State.state = State::Idle;
+    }
 
     layout.Offset.y = -25;
     label.text = "Ip:";
-    Button(layout, Big, label);
+    if (Button(layout, Big, label, &Ip_State)) {
+        Ip_State.state = State::Idle;
+    }
 }
 
 void Gui::MultiplayerHost() {
@@ -93,12 +103,16 @@ void Gui::MultiplayerHost() {
     static ButtonStyle Small = {{151,0,221,20}, {151,21,221,41}, Texture_Id::Gui};
     static TextInputStyle Host_style = {.style = Big, .Default_str = "Enter port:", .max_chars = 5, .Input_Mode = 1};
     static std::string HostInput;
+    static Animation_State<glm::vec2> Host_State;
+    static Animation_State<glm::vec2> Back_State;
+    static Animation_State<glm::vec2> Port_State;
 
     Layout layout = {Anch::Center, {70, 20}, {0, 0}};
     Label label = {.anchor = Anch::Center};
 
     label.text = (!game.Hosting) ? "Host" : "Stop";
-    if (Button(layout, Small, label)) {
+    if (Button(layout, Small, label, &Host_State)) {
+        Host_State.state = State::Idle;
         if (game.Hosting) {
             net.server.Stop_Server();
             game.Hosting = false;
@@ -117,14 +131,18 @@ void Gui::MultiplayerHost() {
     layout.Size.x = 150;
     layout.Offset.y = 25;
     label.text = "Back";
-    if (Button(layout, Big, label)) {
+    if (Button(layout, Big, label, &Back_State)) {
+        Back_State.state = State::Idle;
         game.MenuId = 2;
+        InputManager::InputActive = false;
     }
 
     layout.Offset.y = -25;
     label.anchor = Anch::LeftCenter;
     label.Offset.x = 3;
     label.text = HostInput;
-    TextInput(layout, Host_style, label);
+    if (TextInput(layout, Host_style, label, &Port_State)) {
+        Port_State.state = State::Idle;
+    }
     HostInput = label.text;
 }
