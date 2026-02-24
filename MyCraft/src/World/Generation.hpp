@@ -1,5 +1,4 @@
 #pragma once
-#include <glm/glm.hpp>
 #include <mutex>
 #include <condition_variable>
 #include <queue>
@@ -19,11 +18,13 @@ private:
 public:
     std::mutex GenMutex;
     std::mutex ResultMutex;
+
     std::condition_variable GenCV;
     std::atomic<bool> Running{false};
+    std::vector<std::thread> Workers;
+
     std::queue<std::pair<int, int>> GenQueue;
     std::deque<Chunk> ReadyChunks;
-    std::vector<std::thread> Workers;
     std::unordered_set<std::pair<int,int>, World_Map::pair_hash> GeneratingChunks;
 
     void LookForChunks();
@@ -32,11 +33,7 @@ public:
     void Start(const int Threads, const glm::ivec3& ChunkSize) {
         Running = true;
         for (int n = 0; n < Threads; ++n) {
-            Workers.emplace_back(
-                &ChunkGeneration::GenerateChunk,
-                this,
-                ChunkSize
-            );
+            Workers.emplace_back(&ChunkGeneration::GenerateChunk, this, ChunkSize);
         }
         std::cout << "Created " << Threads << " Generation Threads\n";
     }

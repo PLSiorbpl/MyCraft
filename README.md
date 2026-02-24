@@ -1,11 +1,11 @@
 # MyCraft
-![Icon](./MyCraft/Assets/Textures/Logo/Icon-Client.png)
+![Icon](./MyCraft/Assets/Textures/Logo/Icon-Client.png) ![Icon](./MyCraft/Assets/Textures/Logo/Icon-Server.png)
 
-- MyCraft is a Clone of Minecraft programed from scrach in **c++** and **OpenGL**. Its my First c++ project so any advices/help are welcome!
+- MyCraft is a Clone of Minecraft programed from scrach in **C++** and **OpenGL**. Its my First C++ project that means i still learn and code is a mess sometimes!
 
-- Still WIP but you can Help!! [GitHub](https://github.com/PLSiorbpl/MyCraft)
+- Still in Development but you can Help!! [GitHub](https://github.com/PLSiorbpl/MyCraft)
 
-- **Windows** And **Linux** Support!!
+- **Windows** And partialy **Linux** Support!!
 
 ## Controls
 -  Movement: **WASD** Keys
@@ -16,46 +16,37 @@
 -  Menu: **"ESCAPE"** Key
 -  HotBar: **"Scroll Wheel"** on Mouse
 -  Place/Break: **"Mouse"** Buttons
+-  Debug view: **"F3"** Key
+-  Health: **"TAB"** Key
 
 ## Features
 -  Infinite World Generation
 -  Customizable Terrain (/MyCraft/Assets/Settings.txt)
 -  Efficient mesh generation
 -  Cool Gui System
--  Game is Alredy Compiled (Windows And Linux)
--  Settings (/MyCraft/Assets/Settings.txt)
+-  Game is Alredy Compiled (Windows and *sometimes Linux*)
+-  In game Settings Gui
+-  Easy to use Multiplayer (currently only chat)
 
 ## Project Structure
 ```bash 
 .
 ├── MyCraft/
 |   ├── Assets/     # Settings and textures
-|   ├── Include/    # All necesary Libraries and compiled ImGui
-|   ├── Lib/        # Idk why its a thing
+|   ├── Include/    # All necesary Libraries
+|   ├── Lib/        # Linux .dlls
 |   ├── shaders/    # GLSL Shaders
-|   └── src/        # C++ Source Files
+|   └── src/        # C++ Source/Header Files
 |
-├── imgui.ini
-├── make.bat    # This is for Compilation (you need g++ compiler)
 ├── MyCraft.exe # Game
 └── README.md   # You are reading this xd
 ```
 
-## Build Instructions
-- Get VS Code (I like just it)
-- Get g++ compiler (MinGW)
-- You need c++ extension too (in VS Code)
-- Edit include Path (if its not detecting Include's)
-- Run make.bat file and it should work
-- You can also compile it with CMake but idk how
-### Recomended Include Path
-- ${workspaceFolder}/**
-- ${workspaceFolder}/MyCraft/Include/**
-- ${workspaceFolder}/MyCraft/Include/glm/**
-- ${workspaceFolder}/MyCraft/**
+## Build
+-  You can compile game with **CMake**, **cmakelists.txt** is included
 
 ## Troubleshooting
-- If you encounter any issues while compiling or running the game, feel free to **open an issue** on [GitHub](https://github.com/PLSiorbpl/MyCraft/issues)
+- If you encounter any issues while compiling or playing the game, feel free to **open an issue** on [GitHub](https://github.com/PLSiorbpl/MyCraft/issues)
 
 ## Author
 - **PLSiorbpl**

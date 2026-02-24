@@ -32,6 +32,7 @@ struct Game_Variables {
     bool InServer = false;
     bool Hosting = false;
     bool Joined = false;
+    float TimeOfDay = 0.25f;
 };
 
 struct Terrain_Settings {
@@ -94,6 +95,7 @@ struct Shaders {
     Sh Solid_Shader_Blocks;
     Sh General_Gui_Shader;
     Sh SelectionBox_Shader;
+    Sh SkyBox_Shader;
 };
 
 struct window_context {

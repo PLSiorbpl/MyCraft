@@ -8,14 +8,14 @@ void FPS::Init() {
 }
 
 float FPS::Start() {
-    float currentFrame = glfwGetTime();
+    const float currentFrame = glfwGetTime();
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
     return deltaTime;
 }
 
 int FPS::End() {
-    float currentTime = glfwGetTime();
+    const float currentTime = glfwGetTime();
     nbFrames++;
     if (currentTime - lastTime >= 1.0f) {
         ToReturn = nbFrames;

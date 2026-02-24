@@ -31,6 +31,7 @@
 #include "Render/Frustum.hpp"
 #include "Render/SelectionBox.hpp"
 #include "Render/Camera.hpp"
+#include "Render/SkyBox/SkyBox.hpp"
 
 #include "Shader_Utils/Shader.hpp"
 
@@ -67,6 +68,7 @@ private:
     Gui gui = {};
     Frustum frustum;
     Selection selection = {};
+    SkyBox skybox;
 public:
     static window_context ctx;
     Settings_Loader Settings;
@@ -216,6 +218,7 @@ void Game::MainLoop() {
     selection.Init(SH.SelectionBox_Shader.Shader);
     Fps.Init();
     GenerateChunk.Start(game_settings.Generation_Threads, Chunk_Size);
+    skybox.Create_SkyBox();
     while (!glfwWindowShouldClose(window)) {
 
             game.DeltaTime = Fps.Start();
@@ -225,6 +228,11 @@ void Game::MainLoop() {
                 continue;
             }
             glfwPollEvents();
+
+        //-------------------------
+        // Clearing Screen
+        glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             
         // -------------------------------------------------------------------------------
         // Main Engine
@@ -238,6 +246,23 @@ void Game::MainLoop() {
             static constexpr auto model = glm::mat4(1.0f);
             const glm::mat4 view = Movement::GetViewMatrix();
             const glm::mat4 proj = glm::perspective(glm::radians(FOV), aspectRatio, 0.1f, 2000.0f);
+            const glm::mat4 invView = glm::inverse(view);
+            const glm::mat4 invProj = glm::inverse(proj);
+
+            game.TimeOfDay += Fps.GetDeltaTime() / 600;
+            game.TimeOfDay = fmod(game.TimeOfDay, 1.0f);
+
+            const float angle = game.TimeOfDay * glm::two_pi<float>();
+
+            auto sunDir = glm::vec3(
+                cos(angle),
+                sin(angle),
+                sin(angle) * 0.3f
+            );
+
+            sunDir = glm::normalize(sunDir);
+
+            skybox.Render_SkyBox(invProj, invView, sunDir);
 
             glUseProgram(SH.Solid_Shader_Blocks.Shader);
             Shader::Set_Int(SH.Solid_Shader_Blocks.Shader, "BaseTexture", 0);
@@ -294,7 +319,7 @@ void Game::MainLoop() {
                     }
                 }
             }
-
+            //-------------------------
             game.Updates = 0;
             time.Reset();
             for (Chunk* chunk : World_Map::Mesh_Queue) {
@@ -309,24 +334,9 @@ void Game::MainLoop() {
                 const bool visible = Frustum::IsAABBVisible(Frust, chunkMin, chunkMax);
                 // Normal Updates
                 if (visible && game.Updates < game.Mesh_Updates) {
-                    const int chunkX = chunk->chunkX;
-                    const int chunkZ = chunk->chunkZ;
-                    const std::array<std::pair<int,int>, 4> neighbors = {
-                        std::make_pair(chunkX+1, chunkZ),
-                        std::make_pair(chunkX-1, chunkZ),
-                        std::make_pair(chunkX, chunkZ+1),
-                        std::make_pair(chunkX, chunkZ-1)
-                    };
-                    bool skip = false;
-                    for (auto& n : neighbors) {
-                        if (World_Map::World.find(n) == World_Map::World.end()) {
-                            skip = true;
-                            break;
-                        }
-                    }
-                    if (skip) continue;
 
                     chunk->Mesh.clear();
+                    //std::vector<Chunk::Vertex> Mesh;
                     Mesh::GenerateMesh(*chunk, chunk->Mesh, chunk->chunkX, chunk->chunkZ, Chunk_Size, Camera.RenderDistance);
                     chunk->SendData();
                     World_Map::Render_List.push_back({
@@ -353,23 +363,6 @@ void Game::MainLoop() {
             
                 // Lazy Updates
                 if (!visible && game.Updates < game.Lazy_Mesh_Updates) {
-                    const int chunkX = chunk->chunkX;
-                    const int chunkZ = chunk->chunkZ;
-                    const std::array<std::pair<int,int>, 4> neighbors = {
-                        std::make_pair(chunkX+1, chunkZ),
-                        std::make_pair(chunkX-1, chunkZ),
-                        std::make_pair(chunkX, chunkZ+1),
-                        std::make_pair(chunkX, chunkZ-1)
-                    };
-                    bool skip = false;
-                    for (auto& n : neighbors) {
-                        if (World_Map::World.find(n) == World_Map::World.end()) {
-                            skip = true;
-                            break;
-                        }
-                    }
-                    if (skip) continue;
-
                     chunk->Mesh.clear();
                     Mesh::GenerateMesh(*chunk, chunk->Mesh, chunk->chunkX, chunk->chunkZ, Chunk_Size, Camera.RenderDistance);
                     chunk->SendData();
@@ -408,12 +401,6 @@ void Game::MainLoop() {
                 }
             }
             PerfS.mesh = time.ElapsedMs();
-
-        //-------------------------
-        // Clearing Screen
-            glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         //-------------------------
         // World Generation
         //-------------------------
@@ -446,7 +433,6 @@ void Game::MainLoop() {
             for (auto& info : World_Map::Render_List) {
                 if (info.Delete > 0) {
                     info.Delete++;
-                    //continue;
                 }
 
                 const auto chunkMin = glm::vec3(info.chunkX * Chunk_Size.x, 0, info.chunkZ * Chunk_Size.z);

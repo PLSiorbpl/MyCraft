@@ -111,7 +111,7 @@ void Gui::Menu() {
     label.text = "Multiplayer";
     if (Button(layout, Small, label, &Multiplayer_State)) {
         Multiplayer_State.state = State::Idle;
-        Multiplayer(true);
+        Multiplayer();
         game.MenuId = 2;
     }
 }
@@ -310,7 +310,7 @@ void Gui::Generate() {
         Camera.Can_Move = false;
         if (game.MenuId == 0) { Menu(); }
         else if (game.MenuId == 1) { Settings(); }
-        else if (game.MenuId == 2) { Multiplayer(false); }
+        else if (game.MenuId == 2) { Multiplayer(); }
         else if (game.MenuId == 3) { MultiplayerJoin(); }
         else if (game.MenuId == 4) { MultiplayerHost(); }
     } else if (!InputManager::keysToggle[GLFW_KEY_T]) { Camera.Can_Move = true; }

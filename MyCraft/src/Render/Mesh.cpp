@@ -1,5 +1,9 @@
 #include "Mesh.hpp"
 
+#include <array>
+
+#include "World.hpp"
+
 static const glm::ivec2 BlockUVs[] = {
     {0,0}, // 0 - air
     {0,0}, // 1 - stone
@@ -16,7 +20,6 @@ void Mesh::GenerateMesh(const Chunk& chunk, std::vector<Chunk::Vertex>& vertices
 
     const int H = ChunkSize.y;
     const int D = ChunkSize.z;
-    //const int W = ChunkSize.x;
 
     std::vector<uint32_t> Visible;
     Visible.resize(static_cast<size_t>(H) * static_cast<size_t>(D));

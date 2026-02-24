@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <glm/glm.hpp>
 #include <vector>
 #include <string>
@@ -27,7 +28,8 @@ public:
     };
 
     // World Stuff
-    std::vector<Block> blocks;
+    static constexpr int SIZE = 16*256*16;
+    std::array<Block, SIZE> blocks;
     int width, height, depth;
     int chunkX, chunkZ;
     static const std::map<uint8_t, Block> BlockDefs;
@@ -42,18 +44,17 @@ public:
     GLuint vbo = 0;
     GLsizei indexCount = 0;
 
-    Chunk() : blocks(0), width(0), height(0), depth(0), chunkX(0), chunkZ(0) {}
+    Chunk() : width(0), height(0), depth(0), chunkX(0), chunkZ(0) {}
 
     [[nodiscard]] inline int index(const int x, const int y, const int z) const {
-    /*assert(x >= 0 && x < width);
-    assert(y >= 0 && y < height);
-    assert(z >= 0 && z < depth);*/
+        /*assert(x >= 0 && x < width);
+        assert(y >= 0 && y < height);
+        assert(z >= 0 && z < depth);*/
 
-    const int idx = x + z * width + y * width * depth;
-    //assert(idx >= 0 && idx < (int)blocks.size());
-    return idx;
-}
-
+        const int idx = x + z * width + y * width * depth;
+        //assert(idx >= 0 && idx < (int)blocks.size());
+        return idx;
+    }
 
     [[nodiscard]] inline const Block& get(const int x, const int y, const int z) const noexcept {
         return blocks[index(x, y, z)];

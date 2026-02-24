@@ -12,7 +12,6 @@ uniform mat4 Proj;
 out vec2 TexCoord;
 out vec3 FragPos;
 out vec3 Normal;
-//out vec3 VColor;
 
 vec3 getNormal(uint dir) {
     if (dir == 0u) return vec3(-1, 0, 0);   // -X

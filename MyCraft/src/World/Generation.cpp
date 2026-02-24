@@ -10,9 +10,9 @@ void ChunkGeneration::LookForChunks() {
 
             const int chunkX = Camera.Chunk.x + dx;
             const int chunkZ = Camera.Chunk.z + dz;
-            const std::pair<int, int> key = {chunkX, chunkZ};
+            const std::pair key = {chunkX, chunkZ};
             const int dist = std::max(std::abs(dx), std::abs(dz));
-            const bool isEdge = (dist > Rd);
+            const bool isEdge = dist > Rd;
 
             {
                 std::lock_guard lock(GenMutex);
@@ -44,7 +44,7 @@ void ChunkGeneration::GenerateChunk(const glm::ivec3 ChunkSize) {
             GenQueue.pop();
         }
 
-        Chunk data = Terrain.Generate_Terrain_Chunk(chunkPos.first, chunkPos.second, ChunkSize);
+        const Chunk data = Terrain.Generate_Terrain_Chunk(chunkPos.first, chunkPos.second, ChunkSize);
 
         {
             std::lock_guard lock(ResultMutex);

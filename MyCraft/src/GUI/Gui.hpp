@@ -100,7 +100,7 @@ public:
     void Menu();
     void Settings();
     void Chat();
-    void Multiplayer(bool Initialize);
+    void Multiplayer();
     void MultiplayerJoin();
     void MultiplayerHost();
     void Crosschair();

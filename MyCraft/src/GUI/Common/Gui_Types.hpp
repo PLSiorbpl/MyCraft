@@ -122,6 +122,13 @@ namespace gui {
         Anch anchor = Anch::None;
     };
 
+    struct Button_Widget {
+        Layout layout;
+        ButtonStyle style;
+        Label label;
+        Animation_State<glm::vec2> state;
+    };
+
     struct TextCache {
         /*
             stores last value to prevent rebuilding string every frame

@@ -15,20 +15,20 @@ void main() {
     // ----------------------------
     // Constants
     // ----------------------------
-    float roughness = pow(1 - 0.15, 2.0);
-    float metalness = 1.0; // soon in texture
+    const float roughness = pow(1 - 0.15, 2.0);
+    const float metalness = 1.0; // soon in texture
 
-    vec3 Sun = vec3(0.7f, -1.0f, 0.7f);
-    vec3 lightColor = vec3(1.0,1.0,0.8);
+    const vec3 Sun = vec3(0.7f, -1.0f, 0.7f);
+    const vec3 lightColor = vec3(1.0,1.0,0.8);
 
     // ----------------------------
     // Normalization
     // ----------------------------
     vec3 WorldNormal = normalize(Normal);
     if (length(WorldNormal) < 0.5) discard;
-    vec3 SunDir = normalize(Sun);
+    const vec3 SunDir = normalize(Sun);
     vec3 viewDir = normalize(ViewPos - FragPos);
-    vec3 lightDir = normalize(-SunDir);
+    const vec3 lightDir = normalize(-SunDir);
 
     // ----------------------------
     // Albedo
@@ -36,21 +36,19 @@ void main() {
     vec4 baseColorData = texture(BaseTexture, TexCoord);
     vec3 FinalColor = pow(baseColorData.rgb, vec3(2.2));
 
-    float AmbientLight = 0.2;
-
+    const float AmbientLight = 0.2;
 
     // ----------------------------
     // Diffuse
     // ----------------------------
     float DiffuseLight = max(metalness * dot(WorldNormal, lightDir), 0.0);
 
-
     // ----------------------------
     // Specular
     // ----------------------------
     float SpecularLight = 0.0;
      if (DiffuseLight > 0.0) {
-        float shininess = 2/pow(roughness, 2) - 2;
+        const float shininess = 2/pow(roughness, 2) - 2;
         vec3 halfVector = normalize(lightDir+viewDir);
 
         SpecularLight = pow(max(dot(halfVector, WorldNormal), 0.0), shininess);
@@ -59,9 +57,9 @@ void main() {
     // ----------------------------
     // Fog
     // ----------------------------
-    vec3 fogColor = vec3(0.5, 0.7, 1.0);
+    const vec3 fogColor = vec3(0.5, 0.7, 1.0);
 
-    float FOG_DENSITY = 7.0;
+    const float FOG_DENSITY = 7.0;
     float dist = length(FragPos - ViewPos) / (RenderDist*16);
     float fogFactor = exp(-FOG_DENSITY * (1.0 - dist));
 

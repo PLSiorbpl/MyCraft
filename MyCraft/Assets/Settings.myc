@@ -1,19 +1,19 @@
 // General Options:
-Render Distance=24
-Generation Threads=2 // Recommended 1-4 not more
+Render Distance=64
+Generation Threads=4 // Recommended 1-4 not more
 
-RAM=8192 // in MB
+RAM=18192 // in MB
 V-Sync=1
 
-Mesh Updates=32
-Lazy Mesh Updates=8
+Mesh Updates=64
+Lazy Mesh Updates=16
 Out Of ram=1 // 1 - Dont Exit Program and change RenderDist by -1 | 0 - Exit Program (Crash)
 
 // World Generation:
 Chunk Width=16
 Chunk Height=256
 Chunk Depth=16
-Generation Type=3 // 2 - 2d | 3 - 3d
+Generation Type=2 // 2 - 2d | 3 - 3d
 
 // Info: Biome Multiplier is kinda bad use Biome power instead (pow(power, height);)
 Seed=1234
@@ -34,4 +34,4 @@ Tick Rate=60.0f
 // Player:
 FOV=80
 Speed=0.1f
-Sprint Speed=0.08f
+Sprint Speed=1.08f
