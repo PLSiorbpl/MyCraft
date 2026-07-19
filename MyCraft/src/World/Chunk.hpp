@@ -47,7 +47,7 @@ public:
     GLuint vbo = 0;
     GLsizei indexCount = 0;
 
-    Chunk() : chunkX(0), chunkZ(0) {}
+    explicit Chunk(const int X = 0, const int Y = 0) : chunkX(X), chunkZ(Y) {}
 
     static int index(const int x, const int y, const int z) {
         const int idx = x + z * WIDTH + y * WIDTH * DEPTH;

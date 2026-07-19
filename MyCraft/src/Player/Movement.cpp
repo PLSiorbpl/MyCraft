@@ -1,6 +1,11 @@
 #include "Movement.hpp"
+#include <glm/gtc/matrix_transform.hpp>
 
-void Movement::Init(GLFWwindow* window, const glm::ivec3 ChunkSize, Selection& Sel) {
+#include "Utils/Globals.hpp"
+#include "Utils/InputManager.hpp"
+#include "Colisions.hpp"
+
+void Movement::Init(GLFWwindow* window, Selection& Sel) {
     direction = glm::vec3(0.0f);
     Cos.x = cos(glm::radians(Camera.Pitch));
     Cos.y = cos(glm::radians(Camera.Yaw));
@@ -8,17 +13,17 @@ void Movement::Init(GLFWwindow* window, const glm::ivec3 ChunkSize, Selection& S
     Sin.y = sin(glm::radians(Camera.Yaw));
 
     if (Camera.Can_Move) {
-        Input(window, ChunkSize, Sel);
+        Input(window, Sel);
         Special_Keys(window);
     }
-        TestColisions(ChunkSize);
+        TestColisions();
         Damp();
 
         if (Camera.Place_CoolDown > 0) Camera.Place_CoolDown -= 1;
         if (Camera.Break_CoolDown > 0) Camera.Break_CoolDown -= 1;
 }
 
-void Movement::Input(GLFWwindow* window, const glm::ivec3 ChunkSize, Selection& Sel) {
+void Movement::Input(GLFWwindow* window, Selection& Sel) {
     glm::vec2 moveVec(0.0f, 0.0f);
     float speed = Camera.Speed;
     if (InputManager::keysState[GLFW_KEY_LEFT_SHIFT]) speed += Camera.SprintSpeed;
@@ -38,9 +43,9 @@ void Movement::Input(GLFWwindow* window, const glm::ivec3 ChunkSize, Selection& 
     if (InputManager::keysState[GLFW_KEY_LEFT_CONTROL]) Camera.Vel.y = -Camera.JumpStrength;
 
     // Mouse Actions
-    TAction.RayCastBlock(Camera, ChunkSize, 0, 0, Sel); // Selection Box
-    if (InputManager::MouseState[GLFW_MOUSE_BUTTON_1]) TAction.RayCastBlock(Camera, ChunkSize, 1, 0, Sel); // Break
-    if (InputManager::MouseState[GLFW_MOUSE_BUTTON_2]) TAction.RayCastBlock(Camera, ChunkSize, 2, Camera.ItemHeld, Sel); // Place
+    TAction.RayCastBlock(Camera, 0, 0, Sel); // Selection Box
+    if (InputManager::MouseState[GLFW_MOUSE_BUTTON_1]) TAction.RayCastBlock(Camera, 1, 0, Sel); // Break
+    if (InputManager::MouseState[GLFW_MOUSE_BUTTON_2]) TAction.RayCastBlock(Camera, 2, Camera.ItemHeld, Sel); // Place
 
     // Normalize Length
     float len = glm::length(moveVec);
@@ -58,16 +63,16 @@ void Movement::Special_Keys(GLFWwindow* window) {
     Camera.crouching = InputManager::keysState[GLFW_KEY_LEFT_CONTROL];
 }
 
-void Movement::TestColisions(const glm::ivec3 ChunkSize) {
+void Movement::TestColisions() {
     // get unstuck from block
-    if (colisions::isSolidAround(Camera.Position, ChunkSize) && !Camera.Mode) {
+    if (colisions::isSolidAround(Camera.Position) && !Camera.Mode) {
         Camera.Position.y += 1.0f;
     }
 
     if (!Camera.Mode) Camera.Vel.y -= Camera.Gravity;
 
     testPos = Camera.Position + glm::vec3(0, Camera.Vel.y, 0);
-    if (!colisions::isSolidAround(testPos, ChunkSize) || Camera.Mode) {
+    if (!colisions::isSolidAround(testPos) || Camera.Mode) {
         Camera.Position.y = testPos.y;
         Camera.onGround = false;
     } else {
@@ -78,14 +83,14 @@ void Movement::TestColisions(const glm::ivec3 ChunkSize) {
     }
 
     testPos = Camera.Position + glm::vec3(Camera.Vel.x, 0, 0);
-    if (!colisions::isSolidAround(testPos, ChunkSize) || Camera.Mode) {
+    if (!colisions::isSolidAround(testPos) || Camera.Mode) {
         Camera.Position.x = testPos.x;
     } else if (Camera.Mode) {
         Camera.Vel.x = 0.0f;
     }
 
     testPos = Camera.Position + glm::vec3(0, 0, Camera.Vel.z);
-    if (!colisions::isSolidAround(testPos, ChunkSize) || Camera.Mode) {
+    if (!colisions::isSolidAround(testPos) || Camera.Mode) {
         Camera.Position.z = testPos.z;
     } else {
         Camera.Vel.z = 0.0f;

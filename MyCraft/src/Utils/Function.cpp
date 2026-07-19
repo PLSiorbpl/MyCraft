@@ -1,10 +1,12 @@
 #include "Function.hpp"
 
+#include <iomanip>
+
 float Fun::ConvertHorizontalFovToVertical(float fovX_deg, float aspectRatio) {
     return glm::degrees(2.0f * atan(tan(glm::radians(fovX_deg) / 2.0f) / aspectRatio));
 }
 
-size_t Fun::calculateWorldMemory(const std::unordered_map<std::pair<int, int>, Chunk, World_Map::pair_hash>& World, glm::ivec3 ChunkSize) {
+size_t Fun::calculateWorldMemory(const std::unordered_map<std::pair<int, int>, Chunk, World_Map::PairHash>& World, glm::ivec3 ChunkSize) {
     size_t total = 0;
     constexpr int nodeOverhead = sizeof(void*) * 3;
     

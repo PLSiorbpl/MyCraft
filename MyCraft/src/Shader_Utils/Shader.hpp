@@ -1,13 +1,7 @@
 #pragma once
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-#include <iostream>
 #include <string>
-#include <sstream>
-#include <fstream>
-#include "stb_image.h"
-#include "Globals.hpp"
 
 class Shader {
     public:
@@ -17,10 +11,9 @@ class Shader {
     static void Init_Shader();
 
     static GLuint Create_Shader(const std::string& vertex, const std::string& fragment);
+    static std::string LoadShaderSource(const std::string& path);
 
     static unsigned int Load_Texture(const std::string& path, GLenum TextureUnit);
-
-    static std::string LoadShaderSource(const std::string& path);
 
     //---------------------
     // Uniforms

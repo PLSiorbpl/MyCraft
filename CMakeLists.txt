@@ -18,7 +18,6 @@ endif()
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/Include"
-        "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/Include/glad/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/src/GUI"
         "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/src/Network"
         "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/src/Player"

@@ -1,4 +1,5 @@
 #include "FPS.hpp"
+#include <GLFW/glfw3.h>
 
 void FPS::Init() {
     lastFrame = glfwGetTime();

@@ -1,6 +1,9 @@
 #include "Breaking.hpp"
+#include <algorithm>
 
-void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, int Action, int block, Selection& Sel, float MaxDistance, float StepSize) {
+#include "World/World.hpp"
+
+void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selection& Sel, float MaxDistance, float StepSize) {
     auto &World = World_Map::World;
 
     auto SetNeighborsDirty = [&](int localX, int localZ, int chunkX, int chunkZ) {
@@ -21,9 +24,9 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
             }
         };
         if (localX == 0)             mark(chunkX-1, chunkZ);
-        if (localX == ChunkSize.x-1) mark(chunkX+1, chunkZ);
+        if (localX == Chunk::WIDTH-1) mark(chunkX+1, chunkZ);
         if (localZ == 0)             mark(chunkX, chunkZ-1);
-        if (localZ == ChunkSize.z-1) mark(chunkX, chunkZ+1);
+        if (localZ == Chunk::DEPTH-1) mark(chunkX, chunkZ+1);
     };
 
     glm::vec3 direction;
@@ -63,18 +66,18 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
     // RayCast
     while(distance < MaxDistance) {
         if (distance > MaxDistance) break;
-        const int cx = floor(Block.x / static_cast<float>(ChunkSize.x));
-        const int cz = floor(Block.z / static_cast<float>(ChunkSize.z));
+        const int cx = floor(Block.x / static_cast<float>(Chunk::WIDTH));
+        const int cz = floor(Block.z / static_cast<float>(Chunk::DEPTH));
 
-        const int LocalX = Block.x - cx * ChunkSize.x;
-        const int LocalZ = Block.z - cz * ChunkSize.z;
+        const int LocalX = Block.x - cx * Chunk::WIDTH;
+        const int LocalZ = Block.z - cz * Chunk::DEPTH;
         
         auto it = World.find({cx, cz});
         if (it != World.end()) {
             Chunk& chunk = it->second;
 
             // Actions  Break | Place | Show SelectionBox
-            if (Block.y >= 0 && Block.y < ChunkSize.y) {
+            if (Block.y >= 0 && Block.y < Chunk::HEIGHT) {
                 // Break
                 if (Action == 1 && Camera.Break_CoolDown == 0) {
                     if (chunk.get(LocalX, Block.y, LocalZ).Flags & 0b10'00'00'00) {
@@ -99,7 +102,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
                     if (chunk.get(LocalX, Block.y, LocalZ).Flags & 0b10'00'00'00 && !(LastBlock.Flags & 0b10'00'00'00)) {
                         const Chunk::Block TryBlock = LastChunk->get(LastCord.x, LastCord.y, LastCord.z);
                         LastChunk->set(LastCord.x, LastCord.y, LastCord.z, Chunk::BlockDefs.at(block));
-                        if (Colision.isSolidAround(Camera.Position, ChunkSize)) {
+                        if (Colision.isSolidAround(Camera.Position)) {
                             LastChunk->set(LastCord.x, LastCord.y, LastCord.z, TryBlock);
                             Camera.Place_CoolDown = 8;
                             break;

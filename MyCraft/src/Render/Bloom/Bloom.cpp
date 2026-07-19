@@ -1,13 +1,7 @@
 #include "Bloom.hpp"
-#include "Shader_Utils/Shader.hpp"
+#include <iostream>
 
-/*
- *
- *
- * I know Imated is looking at this comment :skull:
- *
- *
-*/
+#include "Shader_Utils/Shader.hpp"
 
 void Bloom::Initialize(const int width, const int height) {
     extractShader.Shader = Shader::Create_Shader("MyCraft/shaders/FullScreen_vert.glsl", "MyCraft/shaders/Bloom/Extract_frag.glsl");

@@ -1,6 +1,6 @@
 // General Options:
 Render Distance=32
-Generation Threads=4 // Recommended 1-4 not more
+Generation Threads=4 // Recommended 1-4
 Day Cycle Duration=30  // in seconds
 
 // Bloom Settings:
@@ -12,14 +12,11 @@ Exposure=1.0f
 RAM=8192 // in MB
 V-Sync=1
 
-Mesh Updates=64
+Mesh Updates=32
 Lazy Mesh Updates=16
 Out Of ram=1 // 1 - Dont Exit Program and change RenderDist by -1 | 0 - Exit Program (Crash)
 
 // World Generation:
-Chunk Width=16
-Chunk Height=256
-Chunk Depth=16
 Generation Type=2 // 2 - 2d | 3 - 3d
 
 // Info: Biome Multiplier is kinda bad use Biome power instead (pow(power, height);)

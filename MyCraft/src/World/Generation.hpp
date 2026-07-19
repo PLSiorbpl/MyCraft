@@ -23,12 +23,12 @@ public:
 
     std::queue<std::pair<int, int>> GenQueue;
     std::deque<Chunk> ReadyChunks;
-    std::unordered_set<std::pair<int,int>, World_Map::pair_hash> GeneratingChunks;
+    std::unordered_set<std::pair<int,int>, World_Map::PairHash> GeneratingChunks;
 
     void LookForChunks();
     void GenerateChunk();
 
-    void Start(const int Threads, const glm::ivec3& ChunkSize) {
+    void Start(const int Threads) {
         Running = true;
         for (int n = 0; n < Threads; ++n) {
             Workers.emplace_back(&ChunkGeneration::GenerateChunk, this);

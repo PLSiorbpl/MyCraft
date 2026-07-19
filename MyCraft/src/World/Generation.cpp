@@ -44,7 +44,7 @@ void ChunkGeneration::GenerateChunk() {
             GenQueue.pop();
         }
 
-        const Chunk data = Terrain.Generate_Terrain_Chunk(chunkPos.first, chunkPos.second);
+        Chunk data = Terrain.Generate_Terrain_Chunk(chunkPos.first, chunkPos.second);
 
         {
             std::lock_guard lock(ResultMutex);

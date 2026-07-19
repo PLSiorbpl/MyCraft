@@ -1,4 +1,5 @@
 #include "Settings.hpp"
+#include <iostream>
 
 void Settings_Loader::Load_Settings(const std::string& path) {
     std::ifstream file(path);

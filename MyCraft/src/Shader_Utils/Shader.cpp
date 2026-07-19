@@ -1,4 +1,11 @@
 #include "Shader.hpp"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
+#include "Utils/Globals.hpp"
 
 unsigned int Shader::Load_Texture(const std::string &path, GLenum TextureUnit) {
     unsigned int Texture_ID;

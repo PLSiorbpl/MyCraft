@@ -41,5 +41,5 @@ public:
         Peaks.SetNoiseType(FastNoiseLite::NoiseType::NoiseType_OpenSimplex2);
     }
 
-    [[nodiscard]] Chunk Generate_Terrain_Chunk(int ChunkX, int ChunkZ) const;
+    [[nodiscard]] Chunk Generate_Terrain_Chunk(int ChunkX, int ChunkZ);
 };
