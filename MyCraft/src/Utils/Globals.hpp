@@ -35,6 +35,14 @@ struct Game_Variables {
     float TimeOfDay = 0.25f;
 };
 
+struct Video_Settings {
+    unsigned int Blur_Passes;
+    unsigned int Blur_Scale;
+
+    float Extract_Threshold;
+    float Exposure;
+};
+
 struct Terrain_Settings {
     int Seed;
     float basefreq;
@@ -54,6 +62,7 @@ struct Game_Settings {
     int width, height;
     int Scaled_w, Scaled_h;
     int Scale;
+    unsigned int DayCycleDuration;
     glm::vec2 Mouse = glm::vec2(0.0f);
 };
 
@@ -96,6 +105,9 @@ struct Shaders {
     Sh General_Gui_Shader;
     Sh SelectionBox_Shader;
     Sh SkyBox_Shader;
+    Sh extractShader;
+    Sh blurShader;
+    Sh combineShader;
 };
 
 struct window_context {
@@ -111,3 +123,4 @@ extern Game_Settings game_settings;
 extern PerfStats PerfS;
 extern Shaders SH;
 extern Net net;
+extern Video_Settings video_settings;

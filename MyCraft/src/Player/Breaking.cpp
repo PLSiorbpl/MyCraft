@@ -1,5 +1,4 @@
 #include "Breaking.hpp"
-#include <glad/glad.h>
 
 void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, int Action, int block, Selection& Sel, float MaxDistance, float StepSize) {
     auto &World = World_Map::World;
@@ -9,8 +8,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
             auto it = World.find({cx, cz});
             if (it != World.end()) {
                 it->second.DirtyFlag = true;
-                it->second.Gen_Mesh = true;
-                it->second.Ready_Render = false;
+                it->second.has_mesh = false;
                 for (auto& info : World_Map::Render_List) {
                     if (info.chunkX == cx && info.chunkZ == cz) {
                         info.Delete = 1;
@@ -82,8 +80,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
                     if (chunk.get(LocalX, Block.y, LocalZ).Flags & 0b10'00'00'00) {
                         chunk.set(LocalX, Block.y, LocalZ, Chunk::BlockDefs.at(0));
                         chunk.DirtyFlag = true;
-                        chunk.Gen_Mesh = true;
-                        chunk.Ready_Render = false;
+                        chunk.has_mesh = false;
                         for (auto& info : World_Map::Render_List) {
                             if (info.chunkX == cx && info.chunkZ == cz) {
                                 info.Delete = 1;
@@ -108,8 +105,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, const glm::ivec3 ChunkSize, in
                             break;
                         } else {
                             LastChunk->DirtyFlag = true;
-                            LastChunk->Gen_Mesh = true;
-                            LastChunk->Ready_Render = false;
+                            LastChunk->has_mesh = false;
                             for (auto& info : World_Map::Render_List) {
                                 if (info.chunkX == LastC.x && info.chunkZ == LastC.y) { // vec2 so x and y but y is z
                                     info.Delete = 1;

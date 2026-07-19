@@ -8,3 +8,4 @@ Game_Settings game_settings;
 PerfStats PerfS;
 Shaders SH;
 Net net;
+Video_Settings video_settings;

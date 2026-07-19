@@ -1,8 +1,15 @@
 // General Options:
-Render Distance=64
+Render Distance=32
 Generation Threads=4 // Recommended 1-4 not more
+Day Cycle Duration=30  // in seconds
 
-RAM=18192 // in MB
+// Bloom Settings:
+Blur Texture Scale=4   // (width/n, heigh/n)   n - Scale
+Blur Passes=5          // How many times blur Bright Texture
+Extraction Threshold=0.99f
+Exposure=1.0f
+
+RAM=8192 // in MB
 V-Sync=1
 
 Mesh Updates=64

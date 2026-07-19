@@ -11,8 +11,6 @@
 
 class ChunkGeneration {
 private:
-    int chunkX, chunkZ;
-    int dx, dz, dist;
     TerrainGen Terrain;
 
 public:
@@ -28,12 +26,12 @@ public:
     std::unordered_set<std::pair<int,int>, World_Map::pair_hash> GeneratingChunks;
 
     void LookForChunks();
-    void GenerateChunk(glm::ivec3 ChunkSize);
+    void GenerateChunk();
 
     void Start(const int Threads, const glm::ivec3& ChunkSize) {
         Running = true;
         for (int n = 0; n < Threads; ++n) {
-            Workers.emplace_back(&ChunkGeneration::GenerateChunk, this, ChunkSize);
+            Workers.emplace_back(&ChunkGeneration::GenerateChunk, this);
         }
         std::cout << "Created " << Threads << " Generation Threads\n";
     }

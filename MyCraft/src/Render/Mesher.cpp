@@ -20,7 +20,7 @@ Chunk* getChunk(int x, int z) {
 
 void Mesher::Manager(const Frustum::Frust &Frust, const glm::ivec3 Chunk_Size) {
     for (Chunk* chunk : World_Map::Mesh_Queue) {
-        if (!chunk->DirtyFlag || !chunk->Gen_Mesh || chunk->InRender)
+        if (!chunk->DirtyFlag || !chunk->has_terrain || chunk->InRender)
             continue;
         if (game.Updates >= game.Mesh_Updates)
             break;

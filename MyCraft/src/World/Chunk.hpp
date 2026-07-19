@@ -2,7 +2,6 @@
 #include <array>
 #include <glm/glm.hpp>
 #include <vector>
-#include <string>
 #include <map>
 #include <cstdint>
 
@@ -28,43 +27,43 @@ public:
     };
 
     // World Stuff
-    static constexpr int SIZE = 16*256*16;
+    static constexpr int WIDTH = 16;
+    static constexpr int HEIGHT = 256;
+    static constexpr int DEPTH = 16;
+    static constexpr int SIZE = WIDTH*HEIGHT*DEPTH;
     std::array<Block, SIZE> blocks;
-    int width, height, depth;
     int chunkX, chunkZ;
     static const std::map<uint8_t, Block> BlockDefs;
 
     // Mesh Stuff
+    bool has_terrain = false;
+    bool is_edge = false;
+    bool has_mesh = false;
     bool InRender = false;
-    bool Gen_Mesh = true;
-    bool Ready_Render = false;
     bool DirtyFlag = true;
+
     std::vector<Vertex> Mesh;
     GLuint vao = 0;
     GLuint vbo = 0;
     GLsizei indexCount = 0;
 
-    Chunk() : width(0), height(0), depth(0), chunkX(0), chunkZ(0) {}
+    Chunk() : chunkX(0), chunkZ(0) {}
 
-    [[nodiscard]] inline int index(const int x, const int y, const int z) const {
-        /*assert(x >= 0 && x < width);
-        assert(y >= 0 && y < height);
-        assert(z >= 0 && z < depth);*/
+    static int index(const int x, const int y, const int z) {
+        const int idx = x + z * WIDTH + y * WIDTH * DEPTH;
 
-        const int idx = x + z * width + y * width * depth;
-        //assert(idx >= 0 && idx < (int)blocks.size());
         return idx;
     }
 
-    [[nodiscard]] inline const Block& get(const int x, const int y, const int z) const noexcept {
+    [[nodiscard]] const Block& get(const int x, const int y, const int z) const noexcept {
         return blocks[index(x, y, z)];
     }
 
-    inline void set(const int x, const int y, const int z, const Block& block) {
+    void set(const int x, const int y, const int z, const Block& block) {
         blocks.at(index(x, y, z)) = block;
     }
 
-    inline void setID(const int x, const int y, const int z, const uint8_t id) {
+    void setID(const int x, const int y, const int z, const uint8_t id) {
         blocks.at(index(x, y, z)).id = id;
     }
 

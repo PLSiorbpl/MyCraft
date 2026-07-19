@@ -26,4 +26,11 @@ class World_Map {
     static std::unordered_map<std::pair<int, int>, Chunk, pair_hash> World;
     static std::vector<Render_Info> Render_List;
     static std::vector<Chunk*> Mesh_Queue;
+
+    static Chunk *find_chunk(int chunkx, int chunkz) {
+        auto c = World.find({chunkx, chunkz});
+        if (c != World.end())
+            return &c->second;
+        return nullptr;
+    }
 };

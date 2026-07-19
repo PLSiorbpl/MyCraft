@@ -32,6 +32,7 @@
 #include "Render/SelectionBox.hpp"
 #include "Render/Camera.hpp"
 #include "Render/SkyBox/SkyBox.hpp"
+#include "Render/Bloom/Bloom.hpp"
 
 #include "Shader_Utils/Shader.hpp"
 
@@ -69,11 +70,14 @@ private:
     Frustum frustum;
     Selection selection = {};
     SkyBox skybox;
+    Bloom bloom;
+    GLuint sceneFBO;
+    GLuint sceneTex;
 public:
     static window_context ctx;
     Settings_Loader Settings;
 
-    static bool Init_Window();
+    bool Init_Window();
 
     static void Init_Shader();
     void MainLoop();
@@ -89,6 +93,12 @@ void Game::Init_Settings(const std::string& Path) {
     // General Options:
     Camera.RenderDistance = Settings.Get<int>("Render Distance", 2);
     game_settings.Generation_Threads = Settings.Get<unsigned int>("Generation Threads", 2);
+    game_settings.DayCycleDuration = Settings.Get<unsigned int>("Day Cycle Duration", 600);
+
+    video_settings.Blur_Scale = Settings.Get<unsigned int>("Blur Texture Scale", 4);
+    video_settings.Blur_Passes = Settings.Get<unsigned int>("Blur Passes", 5);
+    video_settings.Extract_Threshold = Settings.Get<float>("Extraction Threshold", 1.0f);
+    video_settings.Exposure = Settings.Get<float>("Exposure", 1.0f);
 
     game.Max_Ram = Settings.Get<int>("RAM", 2048);
     game.V_Sync = Settings.Get<int>("V-Sync", 0);
@@ -200,6 +210,36 @@ bool Game::Init_Window() {
     glGetIntegerv(GL_MINOR_VERSION, &PerfS.minor);
 
     PerfS.isModernGL = (PerfS.major >= 4);
+
+    bloom.Initialize(game_settings.width, game_settings.height);
+
+    glGenFramebuffers(1, &sceneFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, sceneFBO);
+
+    // HDR texture
+    glGenTextures(1, &sceneTex);
+    glBindTexture(GL_TEXTURE_2D, sceneTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, game_settings.width, game_settings.height, 0,
+                 GL_RGBA, GL_FLOAT, nullptr);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sceneTex, 0);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Scene FBO ERROR\n";
+
+    GLuint rboDepth;
+    glGenRenderbuffers(1, &rboDepth);
+    glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, game_settings.width, game_settings.height);
+
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     
     return false;
 }
@@ -231,6 +271,7 @@ void Game::MainLoop() {
 
         //-------------------------
         // Clearing Screen
+        glBindFramebuffer(GL_FRAMEBUFFER, sceneFBO);
         glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             
@@ -249,7 +290,7 @@ void Game::MainLoop() {
             const glm::mat4 invView = glm::inverse(view);
             const glm::mat4 invProj = glm::inverse(proj);
 
-            game.TimeOfDay += Fps.GetDeltaTime() / 600;
+            game.TimeOfDay += Fps.GetDeltaTime() / game_settings.DayCycleDuration;
             game.TimeOfDay = fmod(game.TimeOfDay, 1.0f);
 
             const float angle = game.TimeOfDay * glm::two_pi<float>();
@@ -271,6 +312,7 @@ void Game::MainLoop() {
             Shader::Set_Mat4(SH.Solid_Shader_Blocks.Shader, "View", view);
             Shader::Set_Mat4(SH.Solid_Shader_Blocks.Shader, "Proj", proj);
             Shader::Set_Int(SH.Solid_Shader_Blocks.Shader, "RenderDist", Camera.RenderDistance);
+            Shader::Set_Vec3(SH.Solid_Shader_Blocks.Shader, "Sun", sunDir);
     
             const Frustum::Frust Frust = Frustum::ExtractFrustum(proj*view);
     
@@ -323,10 +365,20 @@ void Game::MainLoop() {
             game.Updates = 0;
             time.Reset();
             for (Chunk* chunk : World_Map::Mesh_Queue) {
-                if (!chunk->DirtyFlag || !chunk->Gen_Mesh || chunk->InRender)
+                if (!chunk->has_terrain || chunk->is_edge || !chunk->DirtyFlag || chunk->InRender)
                     continue;
                 if (game.Updates >= game.Mesh_Updates)
                     break;
+
+                if (World_Map::find_chunk(chunk->chunkX, chunk->chunkZ + 1) == nullptr) continue;
+                if (World_Map::find_chunk(chunk->chunkX, chunk->chunkZ - 1) == nullptr) continue;
+                if (World_Map::find_chunk(chunk->chunkX + 1, chunk->chunkZ) == nullptr) continue;
+                if (World_Map::find_chunk(chunk->chunkX - 1, chunk->chunkZ) == nullptr) continue;
+
+                if (!World_Map::find_chunk(chunk->chunkX, chunk->chunkZ + 1)->has_terrain) continue;
+                if (!World_Map::find_chunk(chunk->chunkX, chunk->chunkZ - 1)->has_terrain) continue;
+                if (!World_Map::find_chunk(chunk->chunkX + 1, chunk->chunkZ)->has_terrain) continue;
+                if (!World_Map::find_chunk(chunk->chunkX - 1, chunk->chunkZ)->has_terrain) continue;
 
                 const auto chunkMin = glm::vec3(chunk->chunkX * Chunk_Size.x, 0, chunk->chunkZ * Chunk_Size.z);
                 const glm::vec3 chunkMax = chunkMin + glm::vec3(Chunk_Size);
@@ -334,10 +386,8 @@ void Game::MainLoop() {
                 const bool visible = Frustum::IsAABBVisible(Frust, chunkMin, chunkMax);
                 // Normal Updates
                 if (visible && game.Updates < game.Mesh_Updates) {
-
                     chunk->Mesh.clear();
-                    //std::vector<Chunk::Vertex> Mesh;
-                    Mesh::GenerateMesh(*chunk, chunk->Mesh, chunk->chunkX, chunk->chunkZ, Chunk_Size, Camera.RenderDistance);
+                    Mesh::GenerateMesh(*chunk);
                     chunk->SendData();
                     World_Map::Render_List.push_back({
                         chunk->chunkX,
@@ -354,8 +404,7 @@ void Game::MainLoop() {
                     chunk->vbo = 0;
                     chunk->Mesh.clear();
                     chunk->Mesh.shrink_to_fit();
-                    chunk->Gen_Mesh = false;
-                    chunk->Ready_Render = true;
+                    chunk->has_mesh = true;
                     chunk->InRender = true;
                     game.Updates++;
                     continue;
@@ -364,7 +413,7 @@ void Game::MainLoop() {
                 // Lazy Updates
                 if (!visible && game.Updates < game.Lazy_Mesh_Updates) {
                     chunk->Mesh.clear();
-                    Mesh::GenerateMesh(*chunk, chunk->Mesh, chunk->chunkX, chunk->chunkZ, Chunk_Size, Camera.RenderDistance);
+                    Mesh::GenerateMesh(*chunk);
                     chunk->SendData();
                     World_Map::Render_List.push_back({
                         chunk->chunkX,
@@ -381,8 +430,7 @@ void Game::MainLoop() {
                     chunk->vbo = 0;
                     chunk->Mesh.clear();
                     chunk->Mesh.shrink_to_fit();
-                    chunk->Gen_Mesh = false;
-                    chunk->Ready_Render = true;
+                    chunk->has_mesh = true;
                     chunk->InRender = true;
                     game.Updates++;
                 }
@@ -392,7 +440,7 @@ void Game::MainLoop() {
                 for (size_t i = World_Map::Mesh_Queue.size(); i-- > 0;) {
                     Chunk* chunk = World_Map::Mesh_Queue[i];
 
-                    if (!chunk->Ready_Render)
+                    if (!chunk->has_mesh)
                         continue;
 
                     if (i != World_Map::Mesh_Queue.size() - 1)
@@ -495,10 +543,16 @@ void Game::MainLoop() {
                     break;
                 }
             }
+        // --------------------------
+        // Bloom
+        bloom.Extract(sceneTex);
+    bloom.Blur();
+        bloom.Combine(sceneTex);
+
         // Update Screen
-            glfwSwapBuffers(window);
-            PerfS.EntireTime = FrameTime.ElapsedMs();
-            game.FPS = Fps.End();
+        glfwSwapBuffers(window);
+        PerfS.EntireTime = FrameTime.ElapsedMs();
+        game.FPS = Fps.End();
     }
     GenerateChunk.Stop();
 }
@@ -508,7 +562,7 @@ int main() {
 
     std::cout << "Initializing Settings:\n";
     main.Init_Settings("MyCraft/Assets/Settings.myc");
-    if (Game::Init_Window()) return -1;
+    if (main.Init_Window()) return -1;
     std::cout << "Initializing Shaders:\n";
     Game::Init_Shader();
     std::cout << "Launching Game:\n";

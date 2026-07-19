@@ -8,6 +8,7 @@ in vec3 FragPos;
 uniform sampler2D BaseTexture;
 uniform vec3 ViewPos;
 uniform int RenderDist;
+uniform vec3 Sun;
 
 out vec4 FragColor;
 
@@ -15,20 +16,18 @@ void main() {
     // ----------------------------
     // Constants
     // ----------------------------
+    vec3 SunDir = max(Sun, 0);
     const float roughness = pow(1 - 0.15, 2.0);
-    const float metalness = 1.0; // soon in texture
+    const float metalness = 1.0; // not soon in texture ig
 
-    const vec3 Sun = vec3(0.7f, -1.0f, 0.7f);
-    const vec3 lightColor = vec3(1.0,1.0,0.8);
+    const vec3 lightColor = vec3(1.0, 0.9, 0.6);
 
     // ----------------------------
     // Normalization
     // ----------------------------
     vec3 WorldNormal = normalize(Normal);
     if (length(WorldNormal) < 0.5) discard;
-    const vec3 SunDir = normalize(Sun);
     vec3 viewDir = normalize(ViewPos - FragPos);
-    const vec3 lightDir = normalize(-SunDir);
 
     // ----------------------------
     // Albedo
@@ -41,7 +40,7 @@ void main() {
     // ----------------------------
     // Diffuse
     // ----------------------------
-    float DiffuseLight = max(metalness * dot(WorldNormal, lightDir), 0.0);
+    float DiffuseLight = max(metalness * dot(WorldNormal, SunDir), 0.0);
 
     // ----------------------------
     // Specular
@@ -49,7 +48,7 @@ void main() {
     float SpecularLight = 0.0;
      if (DiffuseLight > 0.0) {
         const float shininess = 2/pow(roughness, 2) - 2;
-        vec3 halfVector = normalize(lightDir+viewDir);
+        vec3 halfVector = normalize(SunDir+viewDir);
 
         SpecularLight = pow(max(dot(halfVector, WorldNormal), 0.0), shininess);
     }

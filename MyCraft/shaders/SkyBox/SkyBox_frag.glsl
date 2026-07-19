@@ -33,13 +33,28 @@ void main()  {
     // Sun
     float d = dot(rayDir, sunDir);
 
-    float sun = smoothstep(0.9995, 1.0, d);
-    float glow = smoothstep(0.99, 1.0, d);
+    float sun = smoothstep(0.999, 1.0, d);
+    float glow = smoothstep(0.98, 1.0, d);
 
     const vec3 sunColor = vec3(1.0, 0.9, 0.6);
 
     sky += sunColor * sun * 12.0;  // Disk
     sky += sunColor * glow * 0.6;  // Aura
+
+    float height = 2;
+    int samples = 20;
+    vec3 color;
+
+    for (int i = 0; i < samples; i++) {
+        height += 0.01;
+        float dist_to_height = height / rayDir.y;
+        vec3 world_pos = rayDir * dist_to_height;
+        color = smoothstep(0.15, 0, abs(vec3(fract(world_pos.x)) - 0.5f));
+        float upfactor = rayDir.y;
+        color *= upfactor;
+    }
+
+    //sky = mix(color, sky, dayfactor);
 
     FragColor = vec4(sky, 1.0);
 }

@@ -6,20 +6,18 @@ inline float lerp(const float a, const float b, const float t) {
     return a + (b - a) * t;
 }
 
-Chunk TerrainGen::Generate_Terrain_Chunk(const int ChunkX, const int ChunkZ, const glm::ivec3 ChunkSize) const {
+Chunk TerrainGen::Generate_Terrain_Chunk(const int ChunkX, const int ChunkZ) const {
     Chunk chunk;
-    chunk.width = ChunkSize.x;
-    chunk.height = ChunkSize.y;
-    chunk.depth = ChunkSize.z;
     chunk.chunkX = ChunkX;
     chunk.chunkZ = ChunkZ;
-    //chunk.blocks.resize(ChunkSize.x * ChunkSize.y * ChunkSize.z);
+    chunk.has_terrain = true;
+    chunk.DirtyFlag = true;
 
     if (game_settings.World_Generation_Type == 3) {
-        for (int x = 0; x < ChunkSize.x; x++) {
-            for (int z = 0; z < ChunkSize.z; z++) {
-                const float worldX = ChunkX * ChunkSize.x + x;
-                const float worldZ = ChunkZ * ChunkSize.z + z;
+        for (int x = 0; x < Chunk::WIDTH; x++) {
+            for (int z = 0; z < Chunk::DEPTH; z++) {
+                const float worldX = ChunkX * Chunk::WIDTH + x;
+                const float worldZ = ChunkZ * Chunk::DEPTH + z;
 
                 const float Noise_Biome = (biomeNoise.GetNoise(worldX * BiomeFreq, worldZ * BiomeFreq)+1)*0.5;
                 const float biomeFactor = pow(Noise_Biome, BiomePower);
@@ -36,11 +34,11 @@ Chunk TerrainGen::Generate_Terrain_Chunk(const int ChunkX, const int ChunkZ, con
 
                 float normalizedHeight = (baseHeight/octaves) * 0.5f + 0.5f;
                 normalizedHeight *= (BiomeBase + biomeFactor * BiomeMult);
-                const int intHeight = std::max(0, static_cast<int>(normalizedHeight * ChunkSize.y) - 24);
+                const int intHeight = std::max(0, static_cast<int>(normalizedHeight * Chunk::HEIGHT) - 24);
 
-                for (float y = 0; y < ChunkSize.y; y++) {
+                for (float y = 0; y < Chunk::HEIGHT; y++) {
 
-                    const float val2 = biomeNoise.GetNoise(worldX, y, worldZ) * ChunkSize.y;
+                    const float val2 = biomeNoise.GetNoise(worldX, y, worldZ) * Chunk::HEIGHT;
                     const int temp = glm::mix(val2/16, val2/4, Noise_Biome) + intHeight;
 
                     if (y == temp) {
@@ -67,10 +65,10 @@ Chunk TerrainGen::Generate_Terrain_Chunk(const int ChunkX, const int ChunkZ, con
 
         const float Peaks_Freq = 0.3f;
 
-        for (int x = 0; x < ChunkSize.x; ++x) {
-            for (int z = 0; z < ChunkSize.z; ++z) {
-                const float wx = ChunkX * ChunkSize.x + x;
-                const float wz = ChunkZ * ChunkSize.z + z;
+        for (int x = 0; x < Chunk::WIDTH; ++x) {
+            for (int z = 0; z < Chunk::DEPTH; ++z) {
+                const float wx = ChunkX * Chunk::WIDTH + x;
+                const float wz = ChunkZ * Chunk::DEPTH + z;
 
                 // Continental
                 const float cont_n = Continentalness.GetNoise(wx * Continent_Freq, wz * Continent_Freq);
@@ -104,7 +102,7 @@ Chunk TerrainGen::Generate_Terrain_Chunk(const int ChunkX, const int ChunkZ, con
                 shape -= riverMask * 80.0f;
 
                 const float beachMask = std::clamp(1.0f - std::abs(shape - SeaLevel) / 2.0f, 0.0f, 1.0f);
-                for (int y = 0; y < ChunkSize.y; y++) {
+                for (int y = 0; y < Chunk::HEIGHT; y++) {
 
                     const float Density = shape - y;
                     if (Density > 0.0f) {

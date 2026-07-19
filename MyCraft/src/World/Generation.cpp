@@ -24,14 +24,14 @@ void ChunkGeneration::LookForChunks() {
 
             auto it = World.find(key);
             if (it != World.end()) {
-                it->second.Gen_Mesh = !isEdge;
+                it->second.is_edge = isEdge;
             }
         }
     }
     GenCV.notify_all();
 }
 
-void ChunkGeneration::GenerateChunk(const glm::ivec3 ChunkSize) {
+void ChunkGeneration::GenerateChunk() {
     while (Running) {
         std::pair<int,int> chunkPos;
 
@@ -44,7 +44,7 @@ void ChunkGeneration::GenerateChunk(const glm::ivec3 ChunkSize) {
             GenQueue.pop();
         }
 
-        const Chunk data = Terrain.Generate_Terrain_Chunk(chunkPos.first, chunkPos.second, ChunkSize);
+        const Chunk data = Terrain.Generate_Terrain_Chunk(chunkPos.first, chunkPos.second);
 
         {
             std::lock_guard lock(ResultMutex);

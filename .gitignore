@@ -1,8 +1,10 @@
-# IDEs
 .idea/
 .vs/
+.venv/
 .vscode/
-out
+out/
+build/
+cmake-build-debug/
 
 # Windows
 Thumbs.db
