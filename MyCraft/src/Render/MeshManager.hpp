@@ -18,8 +18,8 @@ namespace Meshing {
 
     struct ChunkSnapshot {
         glm::ivec2 ChunkPos;
-        std::array<Chunk::Block, SIZE> blocks;
-        std::array<std::array<Chunk::Block, SIZE>, 4> neighbor;
+        std::array<Chunk::block, SIZE> blocks;
+        std::array<std::array<Chunk::block, SIZE>, 4> neighbor;
     };
 
     class Mesher {

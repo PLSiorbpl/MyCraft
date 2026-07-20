@@ -2,7 +2,7 @@
 
 #include "World/World.hpp"
 
-bool colisions::isSolidAround(glm::vec3 pos, float margin, float height) {
+bool colisions::isSolidAround(const glm::vec3 pos, float margin, float height) {
     for (const float dx : {-margin, margin}) {
         for (const float dz : {-margin, margin}) {
             for (const float dy : {0.0f, height / 2.0f, height}) {
@@ -15,7 +15,7 @@ bool colisions::isSolidAround(glm::vec3 pos, float margin, float height) {
     }
     return false;
 }
-bool colisions::isSolidAt(glm::vec3 pos) {
+bool colisions::isSolidAt(const glm::vec3 pos) {
     const auto& World = World_Map::World;
     const int blockX = static_cast<int>(floor(pos.x));
     const int blockY = static_cast<int>(floor(pos.y-1.7f));
@@ -36,7 +36,7 @@ bool colisions::isSolidAt(glm::vec3 pos) {
         const Chunk& chunk = it->second;
 
         if (blockY >= 0 && blockY < Chunk::HEIGHT) {
-            return chunk.get(localX, blockY, localZ).Flags & 0b1000'0000;
+            return chunk.get_state(localX, blockY, localZ)->is_solid;
         }
     }
 

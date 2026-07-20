@@ -2,21 +2,37 @@
 #include <array>
 #include <glm/glm.hpp>
 #include <vector>
-#include <map>
+#include <memory>
 #include <cstdint>
+
+#include "Block.hpp"
 
 typedef unsigned int GLuint;
 typedef int GLsizei;
 
+enum class block_type : uint8_t {
+    Air,
+    Stone,
+    Grass ,
+    Dirt,
+    Iron,
+    Wool,
+    Water,
+
+    _count
+};
+
+extern std::array<std::unique_ptr<Block>, static_cast<int>(block_type::_count)> block_cache;
+void init_block_state();
+
 class Chunk {
 public:
-    struct Block {
-        uint8_t id;
-        // Flags: Solid, Transparent, ...
-        uint8_t Flags;
+    struct block {
+        block_type id = block_type::Air;
+        uint16_t state = 0; // 0 - global  1-...
 
-        explicit Block(const uint8_t id = 0, const uint8_t Flags = 0)
-            : id(id), Flags(Flags) {}
+        explicit block(const block_type id = block_type::Air)
+            : id(id) {}
     };
 
     struct Vertex {
@@ -31,9 +47,8 @@ public:
     static constexpr int HEIGHT = 256;
     static constexpr int DEPTH = 16;
     static constexpr int SIZE = WIDTH*HEIGHT*DEPTH;
-    std::array<Block, SIZE> blocks;
+    std::array<block, SIZE> blocks;
     int chunkX, chunkZ;
-    static const std::map<uint8_t, Block> BlockDefs;
 
     // Mesh Stuff
     bool has_terrain = false;
@@ -55,16 +70,21 @@ public:
         return idx;
     }
 
-    [[nodiscard]] const Block& get(const int x, const int y, const int z) const noexcept {
+    [[nodiscard]] const block& get(const int x, const int y, const int z) const noexcept {
         return blocks[index(x, y, z)];
     }
 
-    void set(const int x, const int y, const int z, const Block& block) {
-        blocks.at(index(x, y, z)) = block;
+    [[nodiscard]] Block *get_state(const int x, const int y, const int z) const noexcept {
+        const auto &b = blocks[index(x, y, z)];
+        if (b.state == 0) {
+            return block_cache[static_cast<size_t>(b.id)].get();
+        }
+
+        return block_cache[static_cast<size_t>(b.id)].get();
     }
 
-    void setID(const int x, const int y, const int z, const uint8_t id) {
-        blocks.at(index(x, y, z)).id = id;
+    void set(const int x, const int y, const int z, const block& block) {
+        blocks.at(index(x, y, z)) = block;
     }
 
     void SendData();

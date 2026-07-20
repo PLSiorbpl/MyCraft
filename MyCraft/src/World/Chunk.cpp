@@ -1,17 +1,20 @@
 #include <glad/glad.h>
 #include "Chunk.hpp"
 
+#include <cstdio>
+#include <memory>
 
-const std::map<uint8_t, Chunk::Block> Chunk::BlockDefs = {
-    // Flags: Solid, Transparent, ...
-    { 0, Block(0, 0b00'00'00'00) }, // Air
-    { 1, Block(1, 0b10'00'00'00) }, // Stone
-    { 2, Block(2, 0b10'00'00'00) }, // Grass
-    { 3, Block(3, 0b10'00'00'00) }, // Dirt
-    { 4, Block(4, 0b10'00'00'00) }, // Blacha
-    { 5, Block(5, 0b10'00'00'00) }, // Wool
-    { 6, Block(6, 0b11'00'00'00) } // Water
- };
+std::array<std::unique_ptr<Block>, static_cast<int>(block_type::_count)> block_cache;
+
+void init_block_state() {
+    block_cache[static_cast<int>(block_type::Air)] = std::make_unique<Air>();
+    block_cache[static_cast<int>(block_type::Stone)] = std::make_unique<Stone>();
+    block_cache[static_cast<int>(block_type::Grass)] = std::make_unique<Grass>();
+    block_cache[static_cast<int>(block_type::Dirt)] = std::make_unique<Dirt>();
+    block_cache[static_cast<int>(block_type::Iron)] = std::make_unique<Iron>();
+    block_cache[static_cast<int>(block_type::Wool)] = std::make_unique<Wool>();
+    block_cache[static_cast<int>(block_type::Water)] = std::make_unique<Water>();
+}
 
 void Chunk::SendData() {
     if (vao == 0) {

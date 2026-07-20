@@ -40,11 +40,11 @@ Chunk TerrainGen::Generate_Terrain_Chunk(const int ChunkX, const int ChunkZ) {
                     const int temp = glm::mix(val2/16, val2/4, Noise_Biome) + intHeight;
 
                     if (y == temp) {
-                        chunk.set(x, y, z, Chunk::BlockDefs.at(2)); // Grass
+                        chunk.set(x, y, z, Chunk::block(block_type::Grass)); // Grass
                     } else if (y <= temp - 3) {
-                        chunk.set(x, y, z, Chunk::BlockDefs.at(1)); // Stone
+                        chunk.set(x, y, z, Chunk::block(block_type::Stone)); // Stone
                     } else if (y <= temp) {
-                        chunk.set(x, y, z, Chunk::BlockDefs.at(3)); // Dirt
+                        chunk.set(x, y, z, Chunk::block(block_type::Dirt)); // Dirt
                     }
                 }
             }
@@ -105,11 +105,11 @@ Chunk TerrainGen::Generate_Terrain_Chunk(const int ChunkX, const int ChunkZ) {
                     const float Density = shape - y;
                     if (Density > 0.0f) {
                         if (beachMask > 0)
-                            chunk.set(x, y, z, Chunk::BlockDefs.at(3));
+                            chunk.set(x, y, z, Chunk::block(block_type::Dirt));
                         else
-                            chunk.set(x, y, z, Chunk::BlockDefs.at(2)); // Grass
+                            chunk.set(x, y, z, Chunk::block(block_type::Grass)); // Grass
                     } else if (y <= SeaLevel) {
-                        chunk.set(x, y, z, Chunk::BlockDefs.at(6));
+                        chunk.set(x, y, z, Chunk::block(block_type::Water));
                     }
                 }
             }

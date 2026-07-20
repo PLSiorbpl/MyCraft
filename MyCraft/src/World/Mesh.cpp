@@ -4,16 +4,6 @@
 
 #include "World.hpp"
 
-static const glm::ivec2 BlockUVs[] = {
-    {0,0}, // 0 - air
-    {0,0}, // 1 - stone
-    {1,0}, // 2 - grass
-    {2,0}, // 3 - dirt
-    {3,0}, // 4 - Blacha
-    {4,0}, // 5 - Wool
-    {5,0}  // 6 - Water
-};
-
 void Mesh::GenerateMesh(Chunk& chunk) {
     const int chunkX = chunk.chunkX;
     const int chunkZ = chunk.chunkZ;
@@ -39,7 +29,7 @@ void Mesh::GenerateMesh(Chunk& chunk) {
         for (int z = 0; z < Chunk::DEPTH; z++) {
             uint32_t bits = 0;
             for (int x = 0; x < Chunk::WIDTH; x++) {
-                if (chunk.get(x, y, z).Flags & 0b10'00'00'00) {
+                if (chunk.get_state(x, y, z)->is_solid) {
                     bits |= (static_cast<uint32_t>(1) << x);
                 }
             }
@@ -60,7 +50,7 @@ void Mesh::GenerateMesh(Chunk& chunk) {
                 uint32_t bits = 0;
                 for (int x = 0; x < Chunk::WIDTH; x++) {
                     if (czp) {
-                        if (czp->get(x, y, 0).id != 0)
+                        if (czp->get_state(x, y, 0)->is_solid)
                             bits |= (static_cast<uint32_t>(1) << x);
                     } else
                         bits |= (static_cast<uint32_t>(1) << x);
@@ -77,7 +67,7 @@ void Mesh::GenerateMesh(Chunk& chunk) {
                 uint32_t bits = 0;
                 for (int x = 0; x < Chunk::WIDTH; x++) {
                     if (czn) {
-                        if (czn->get(x, y, Chunk::DEPTH - 1).id != 0)
+                        if (czn->get_state(x, y, Chunk::DEPTH - 1)->is_solid)
                             bits |= (static_cast<uint32_t>(1) << x);
                     } else
                         bits |= (static_cast<uint32_t>(1) << x);
@@ -110,11 +100,11 @@ void Mesh::GenerateMesh(Chunk& chunk) {
             //-------------------------
             // Meshing
             for (int x = 0; x < Chunk::WIDTH; x++) {
-                const auto block = chunk.get(x, y, z);
-                if (!(block.Flags & 0b10'00'00'00)) continue;
+                auto block = chunk.get_state(x, y, z);
+                if (!block->is_solid) continue;
                 const glm::vec3 w = {worldOffsetX + x, static_cast<float>(y), worldOffsetZ + z};
 
-                const glm::ivec2 tex = BlockUVs[block.id];
+                const glm::ivec2 &tex = block->uv;
 
                 const uint32_t mask = (static_cast<uint32_t>(1) << x);
                 if (visibleZp & mask) MeshZFace(vertices, w, 1, tex,  1);
@@ -124,17 +114,17 @@ void Mesh::GenerateMesh(Chunk& chunk) {
                 //-------------------------
                 // X+
                 if (x + 1 < Chunk::WIDTH) {
-                    if (!(chunk.get(x+1, y, z).Flags & 0b10'00'00'00))
+                    if (!chunk.get_state(x+1, y, z)->is_solid)
                         MeshXFace(vertices, w, 1, tex, 1);
-                } else if (cxp && cxp->get(0, y, z).id == 0) {
+                } else if (cxp && !cxp->get_state(0, y, z)->is_solid) {
                     MeshXFace(vertices, w, 1, tex, 1);
                 }
                 //-------------------------
                 // X-
                 if (x - 1 >= 0) {
-                    if (!(chunk.get(x-1, y, z).Flags & 0b10'00'00'00))
+                    if (!chunk.get_state(x-1, y, z)->is_solid)
                         MeshXFace(vertices, w, 1, tex, -1);
-                } else if (cxn && cxn->get(Chunk::WIDTH - 1, y, z).id == 0) {
+                } else if (cxn && !cxn->get_state(Chunk::WIDTH - 1, y, z)->is_solid) {
                     MeshXFace(vertices, w, 1, tex, -1);
                 }
             }
@@ -266,5 +256,5 @@ inline bool Mesh::IsBlockAt(const int WorldX, int y, const int WorldZ) {
     if (it == World_Map::World.end()) return true;
 
     const Chunk& chunk = it->second;
-    return chunk.get(localX, y, localZ).id != 0;
+    return chunk.get_state(localX, y, localZ)->is_solid;
 }

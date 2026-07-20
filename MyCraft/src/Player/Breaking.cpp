@@ -36,7 +36,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
     direction = glm::normalize(direction);
 
     const glm::vec3 Pos = Camera.Position;
-    glm::ivec3 Block = glm::floor(Pos);
+    glm::ivec3 c_block = glm::floor(Pos);
 
     const glm::ivec3 Step = glm::ivec3(direction.x > 0 ? 1 : -1,
         direction.y > 0 ? 1 : -1,
@@ -49,9 +49,9 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
     if (fabs(safeDir.y) < eps.x) safeDir.y = (safeDir.y >= 0 ? eps.x : -eps.x);
     if (fabs(safeDir.z) < eps.x) safeDir.z = (safeDir.z >= 0 ? eps.x : -eps.x);
     
-    glm::vec3 tMax = glm::vec3(((Step.x > 0 ? (Block.x + 1) : Block.x) - Pos.x) / safeDir.x,
-        ((Step.y > 0 ? (Block.y + 1) : Block.y) - Pos.y) / safeDir.y,
-        ((Step.z > 0 ? (Block.z + 1) : Block.z) - Pos.z) / safeDir.z);
+    glm::vec3 tMax = glm::vec3(((Step.x > 0 ? (c_block.x + 1) : c_block.x) - Pos.x) / safeDir.x,
+        ((Step.y > 0 ? (c_block.y + 1) : c_block.y) - Pos.y) / safeDir.y,
+        ((Step.z > 0 ? (c_block.z + 1) : c_block.z) - Pos.z) / safeDir.z);
 
     const glm::vec3 tDelta = glm::abs(1.0f / (direction + eps));
 
@@ -59,29 +59,29 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
     float distance = 0.0f;
     bool firstrun = true;
     Chunk* LastChunk = nullptr;
-    Chunk::Block LastBlock;
+    Block *LastBlock;
     glm::ivec3 LastCord;
     glm::ivec2 LastC;
 
     // RayCast
     while(distance < MaxDistance) {
         if (distance > MaxDistance) break;
-        const int cx = floor(Block.x / static_cast<float>(Chunk::WIDTH));
-        const int cz = floor(Block.z / static_cast<float>(Chunk::DEPTH));
+        const int cx = floor(c_block.x / static_cast<float>(Chunk::WIDTH));
+        const int cz = floor(c_block.z / static_cast<float>(Chunk::DEPTH));
 
-        const int LocalX = Block.x - cx * Chunk::WIDTH;
-        const int LocalZ = Block.z - cz * Chunk::DEPTH;
+        const int LocalX = c_block.x - cx * Chunk::WIDTH;
+        const int LocalZ = c_block.z - cz * Chunk::DEPTH;
         
         auto it = World.find({cx, cz});
         if (it != World.end()) {
             Chunk& chunk = it->second;
 
             // Actions  Break | Place | Show SelectionBox
-            if (Block.y >= 0 && Block.y < Chunk::HEIGHT) {
+            if (c_block.y >= 0 && c_block.y < Chunk::HEIGHT) {
                 // Break
                 if (Action == 1 && Camera.Break_CoolDown == 0) {
-                    if (chunk.get(LocalX, Block.y, LocalZ).Flags & 0b10'00'00'00) {
-                        chunk.set(LocalX, Block.y, LocalZ, Chunk::BlockDefs.at(0));
+                    if (chunk.get_state(LocalX, c_block.y, LocalZ)->is_solid) {
+                        chunk.set(LocalX, c_block.y, LocalZ, Chunk::block(block_type::Air));
                         chunk.DirtyFlag = true;
                         chunk.has_mesh = false;
                         for (auto& info : World_Map::Render_List) {
@@ -99,9 +99,9 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                     }
                     // Place
                 } else if (Action == 2 && Camera.Place_CoolDown == 0 && !firstrun) {
-                    if (chunk.get(LocalX, Block.y, LocalZ).Flags & 0b10'00'00'00 && !(LastBlock.Flags & 0b10'00'00'00)) {
-                        const Chunk::Block TryBlock = LastChunk->get(LastCord.x, LastCord.y, LastCord.z);
-                        LastChunk->set(LastCord.x, LastCord.y, LastCord.z, Chunk::BlockDefs.at(block));
+                    if (chunk.get_state(LocalX, c_block.y, LocalZ)->is_solid && !LastBlock->is_solid) {
+                        const Chunk::block TryBlock = LastChunk->get(LastCord.x, LastCord.y, LastCord.z);
+                        LastChunk->set(LastCord.x, LastCord.y, LastCord.z, Chunk::block(block_type::Dirt));
                         if (Colision.isSolidAround(Camera.Position)) {
                             LastChunk->set(LastCord.x, LastCord.y, LastCord.z, TryBlock);
                             Camera.Place_CoolDown = 8;
@@ -126,8 +126,8 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                     }
                     // Show SelectionBox
                 } else if (Action == 0) {
-                    if (chunk.get(LocalX, Block.y, LocalZ).Flags & 0b10'00'00'00) {
-                        Sel.Draw(glm::vec3(Block));
+                    if (chunk.get_state(LocalX, c_block.y, LocalZ)->is_solid) {
+                        Sel.Draw(glm::vec3(c_block));
                         Camera.Draw_Selection = true;
                         break;
                     } else {
@@ -136,25 +136,25 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                 }
             }
             LastChunk = &chunk;
-            LastBlock = chunk.get(LocalX, Block.y, LocalZ);
-            LastCord = glm::ivec3(LocalX, Block.y, LocalZ);
+            LastBlock = chunk.get_state(LocalX, c_block.y, LocalZ);
+            LastCord = glm::ivec3(LocalX, c_block.y, LocalZ);
             LastC = glm::ivec2(cx, cz);
             firstrun = false;
         }
         if (tMax.x < tMax.y) {
             if (tMax.x < tMax.z) {
-                Block.x += Step.x;
+                c_block.x += Step.x;
                 tMax.x += tDelta.x;
             } else {
-                Block.z += Step.z;
+                c_block.z += Step.z;
                 tMax.z += tDelta.z;
             }
         } else {
             if (tMax.y < tMax.z) {
-                Block.y += Step.y;
+                c_block.y += Step.y;
                 tMax.y += tDelta.y;
             } else {
-                Block.z += Step.z;
+                c_block.z += Step.z;
                 tMax.z += tDelta.z;
             }
         }

@@ -34,10 +34,12 @@ void Tick_Update(GLFWwindow* window, Movement &movement, Selection &Sel) {
 }
 
 void Game::MainLoop() {
-    World_Map::World.reserve(1024);
+    init_block_state();
+    World_Map::World.reserve(512);
     World_Map::World.max_load_factor(0.5f);
     World_Map::Mesh_Queue.reserve(256);
     World_Map::Render_List.reserve(1024);
+
 
     ChunkGeneration GenerateChunk;
     glfwGetWindowSize(window, &game_settings.width, &game_settings.height);
