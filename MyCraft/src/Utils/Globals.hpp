@@ -33,6 +33,7 @@ struct Game_Variables {
     bool Hosting = false;
     bool Joined = false;
     float TimeOfDay = 0.25f;
+    float Seconds_elapsed = 0.0f;
 };
 
 struct Video_Settings {

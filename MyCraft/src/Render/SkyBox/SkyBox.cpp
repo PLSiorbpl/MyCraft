@@ -18,6 +18,7 @@ void SkyBox::Render_SkyBox(const glm::mat4 &invProj, const glm::mat4 &invView, c
     Shader::Set_Mat4(SH.SkyBox_Shader.Shader, "invProj", invProj);
     Shader::Set_Vec3(SH.SkyBox_Shader.Shader, "sunDir", SunDir);
     Shader::Set_Float(SH.SkyBox_Shader.Shader, "dayfactor", dayFactor);
+    Shader::Set_Float(SH.SkyBox_Shader.Shader, "Time", game.Seconds_elapsed);
 
     glDisable(GL_DEPTH_TEST);
 

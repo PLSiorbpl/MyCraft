@@ -79,18 +79,15 @@ void Game::MainLoop() {
         const glm::mat4 invView = glm::inverse(view);
         const glm::mat4 invProj = glm::inverse(proj);
 
+        game.Seconds_elapsed += Fps.GetDeltaTime();
         game.TimeOfDay += Fps.GetDeltaTime() / game_settings.DayCycleDuration;
         game.TimeOfDay = fmod(game.TimeOfDay, 1.0f);
 
         const float angle = game.TimeOfDay * glm::two_pi<float>();
-
-        auto sunDir = glm::vec3(
-            cos(angle),
-            sin(angle),
-            sin(angle) * 0.3f
-        );
+        auto sunDir = glm::vec3(cos(angle), sin(angle), sin(angle) * 0.3f);
 
         sunDir = glm::normalize(sunDir);
+        const float dayFactor = glm::clamp(sunDir.y * 0.5f + 0.5f, 0.0f, 1.0f);
 
         skybox.Render_SkyBox(invProj, invView, sunDir);
 
@@ -102,6 +99,7 @@ void Game::MainLoop() {
         Shader::Set_Mat4(SH.Solid_Shader_Blocks.Shader, "Proj", proj);
         Shader::Set_Int(SH.Solid_Shader_Blocks.Shader, "RenderDist", Camera.RenderDistance);
         Shader::Set_Vec3(SH.Solid_Shader_Blocks.Shader, "Sun", sunDir);
+        Shader::Set_Float(SH.Solid_Shader_Blocks.Shader, "dayfactor", dayFactor);
 
         const Frustum::Frust Frust = Frustum::ExtractFrustum(proj*view);
 

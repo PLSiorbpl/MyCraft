@@ -3,81 +3,110 @@
 in vec2 TexCoord;
 in vec3 Normal;
 in vec3 FragPos;
-//in vec3 VColor;
 
 uniform sampler2D BaseTexture;
 uniform vec3 ViewPos;
 uniform int RenderDist;
 uniform vec3 Sun;
+uniform float dayfactor; // 0 = night, 1 = day
 
 out vec4 FragColor;
 
+// ----------------------------
+// Constants
+// ----------------------------
+const vec3 SUN_COLOR    = vec3(1.0, 0.9, 0.6);
+const vec3 SUNSET_COLOR = vec3(1.0, 0.42, 0.15);
+const vec3 SKY_TOP      = vec3(0.15, 0.35, 0.75);
+const vec3 SKY_BOTTOM   = vec3(0.6, 0.75, 1.0);
+const vec3 NIGHT_SKY    = vec3(0.02, 0.03, 0.08);
+const vec3 MOON_COLOR   = vec3(0.85, 0.9, 1.0);
+const vec3 MOONSET_COLOR = vec3(0.694, 0.878, 0.835);
+
+const float ROUGHNESS = 0.15;
+const float DIFFUSE_MULT = 1.0;
+
+const float FOG_END = 1.0;
+
+const float PI = 3.14159265;
+const float two_PI = 2.0*3.14159265;
+
 void main() {
-    // ----------------------------
-    // Constants
-    // ----------------------------
-    vec3 SunDir = max(Sun, 0);
-    const float roughness = pow(1 - 0.15, 2.0);
-    const float metalness = 1.0; // not soon in texture ig
-
-    const vec3 lightColor = vec3(1.0, 0.9, 0.6);
-
     // ----------------------------
     // Normalization
     // ----------------------------
-    vec3 WorldNormal = normalize(Normal);
-    if (length(WorldNormal) < 0.5) discard;
-    vec3 viewDir = normalize(ViewPos - FragPos);
+    if (length(Normal) < 0.5) discard;
+    vec3 N = normalize(Normal);
+    vec3 V = normalize(ViewPos - FragPos);
+    vec3 L = normalize(Sun);
+    vec3 H = normalize(L + V);
+
+    float NdotL = max(dot(N, L), 0.0);
+    float NdotH = max(dot(N, H), 0.0);
+
+    float sunHeight = L.y;
+    float sunVisibility = smoothstep(0.0, 0.1, sunHeight);
+    float horizonFactor = 1.0 - smoothstep(0.0, 0.5, abs(sunHeight));
+    vec3 dynamicSunColor = mix(SUN_COLOR, SUNSET_COLOR, horizonFactor);
 
     // ----------------------------
     // Albedo
     // ----------------------------
-    vec4 baseColorData = texture(BaseTexture, TexCoord);
-    vec3 FinalColor = pow(baseColorData.rgb, vec3(2.2));
-
-    const float AmbientLight = 0.2;
+    vec4 baseColor = texture(BaseTexture, TexCoord);
+    vec3 albedo = pow(baseColor.rgb, vec3(2.2));
 
     // ----------------------------
     // Diffuse
     // ----------------------------
-    float DiffuseLight = max(metalness * dot(WorldNormal, SunDir), 0.0);
+    float diffuse = DIFFUSE_MULT * NdotL * sunVisibility;
 
     // ----------------------------
     // Specular
     // ----------------------------
-    float SpecularLight = 0.0;
-     if (DiffuseLight > 0.0) {
-        const float shininess = 2/pow(roughness, 2) - 2;
-        vec3 halfVector = normalize(SunDir+viewDir);
+    float roughness2 = max(ROUGHNESS * ROUGHNESS, 0.001);
+    float shininess  = 2.0 / roughness2 - 2.0;
+    float normFactor = (shininess + 8.0) / (8.0 * PI);
+    float specular = (NdotL > 0.0) ? normFactor * pow(NdotH, shininess) * sunVisibility : 0.0;
 
-        SpecularLight = pow(max(dot(halfVector, WorldNormal), 0.0), shininess);
-    }
+    // ----------------------------
+    // Ambient
+    // ----------------------------
+    float ambientStrength = mix(0.02, 0.2, dayfactor);
+
+    // ----------------------------
+    // Combine
+    // ----------------------------
+    vec3 direct = (diffuse + specular) * dynamicSunColor;
+    vec3 totalLight = clamp(direct + vec3(ambientStrength), 0.0, 1.0);
+    vec3 litColor = albedo * totalLight;
+
+    // ----------------------------
+    // Sky
+    // ----------------------------
+    vec3 skyDir = -V;
+    float skyBlend = clamp(skyDir.y * 0.5 + 0.5, 0.0, 1.0);
+    vec3 sky = mix(SKY_BOTTOM, SKY_TOP, skyBlend);
+    sky = mix(NIGHT_SKY, sky, dayfactor);
+
+    float viewNearHorizon = 1.0 - abs(skyDir.y);
+    vec2 sunDirXZ = normalize(Sun.xz + vec2(1e-4));
+    vec2 viewDirXZ = normalize(skyDir.xz + vec2(1e-4));
+    float azimuthAlign = dot(sunDirXZ, viewDirXZ) * 0.5 + 0.5;
+    float sunsetGlow = horizonFactor * viewNearHorizon * mix(0.3, 1.0, azimuthAlign);
+    sky = mix(sky, SUNSET_COLOR, sunsetGlow * 0.7);
 
     // ----------------------------
     // Fog
     // ----------------------------
-    const vec3 fogColor = vec3(0.5, 0.7, 1.0);
-
-    const float FOG_DENSITY = 7.0;
-    float dist = length(FragPos - ViewPos) / (RenderDist*16);
-    float fogFactor = exp(-FOG_DENSITY * (1.0 - dist));
-
+    float fogStart = mix(0.45, 0.70, dayfactor);
+    float dist = length(FragPos - ViewPos) / max(float(RenderDist) * 16.0, 1.0);
+    float fogFactor = smoothstep(fogStart, FOG_END, dist);
 
     // ----------------------------
     // Final
     // ----------------------------
-    float LightBritness = clamp(DiffuseLight + SpecularLight + AmbientLight, 0.0, 1.0);
+    vec3 finalColor = pow(litColor, vec3(1.0 / 2.2));
+    finalColor = mix(finalColor, sky, fogFactor);
 
-
-    FinalColor *= lightColor;
-    FinalColor *= LightBritness;
-    FinalColor = pow(FinalColor, vec3(1/2.2));
-    FinalColor = mix(FinalColor, fogColor, clamp(fogFactor, 0.0, 1.0));
-
-    FragColor = vec4(pow(FinalColor, vec3(1/1)), baseColorData.a);
-
-    // ----------------------------
-    // Debug
-    // ----------------------------
-    //FragColor = vec4(vec3(SpecularLight), 1);
+    FragColor = vec4(finalColor, baseColor.a);
 }
