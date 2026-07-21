@@ -219,7 +219,7 @@ bool Gui::TextInput(const Layout &layout, const TextInputStyle &style, Label& la
     }
 
     // Input Logic
-    if (InputManager::InputActive && !InputManager::charBuffer.empty()) {
+    if (ActiveId == id && InputManager::InputActive && !InputManager::charBuffer.empty()) {
         if (style.max_chars > label.text.size()) {
 
             const char c = InputManager::charBuffer.front();
@@ -233,7 +233,7 @@ bool Gui::TextInput(const Layout &layout, const TextInputStyle &style, Label& la
         InputManager::charBuffer.pop_front();
     }
 
-    if (!label.text.empty()) {
+    if (ActiveId == id && !label.text.empty()) {
         if (InputManager::keysState[GLFW_KEY_BACKSPACE]) {
             label.text.pop_back();
             InputManager::keysState[GLFW_KEY_BACKSPACE] = false;
@@ -247,7 +247,7 @@ bool Gui::TextInput(const Layout &layout, const TextInputStyle &style, Label& la
     }
 
     if (!label.text.empty()) {
-        if (InputManager::InputActive) {
+        if (ActiveId == id && InputManager::InputActive) {
             label.text.push_back(style.Cursor);
             glm::vec2 TextPos;
             if (state != nullptr) {

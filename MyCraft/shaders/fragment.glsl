@@ -23,7 +23,7 @@ const vec3 NIGHT_SKY    = vec3(0.02, 0.03, 0.08);
 const vec3 MOON_COLOR   = vec3(0.85, 0.9, 1.0);
 const vec3 MOONSET_COLOR = vec3(0.694, 0.878, 0.835);
 
-const float ROUGHNESS = 0.15;
+const float ROUGHNESS = 0.5;
 const float DIFFUSE_MULT = 1.0;
 
 const float FOG_END = 1.0;

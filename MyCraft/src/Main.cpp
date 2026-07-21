@@ -40,6 +40,7 @@ void Game::MainLoop() {
     World_Map::Mesh_Queue.reserve(256);
     World_Map::Render_List.reserve(1024);
 
+    game.TimeOfDay = 0.985;
 
     ChunkGeneration GenerateChunk;
     glfwGetWindowSize(window, &game_settings.width, &game_settings.height);
@@ -226,7 +227,7 @@ void Game::MainLoop() {
         // Delete already done chunks
         if (!World_Map::Mesh_Queue.empty()) {
             for (size_t i = World_Map::Mesh_Queue.size(); i-- > 0;) {
-                Chunk* chunk = World_Map::Mesh_Queue[i];
+                const Chunk* chunk = World_Map::Mesh_Queue[i];
 
                 if (!chunk->has_mesh)
                     continue;

@@ -101,7 +101,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                 } else if (Action == 2 && Camera.Place_CoolDown == 0 && !firstrun) {
                     if (chunk.get_state(LocalX, c_block.y, LocalZ)->is_solid && !LastBlock->is_solid) {
                         const Chunk::block TryBlock = LastChunk->get(LastCord.x, LastCord.y, LastCord.z);
-                        LastChunk->set(LastCord.x, LastCord.y, LastCord.z, Chunk::block(block_type::Dirt));
+                        LastChunk->set(LastCord.x, LastCord.y, LastCord.z, Chunk::block(static_cast<block_type>(block)));
                         if (Colision.isSolidAround(Camera.Position)) {
                             LastChunk->set(LastCord.x, LastCord.y, LastCord.z, TryBlock);
                             Camera.Place_CoolDown = 8;

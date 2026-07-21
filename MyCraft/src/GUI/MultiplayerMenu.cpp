@@ -56,13 +56,18 @@ void Gui::MultiplayerJoin() {
     ID = 0;
     static ButtonStyle Big = {{0,0,150,20}, {0,21,150,41}, Texture_Id::Gui};
     static ButtonStyle Small = {{151,0,221,20}, {151,21,221,41}, Texture_Id::Gui};
+    static TextInputStyle Port_style = {.style = Big, .Default_str = "Enter port:", .max_chars = 5, .Input_Mode = 1};
+    static std::string PortInput;
+    static TextInputStyle Ip_style = {.style = Big, .Default_str = "Enter Ipv4:", .max_chars = 15, .Input_Mode = 0};
+    static std::string IpInput;
 
-    Layout layout = {Anch::Center, {70, 20}, {0, 25}};
-    Label label = {.anchor = Anch::Center};
     static Animation_State<glm::vec2> Join_State;
     static Animation_State<glm::vec2> Back_State;
     static Animation_State<glm::vec2> Port_State;
     static Animation_State<glm::vec2> Ip_State;
+
+    Layout layout = {Anch::Center, {70, 20}, {0, 25}};
+    Label label = {.anchor = Anch::Center};
 
     label.text = (!game.Joined) ? "Join" : "Disconect";
     if (Button(layout, Small, label, &Join_State)) {
@@ -71,8 +76,14 @@ void Gui::MultiplayerJoin() {
             net.client.Request_Stop();
             game.Joined = false;
         } else {
-            net.Start_Client("127.0.0.1", 25565, "PLSiorbpl");
-            game.Joined = true;
+            try {
+                if (std::stoi(PortInput) > 0 && std::stoi(PortInput) < 65535) {
+                    net.Start_Client(IpInput, std::stoi(PortInput), "PLSiorbpl");
+                    game.Joined = true;
+                }
+            } catch (...) {
+                chat.push_back("Unable to connect: Wrong Input");
+            }
         }
     }
 
@@ -87,16 +98,18 @@ void Gui::MultiplayerJoin() {
     layout.Offset.y = 0;
     label.anchor = Anch::LeftCenter;
     label.Offset.x = 3;
-    label.text = "Port:";
-    if (Button(layout, Big, label, &Port_State)) {
+    label.text = PortInput;
+    if (TextInput(layout, Port_style, label, &Port_State)) {
         Port_State.state = State::Idle;
     }
+    PortInput = label.text;
 
     layout.Offset.y = -25;
-    label.text = "Ip:";
-    if (Button(layout, Big, label, &Ip_State)) {
+    label.text = IpInput;
+    if (TextInput(layout, Ip_style, label, &Ip_State)) {
         Ip_State.state = State::Idle;
     }
+    IpInput = label.text;
 }
 
 void Gui::MultiplayerHost() {
@@ -120,12 +133,12 @@ void Gui::MultiplayerHost() {
             game.Hosting = false;
         } else {
             try {
-                if (std::stoi(HostInput) > 0 && std::stoi(HostInput.c_str()) < 65535) {
+                if (std::stoi(HostInput) > 0 && std::stoi(HostInput) < 65535) {
                     net.Start_Server(25565);
                     game.Hosting = true;
                 }
             } catch (...) {
-                chat.push_back("Wrong Input");
+                chat.push_back("Unable to start server: Wrong Input");
             }
         }
     }

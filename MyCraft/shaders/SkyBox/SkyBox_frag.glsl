@@ -40,11 +40,11 @@ float starField(vec3 dir) {
     vec3 local = fract(p) - 0.5;
 
     float h = hash(cell);
-    float star = smoothstep(0.985, 1.0, h); // how many
+    float star = smoothstep(0.98, 1.0, h); // how many
     star *= smoothstep(0.7, 0.0, length(local)); // Size
 
     float phase = hash(cell + 17.0);
-    float speed = 2.0 + hash(cell + 91.0) * 2.0; // 2.0–4.0
+    float speed = 1.0 + hash(cell + 91.0) * 2.0; // 1.0–4.0
     float twinkle = 0.6 + 0.4 * sin(Time * speed + phase * two_PI);
 
     return star * twinkle;
