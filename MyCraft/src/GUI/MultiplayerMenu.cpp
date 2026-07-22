@@ -13,9 +13,9 @@ void Gui::Multiplayer() {
     static constexpr ButtonStyle Small = {{151,0,221,20}, {151,21,221,41}, Texture_Id::Gui};
 
     // Back Button
-    static Button_Widget Back = {{Anch::Center, {150, 20}, {0, 50}},
-    Big,
-    {"Back", .anchor = Anch::Center}
+    static Button_Widget Back = {
+        .layout = {.Anchor = Anch::Center, .Size = {150, 20}, .Offset = {0, 50}}, .style = Big,
+        .label = {.text = "Back", .anchor = Anch::Center}, .state = {}
     };
     if (Button(Back.layout, Back.style, Back.label, &Back.state)) {
         Back.state.state = State::Idle;
@@ -23,18 +23,18 @@ void Gui::Multiplayer() {
     }
 
     // Last (Wip) Button
-    static Button_Widget Last = {{Anch::Center, {150, 20}, {0, 25}},
-    Big,
-    {"Last (wip)", .anchor = Anch::Center}
+    static Button_Widget Last = {
+        .layout = {.Anchor = Anch::Center, .Size = {150, 20}, .Offset = {0, 25}}, .style = Big,
+        .label = {.text = "Last (wip)", .anchor = Anch::Center}, .state = {}
     };
     if (Button(Last.layout, Last.style, Last.label, &Last.state)) {
         Last.state.state = State::Idle;
     }
 
     // Host Button
-    static Button_Widget Host = {{Anch::Center, {150, 20}, {0, -25}},
-    Big,
-    {"Host", .anchor = Anch::Center}
+    static Button_Widget Host = {
+        .layout = {.Anchor = Anch::Center, .Size = {150, 20}, .Offset = {0, -25}}, .style = Big,
+        .label = {.text = "Host", .anchor = Anch::Center}, .state = {}
     };
     if (Button(Host.layout, Host.style, Host.label, &Host.state)) {
         Host.state.state = State::Idle;
@@ -42,9 +42,9 @@ void Gui::Multiplayer() {
     }
 
     // Join Button
-    static Button_Widget Join = {{Anch::Center, {70, 20}, {0, 0}},
-    Small,
-    {"Join", .anchor = Anch::Center}
+    static Button_Widget Join = {
+        .layout = {Anch::Center, {70, 20}, {0, 0}}, .style = Small,
+        .label = {.text = "Join", .anchor = Anch::Center}, .state = {}
     };
     if (Button(Join.layout, Join.style, Join.label, &Join.state)) {
         Join.state.state = State::Idle;

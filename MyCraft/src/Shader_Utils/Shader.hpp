@@ -13,7 +13,7 @@ class Shader {
     static GLuint Create_Shader(const std::string& vertex, const std::string& fragment);
     static std::string LoadShaderSource(const std::string& path);
 
-    static unsigned int Load_Texture(const std::string& path, GLenum TextureUnit);
+    static unsigned int Load_Texture(const std::string& path);
 
     //---------------------
     // Uniforms

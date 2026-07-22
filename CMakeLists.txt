@@ -1,7 +1,12 @@
 cmake_minimum_required(VERSION 3.31)
-project(MyCraft)
 
+set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 17)
+
+set(CMAKE_C_COMPILER gcc)
+set(CMAKE_CXX_COMPILER g++)
+
+project(MyCraft C CXX)
 
 add_subdirectory(MyCraft/Include/glad)
 
@@ -28,14 +33,15 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/src"
 )
 
-if(PRODUCTION_BUILD)
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC PRODUCTION_BUILD=1)
-    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -O3 -march=native)
-    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
-else()
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC PRODUCTION_BUILD=0)
-    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -g )
-endif()
+target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC)
+
+target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
+        -march=native
+        -O3
+        #-DNDEBUG
+        -Wall
+        -Wextra
+)
 
 target_link_options(MyCraft PRIVATE
         -static

@@ -1,19 +1,16 @@
 #include <glad/glad.h>
 #include "Chunk.hpp"
 
-#include <cstdio>
-#include <memory>
-
-std::array<std::unique_ptr<Block>, static_cast<int>(block_type::_count)> block_cache;
+std::array<Block, static_cast<int>(block_type::_count)> block_cache;
 
 void init_block_state() {
-    block_cache[static_cast<int>(block_type::Air)] = std::make_unique<Air>();
-    block_cache[static_cast<int>(block_type::Stone)] = std::make_unique<Stone>();
-    block_cache[static_cast<int>(block_type::Grass)] = std::make_unique<Grass>();
-    block_cache[static_cast<int>(block_type::Dirt)] = std::make_unique<Dirt>();
-    block_cache[static_cast<int>(block_type::Iron)] = std::make_unique<Iron>();
-    block_cache[static_cast<int>(block_type::Wool)] = std::make_unique<Wool>();
-    block_cache[static_cast<int>(block_type::Water)] = std::make_unique<Water>();
+    block_cache[static_cast<int>(block_type::Air)] = Air();
+    block_cache[static_cast<int>(block_type::Stone)] = Stone();
+    block_cache[static_cast<int>(block_type::Grass)] = Grass();
+    block_cache[static_cast<int>(block_type::Dirt)] = Dirt();
+    block_cache[static_cast<int>(block_type::Iron)] = Iron();
+    block_cache[static_cast<int>(block_type::Wool)] = Wool();
+    block_cache[static_cast<int>(block_type::Water)] = Water();
 }
 
 void Chunk::SendData() {

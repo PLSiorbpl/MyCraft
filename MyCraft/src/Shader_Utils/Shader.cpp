@@ -7,7 +7,7 @@
 
 #include "Utils/Globals.hpp"
 
-unsigned int Shader::Load_Texture(const std::string &path, GLenum TextureUnit) {
+unsigned int Shader::Load_Texture(const std::string &path) {
     unsigned int Texture_ID;
     glGenTextures(1, &Texture_ID);
     glBindTexture(GL_TEXTURE_2D, Texture_ID);
@@ -103,10 +103,10 @@ void Shader::Init_Shader() {
     SH.SelectionBox_Shader.Shader = Create_Shader("MyCraft/shaders/Selection_Vert.glsl", "MyCraft/shaders/Selection_Frag.glsl");
     SH.SkyBox_Shader.Shader = Create_Shader("MyCraft/Shaders/FullScreen_vert.glsl", "MyCraft/Shaders/SkyBox/SkyBox_frag.glsl");
 
-    SH.Solid_Shader_Blocks.Texture0 = Load_Texture("MyCraft/Assets/Textures/Blocks/Atlas.png", GL_TEXTURE0);
+    SH.Solid_Shader_Blocks.Texture0 = Load_Texture("MyCraft/Assets/Textures/Blocks/Atlas.png");
     SH.General_Gui_Shader.Texture0 = SH.Solid_Shader_Blocks.Texture0;
-    SH.General_Gui_Shader.Texture1 = Load_Texture("MyCraft/Assets/Textures/Gui/Gui.png", GL_TEXTURE1);
-    SH.General_Gui_Shader.Texture2 = Load_Texture("MyCraft/Assets/Textures/Gui/Font.png", GL_TEXTURE2);
+    SH.General_Gui_Shader.Texture1 = Load_Texture("MyCraft/Assets/Textures/Gui/Gui.png");
+    SH.General_Gui_Shader.Texture2 = Load_Texture("MyCraft/Assets/Textures/Gui/Font.png");
 
     glUseProgram(SH.Solid_Shader_Blocks.Shader);
     glActiveTexture(GL_TEXTURE0);

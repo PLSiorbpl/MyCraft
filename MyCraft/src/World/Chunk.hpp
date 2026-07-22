@@ -22,7 +22,7 @@ enum class block_type : uint8_t {
     _count
 };
 
-extern std::array<std::unique_ptr<Block>, static_cast<int>(block_type::_count)> block_cache;
+extern std::array<Block, static_cast<int>(block_type::_count)> block_cache;
 void init_block_state();
 
 class Chunk {
@@ -65,7 +65,12 @@ public:
     explicit Chunk(const int X = 0, const int Y = 0) : chunkX(X), chunkZ(Y) {}
 
     static int index(const int x, const int y, const int z) {
+        assert((x >= 0 && x < WIDTH) && "Invalid X cordinate!");
+        assert((y >= 0 && y < HEIGHT) && "Invalid Y cordinate!");
+        assert((z >= 0 && z < DEPTH) && "Invalid Z cordinate!");
+
         const int idx = x + z * WIDTH + y * WIDTH * DEPTH;
+        assert((idx >= 0 && idx < SIZE) && "Index out of bounds!");
 
         return idx;
     }
@@ -77,14 +82,14 @@ public:
     [[nodiscard]] Block *get_state(const int x, const int y, const int z) const noexcept {
         const auto &b = blocks[index(x, y, z)];
         if (b.state == 0) {
-            return block_cache[static_cast<size_t>(b.id)].get();
+            return &block_cache[static_cast<size_t>(b.id)];
         }
 
-        return block_cache[static_cast<size_t>(b.id)].get();
+        return &block_cache[static_cast<size_t>(b.id)];
     }
 
     void set(const int x, const int y, const int z, const block& block) {
-        blocks.at(index(x, y, z)) = block;
+        blocks[index(x, y, z)] = block;
     }
 
     void SendData();

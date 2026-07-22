@@ -134,9 +134,9 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                         Camera.Draw_Selection = false;
                     }
                 }
-            }
             LastChunk = &chunk;
             LastBlock = chunk.get_state(LocalX, c_block.y, LocalZ);
+            }
             LastCord = glm::ivec3(LocalX, c_block.y, LocalZ);
             LastC = glm::ivec2(cx, cz);
             firstrun = false;

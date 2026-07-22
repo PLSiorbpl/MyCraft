@@ -67,7 +67,7 @@ namespace gui {
 
     struct ProgressStyle {
         float Progress = 0;
-        glm::vec4 BgColor;
+        glm::vec4 BgColor = {0.0f, 1.0f, 0.0f, 1.0f};
         Texture_Id TextureId = Texture_Id::None;
     };
 
@@ -116,8 +116,8 @@ namespace gui {
     };
 
     struct Label {
-        std::string text;
-        TextStyle Style = {{0.9647f, 0.9569f, 0.9255f, 0.0f}, 1, 1, 0};
+        std::string text = {};
+        TextStyle Style = {.Color = {0.9647f, 0.9569f, 0.9255f, 0.0f}, .Scale = 1, .PaddingX = 1, .PaddingY = 0};
         glm::vec2 Offset = {0.0f, 0.0f};
         Anch anchor = Anch::None;
     };

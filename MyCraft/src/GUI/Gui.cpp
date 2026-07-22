@@ -84,7 +84,7 @@ void Gui::Menu() {
     
     // Resume
     Layout layout = {Anch::Center, {150, 20}, {0.0f, -25.0f}};
-    Label label = {"Resume", .anchor = Anch::Center};
+    Label label = {.text = "Resume", .anchor = Anch::Center};
     if (Button(layout, Big, label, &Resume_State)) {
         Resume_State.state = State::Idle;
         InputManager::Key_Callback(window, GLFW_KEY_ESCAPE, 0, GLFW_PRESS, 0);
@@ -127,11 +127,11 @@ void Gui::Settings() {
     static Animation_State<glm::vec2> VSync_State;
 
     Layout layout = {Anch::Center, {70, 20}, {-(70+10)/2, -25.0f}};
-    Label label = {"Render +", .anchor = Anch::Center};
+    Label label = {.text = "Render +", .anchor = Anch::Center};
     if (Button(layout, Small, label, &Render1_State)) {
         Render1_State.state = State::Idle;
         renderd += 1;
-        if (Camera.RenderDistance+renderd > 64) renderd -= 1;
+        if (Camera.RenderDistance+renderd > 96) renderd -= 1;
     }
 
     layout.Offset.y = 0;
@@ -227,32 +227,33 @@ void Gui::DebugScreen() {
     layout.Offset.y = 31;
     Text(Anchor(layout), {.text = TickTime.text, .Style = {.Scale = 0.5}});
 
-    static ProgressStyle style = {.TextureId = Texture_Id::None};
+    static ProgressStyle ram_style = {.TextureId = Texture_Id::None};
+    static ProgressStyle tri_style = {.TextureId = Texture_Id::None};
     static Label label_ram = {.Style = {.Scale = 0.5}, .anchor = Anch::Center};
     static Label label_tris = {.Style = {.Scale = 0.5}, .anchor = Anch::Center};
 
     static size_t LastRam;
     const float ramUsedRatio = static_cast<float>(PerfS.ramUsed) / static_cast<float>(game.Max_Ram * 1024 * 1024);
-    style.Progress = ramUsedRatio;
+    ram_style.Progress = ramUsedRatio;
     if (LastRam != PerfS.ramUsed) {
-        style.BgColor = Gradient(ramUsedRatio, rgb(0x00ff00), rgb(0xffff00), rgb(0xff0000));
+        ram_style.BgColor = Gradient(ramUsedRatio, rgb(0x00ff00), rgb(0xffff00), rgb(0xff0000));
         label_ram.text = Format("%s/%s", Fun::FormatSize(PerfS.ramUsed).c_str(),Fun::FormatSize(game.Max_Ram * 1024 * 1024).c_str());
         LastRam = PerfS.ramUsed;
     }
     layout.Offset.y = 37;
     layout.Size = {53, 10};
-    ProgressBar(layout, style, &label_ram);
+    ProgressBar(layout, ram_style, &label_ram);
 
     static uint64_t LastTris;
     const float TrisVisibleRatio = static_cast<float>(PerfS.Triangles) / static_cast<float>(PerfS.Total_Triangles);
-    style.Progress = TrisVisibleRatio;
+    tri_style.Progress = TrisVisibleRatio;
     if (LastTris != PerfS.Triangles) {
-        style.BgColor = Gradient(TrisVisibleRatio, rgb(0x00ff00), rgb(0xffff00), rgb(0xff0000));
+        tri_style.BgColor = Gradient(TrisVisibleRatio, rgb(0x00ff00), rgb(0xffff00), rgb(0xff0000));
         label_tris.text = Format("%s/%s", Fun::FormatNumber(PerfS.Triangles).c_str(), Fun::FormatNumber(PerfS.Total_Triangles).c_str());
         LastTris = PerfS.Triangles;
     }
     layout.Offset.y = 47;
-    ProgressBar(layout, style, &label_tris);
+    ProgressBar(layout, tri_style, &label_tris);
 }
 
 void Gui::Chat() {
