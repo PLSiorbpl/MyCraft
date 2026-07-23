@@ -16,6 +16,8 @@ const vec3 SKY_BOTTOM   = vec3(0.6, 0.75, 1.0);
 const vec3 NIGHT_SKY    = vec3(0.02, 0.03, 0.08);
 const vec3 MOON_COLOR   = vec3(0.85, 0.9, 1.0);
 const vec3 MOONSET_COLOR = vec3(0.694, 0.878, 0.835);
+const vec3 STAR_COLOR_1 = vec3(0.7,0.8,1.0);
+const vec3 STAR_COLOR_2 = vec3(1.0, 0.643, 0.827);
 
 const float ROUGHNESS = 0.15;
 const float DIFFUSE_MULT = 1.0;
@@ -34,7 +36,7 @@ float hash(vec3 p3) {
     return fract((p3.x + p3.y) * p3.z);
 }
 
-float starField(vec3 dir) {
+vec3 starField(vec3 dir) {
     vec3 p = dir * 300.0;
     vec3 cell = floor(p);
     vec3 local = fract(p) - 0.5;
@@ -47,7 +49,18 @@ float starField(vec3 dir) {
     float speed = 1.0 + hash(cell + 91.0) * 2.0; // 1.0–4.0
     float twinkle = 0.6 + 0.4 * sin(Time * speed + phase * two_PI);
 
-    return star * twinkle;
+    star *= twinkle;
+    vec3 starColor = mix(STAR_COLOR_1, STAR_COLOR_2, hash(cell + 5.0));
+
+    return starColor * star;
+}
+
+vec3 stylize(vec3 c) {
+    float lum = dot(c, vec3(0.2126, 0.7152, 0.0722)); // BT.709 weights or smt
+    c = mix(vec3(lum), c, 1.35); // saturation boost
+    c = mix(c, c * vec3(0.85, 0.9, 1.15), 1.0 - lum); // cold shadows
+    c = mix(c, c * vec3(1.1, 1.0, 0.85), lum); // warm highlights
+    return c;
 }
 
 void main() {
@@ -66,10 +79,10 @@ void main() {
     float sunHeight = L.y;
     vec3 moonDir = -L;
 
-    float sunVisibility  = smoothstep(-0.3, 0.0, sunHeight);
-    float moonVisibility = smoothstep(-0.3, 0.0, moonDir.y);
+    float sunVisibility  = smoothstep(-0.4, 0.0, sunHeight);
+    float moonVisibility = smoothstep(-0.4, 0.0, moonDir.y);
 
-    float horizonFactor = 1.0 - smoothstep(0.0, 0.5, abs(sunHeight));
+    float horizonFactor = 1.0 - smoothstep(0.0, 0.4, abs(sunHeight));
     float nightFactor = smoothstep(0.6, 0.0, dayfactor);
 
     // ----------------------------
@@ -92,8 +105,8 @@ void main() {
     float altitudeFade = smoothstep(-0.06, 0.3, rayDir.y);
     float starVisibility = max(nightFactor, horizonFactor * 0.4) * altitudeFade;
     if (starVisibility > 0.001) {
-        float star = starField(rayDir);
-        sky += vec3(star) * starVisibility;
+        vec3 star = starField(rayDir);
+        sky += star * starVisibility;
     }
 
     // ----------------------------
@@ -101,27 +114,26 @@ void main() {
     // ----------------------------
     float dm = dot(rayDir, moonDir);
     float moonDisc = smoothstep(0.9997, 0.9999, dm) * moonVisibility;
-    //float moonGlow = smoothstep(0.995, 1.0, dm) * moonVisibility; // that looks a bit bad i think
-    float moonGlow = pow(max(dm, 0.0), 500.0) * moonVisibility; // this better fr
+    float moonGlow = pow(max(dm, 0.0), 50.0) * moonVisibility;
 
-    vec3 dynamicMoonColor = mix(MOON_COLOR, MOONSET_COLOR, horizonFactor); // It almost does nothing lol
-    sky += dynamicMoonColor * moonDisc * 4.0;
-    sky += dynamicMoonColor * moonGlow * 0.5;
+    vec3 dynamicMoonColor = mix(MOON_COLOR, MOONSET_COLOR, horizonFactor);
+    sky += dynamicMoonColor * moonDisc * 1.0; // disc
+    sky += dynamicMoonColor * moonGlow * 0.5; // aura
 
     // ----------------------------
     // Sun
     // ----------------------------
     float d = dot(rayDir, L);
-    float sun  = smoothstep(0.9995, 1.0, d) * sunVisibility;
-    //float glow = smoothstep(0.98, 1.0, d) * sunVisibility;
-    float glow = pow(max(d, 0.0), 500.0) * sunVisibility;
+    float sun  = smoothstep(0.9991, 1.0, d) * sunVisibility;
+    float glow = pow(max(d, 0.0), 20.0) * sunVisibility;
 
     vec3 dynamicSunColor = mix(SUN_COLOR, SUNSET_COLOR, horizonFactor);
-    sky += dynamicSunColor * sun * 6.0;  // disc
-    sky += dynamicSunColor * glow * 0.8;  // aura
+    sky += dynamicSunColor * sun * 1.0;  // disc
+    sky += dynamicSunColor * glow * 0.5;  // aura
 
     float dither = (hash(vec3(gl_FragCoord.xy, 0.0)) - 0.5) / 255.0;
     sky += dither;
-    // I know Imated and 555 are looking at this fr
+    sky = stylize(sky);
+
     FragColor = vec4(sky, 1.0);
 }

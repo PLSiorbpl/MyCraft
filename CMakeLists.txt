@@ -38,7 +38,7 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC)
 target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
         -march=native
         -O3
-        #-DNDEBUG
+        -DNDEBUG
         -Wall
         -Wextra
 )

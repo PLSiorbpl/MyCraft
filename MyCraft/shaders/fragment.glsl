@@ -31,6 +31,14 @@ const float FOG_END = 1.0;
 const float PI = 3.14159265;
 const float two_PI = 2.0*3.14159265;
 
+vec3 stylize(vec3 c) {
+    float lum = dot(c, vec3(0.2126, 0.7152, 0.0722)); // BT.709 weights or smt
+    c = mix(vec3(lum), c, 1.35); // saturation boost
+    c = mix(c, c * vec3(0.85, 0.9, 1.15), 1.0 - lum); // cold shadows
+    c = mix(c, c * vec3(1.1, 1.0, 0.85), lum); // warm highlights
+    return c;
+}
+
 void main() {
     // ----------------------------
     // Normalization
@@ -80,6 +88,10 @@ void main() {
     vec3 totalLight = clamp(direct + vec3(ambientStrength), 0.0, 1.0);
     vec3 litColor = albedo * totalLight;
 
+    float rim = pow(1.0 - max(0.0, dot(N, V)), 3.0);
+    vec3 rimColor = mix(vec3(0.6, 0.85, 1.0), SUNSET_COLOR, horizonFactor);
+    litColor += rimColor * rim * 0.05 * sunVisibility;
+
     // ----------------------------
     // Sky
     // ----------------------------
@@ -98,15 +110,18 @@ void main() {
     // ----------------------------
     // Fog
     // ----------------------------
-    float fogStart = mix(0.45, 0.70, dayfactor);
+    float FOG_DENSITY = mix(2.5, 0.9, dayfactor);
+    float fogStart = mix(0.4, 0.7, dayfactor);
     float dist = length(FragPos - ViewPos) / max(float(RenderDist) * 16.0, 1.0);
-    float fogFactor = smoothstep(fogStart, FOG_END, dist);
+    dist *= FOG_DENSITY;
+    float fogFactor = clamp(smoothstep(fogStart, FOG_END, dist), 0.0, 1.2);
 
     // ----------------------------
     // Final
     // ----------------------------
     vec3 finalColor = pow(litColor, vec3(1.0 / 2.2));
     finalColor = mix(finalColor, sky, fogFactor);
+    finalColor = stylize(finalColor);
 
     FragColor = vec4(finalColor, baseColor.a);
 }

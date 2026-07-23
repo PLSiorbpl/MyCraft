@@ -1,7 +1,7 @@
 // General Options:
 Render Distance=32
 Generation Threads=4 // Recommended 1-4
-Day Cycle Duration=1200  // in seconds
+Day Cycle Duration=1200 // in seconds
 
 // Bloom Settings:
 Blur Texture Scale=4   // (width/n, heigh/n)   n - Scale
