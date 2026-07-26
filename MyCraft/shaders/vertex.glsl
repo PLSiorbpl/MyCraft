@@ -1,6 +1,6 @@
 #version 330 core
 layout(location = 0) in vec3 aPos;
-layout(location = 1) in uvec2 aTexCoord;
+layout(location = 1) in vec2 aTexCoord;
 layout(location = 2) in uint aNormal;
 //layout(location = 3) in vec3 aVColor;
 
@@ -25,7 +25,7 @@ vec3 getNormal(uint dir) {
 void main() {
     mat4 MVP = (Proj * View * Model);
 
-    TexCoord = (vec2(aTexCoord)+1)/256;
+    TexCoord = aTexCoord;
     FragPos = aPos;
     Normal = mat3(transpose(inverse(Model))) * getNormal(aNormal);
     gl_Position = MVP * vec4(aPos, 1.0);

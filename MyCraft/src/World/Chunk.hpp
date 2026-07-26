@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <cstdint>
+#include <cstdio>
 
 #include "Block.hpp"
 
@@ -18,11 +19,12 @@ enum class block_type : uint8_t {
     Iron,
     Wool,
     Water,
+    Lamp,
 
     _count
 };
 
-extern std::array<Block, static_cast<int>(block_type::_count)> block_cache;
+extern std::array<Block *, static_cast<int>(block_type::_count)> block_cache;
 void init_block_state();
 
 class Chunk {
@@ -37,7 +39,7 @@ public:
 
     struct Vertex {
         glm::vec3 position;
-        uint8_t uv[2];
+        uint16_t uv[2];
         uint8_t normal;
         uint8_t pad = 0;
     };
@@ -48,6 +50,7 @@ public:
     static constexpr int DEPTH = 16;
     static constexpr int SIZE = WIDTH*HEIGHT*DEPTH;
     std::array<block, SIZE> blocks;
+    std::vector<Block *> block_state;
     int chunkX, chunkZ;
 
     // Mesh Stuff
@@ -79,17 +82,40 @@ public:
         return blocks[index(x, y, z)];
     }
 
-    [[nodiscard]] Block *get_state(const int x, const int y, const int z) const noexcept {
-        const auto &b = blocks[index(x, y, z)];
-        if (b.state == 0) {
-            return &block_cache[static_cast<size_t>(b.id)];
-        }
+    [[nodiscard]]
+    Block* get_state(const int x, const int y, const int z) noexcept {
+        const auto& b = blocks[index(x, y, z)];
 
-        return &block_cache[static_cast<size_t>(b.id)];
+        if (b.state == 0)
+            return block_cache[static_cast<size_t>(b.id)];
+
+        return block_state[b.state - 1];
+    }
+
+    [[nodiscard]]
+    const Block* get_state(const int x, const int y, const int z) const noexcept {
+        const auto& b = blocks[index(x, y, z)];
+
+        if (b.state == 0)
+            return block_cache[static_cast<size_t>(b.id)];
+
+        return block_state[b.state - 1];
+    }
+
+    void create_state(const int x, const int y, const int z) {
+        auto &b = blocks[index(x, y, z)];
+        if (b.state == 0) {
+            block_state.push_back(block_cache[static_cast<size_t>(b.id)]->clone());
+            b.state = block_state.size();
+        }
     }
 
     void set(const int x, const int y, const int z, const block& block) {
-        blocks[index(x, y, z)] = block;
+        auto &b = blocks[index(x, y, z)];
+        if (b.state != 0) {
+            delete block_state[b.state - 1];
+        }
+        b = block;
     }
 
     void SendData();

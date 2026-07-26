@@ -63,6 +63,14 @@ namespace gui {
         Anch Anchor;
         glm::vec2 Size;
         glm::vec2 Offset = {0.0f,0.0f};
+
+        void Move_Y() {
+            Offset.y += Size.y;
+        }
+
+        void Move_X() {
+            Offset.x += Size.x;
+        }
     };
 
     struct ProgressStyle {

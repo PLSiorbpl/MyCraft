@@ -1,5 +1,6 @@
 #include "Breaking.hpp"
 #include <algorithm>
+#include <cstdio>
 
 #include "World/World.hpp"
 
@@ -101,7 +102,34 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                 } else if (Action == 2 && Camera.Place_CoolDown == 0 && !firstrun) {
                     if (chunk.get_state(LocalX, c_block.y, LocalZ)->is_solid && !LastBlock->is_solid) {
                         const Chunk::block TryBlock = LastChunk->get(LastCord.x, LastCord.y, LastCord.z);
+
+                        if (block == 0) {
+                            const Chunk::block &bl = chunk.get(LocalX, c_block.y, LocalZ);
+                            if (bl.state == 0) {
+                                chunk.create_state(LocalX, c_block.y, LocalZ);
+                                printf("yes ");
+                            }
+                            Block *b = chunk.get_state(LocalX, c_block.y, LocalZ);
+                            b->OnClick();
+
+                            chunk.DirtyFlag = true;
+                            chunk.has_mesh = false;
+                            for (auto& info : World_Map::Render_List) {
+                                if (info.chunkX == cx && info.chunkZ == cz) {
+                                    info.Delete = 1;
+                                }
+                            }
+                            Chunk* chunkPtr = &it->second;
+                            if(std::find(World_Map::Mesh_Queue.begin(), World_Map::Mesh_Queue.end(), chunkPtr) == World_Map::Mesh_Queue.end()) {
+                                World_Map::Mesh_Queue.push_back(chunkPtr);
+                            }
+                            SetNeighborsDirty(LocalX, LocalZ, cx, cz);
+                            Camera.Place_CoolDown = 1;
+                            break;
+                        }
+
                         LastChunk->set(LastCord.x, LastCord.y, LastCord.z, Chunk::block(static_cast<block_type>(block)));
+
                         if (Colision.isSolidAround(Camera.Position)) {
                             LastChunk->set(LastCord.x, LastCord.y, LastCord.z, TryBlock);
                             Camera.Place_CoolDown = 8;
@@ -118,7 +146,6 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                             if(std::find(World_Map::Mesh_Queue.begin(), World_Map::Mesh_Queue.end(), chunkPtr) == World_Map::Mesh_Queue.end()) {
                                 World_Map::Mesh_Queue.push_back(chunkPtr);
                             }
-                            //SetNeighborsDirty(LocalX, LocalZ, cx, cz);
                             SetNeighborsDirty(LastCord.x, LastCord.z, LastC.x, LastC.y);
                             Camera.Place_CoolDown = 12;
                             break;

@@ -164,8 +164,8 @@ void Mesh::MeshXFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& w, c
     auto push = [&](float x, float y, float z, float u, float v) {
         Chunk::Vertex ver;
         ver.position = {x,y,z};
-        ver.uv[0] = static_cast<uint8_t>(u*255.0f);
-        ver.uv[1] = static_cast<uint8_t>(v*255.0f);
+        ver.uv[0] = static_cast<uint16_t>(u * 65535.0f);
+        ver.uv[1] = static_cast<uint16_t>(v * 65535.0f);
         ver.normal = (dir > 0 ? 1 : 0);
         vertices->push_back(ver);
     };
@@ -196,8 +196,8 @@ void Mesh::MeshYFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& w, c
     auto push = [&](float x, float y, float z, float u, float v) {
         Chunk::Vertex ver;
         ver.position = {x,y,z};
-        ver.uv[0] = static_cast<uint8_t>(u*255.0f);
-        ver.uv[1] = static_cast<uint8_t>(v*255.0f);
+        ver.uv[0] = static_cast<uint16_t>(u * 65535.0f);
+        ver.uv[1] = static_cast<uint16_t>(v * 65535.0f);
         ver.normal = (dir > 0 ? 3 : 2);
         vertices->push_back(ver);
     };
@@ -228,8 +228,8 @@ void Mesh::MeshZFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& w, c
     auto push = [&](float x, float y, float z, float u, float v) {
         Chunk::Vertex ver;
         ver.position = {x,y,z};
-        ver.uv[0] = static_cast<uint8_t>(u*255.0f);
-        ver.uv[1] = static_cast<uint8_t>(v*255.0f);
+        ver.uv[0] = static_cast<uint16_t>(u * 65535.0f);
+        ver.uv[1] = static_cast<uint16_t>(v * 65535.0f);
         ver.normal = (dir > 0 ? 5 : 4);
         vertices->push_back(ver);
     };

@@ -1,82 +1,147 @@
 #pragma once
+#include <cstdio>
 
 class Block {
 public:
     virtual ~Block() = default;
+    [[nodiscard]] virtual Block* clone() const = 0;
 
     bool is_solid;
     bool is_transparent;
     glm::ivec2 uv;
+
+    virtual void OnClick() {}
 };
 
 
 
 class Air : public Block {
 public:
+    [[nodiscard]] Block* clone() const override {
+        return new Air(*this);
+    }
+
     Air() {
         is_solid = false;
         is_transparent = true;
         uv = glm::ivec2(0, 0);
     }
 
+private:
 };
 
 class Stone : public Block {
 public:
-    Stone() {
-        is_solid = true;
-        is_transparent = false;
-        uv = glm::ivec2(0, 0);
+    [[nodiscard]] Block* clone() const override {
+        return new Stone(*this);
     }
 
-};
-
-class Grass : public Block {
-public:
-    Grass() {
+    Stone() {
         is_solid = true;
         is_transparent = false;
         uv = glm::ivec2(1, 0);
     }
 
+private:
 };
 
-class Dirt : public Block {
+class Grass : public Block {
 public:
-    Dirt() {
+    [[nodiscard]] Block* clone() const override {
+        return new Grass();
+    }
+
+    Grass() {
         is_solid = true;
         is_transparent = false;
         uv = glm::ivec2(2, 0);
     }
 
+private:
 };
 
-class Iron : public Block {
+class Dirt : public Block {
 public:
-    Iron() {
+    [[nodiscard]] Block* clone() const override {
+        return new Dirt(*this);
+    }
+
+    Dirt() {
         is_solid = true;
         is_transparent = false;
         uv = glm::ivec2(3, 0);
     }
 
+private:
 };
 
-class Wool : public Block {
+class Iron : public Block {
 public:
-    Wool() {
+    [[nodiscard]] Block* clone() const override {
+        return new Iron(*this);
+    }
+
+    Iron() {
         is_solid = true;
         is_transparent = false;
         uv = glm::ivec2(4, 0);
     }
 
+private:
 };
 
-class Water : public Block {
+class Wool : public Block {
 public:
-    Water() {
+    [[nodiscard]] Block* clone() const override {
+        return new Wool(*this);
+    }
+
+    Wool() {
         is_solid = true;
         is_transparent = false;
         uv = glm::ivec2(5, 0);
     }
 
+private:
+};
+
+class Water : public Block {
+public:
+    [[nodiscard]] Block* clone() const override {
+        return new Water(*this);
+    }
+
+    Water() {
+        is_solid = true;
+        is_transparent = false;
+        uv = glm::ivec2(6, 0);
+    }
+
+private:
+};
+
+class Lamp : public Block {
+public:
+    [[nodiscard]] Block* clone() const override {
+        return new Lamp(*this);
+    }
+
+    Lamp() {
+        is_solid = true;
+        is_transparent = false;
+        uv = glm::ivec2(7, 0);
+    }
+
+    void OnClick() override {
+        if (!lit) {
+            uv = {0, 4};
+            lit = true;
+        } else {
+            uv = {7, 0};
+            lit = false;
+        }
+    }
+
+private:
+    bool lit = false;
 };

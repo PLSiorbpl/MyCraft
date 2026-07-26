@@ -14,7 +14,7 @@ void Gui::HotBar() {
 
     if (InputManager::ScrollY != 0) {
         Camera.HotBarSlot = wrap(Camera.HotBarSlot - InputManager::ScrollY, 9);
-        Camera.ItemHeld = (Camera.HotBarSlot % 6) + 1;
+        Camera.ItemHeld = (Camera.HotBarSlot % (int)block_type::_count);
         InputManager::ScrollY = 0;
     }
 
@@ -191,40 +191,55 @@ void Gui::Settings() {
 }
 
 void Gui::DebugScreen() {
-    Layout layout = {Anch::TopLeft, {60, 60}, {1,1}};
+    /*
+     FPS
+     Frame time
+     Mesh time
+     Render time
+     Gui time
+     Tick time
+     RAM
+     Triangle
+     Coordinates
+     Block held
+     */
+
+    Layout layout = {Anch::TopLeft, {70, (8*6)+(2*10)}, {1,1}};
 
     DrawRectangle(layout, {{rgb(0x101010)}});
+    layout.Size = {0, 5};
+    layout.Offset = {2, 1};
 
     static TextCache fps;
     UpdateText(fps, game.FPS, "FPS: %d");
-    layout.Offset = {2,1};
     Text(Anchor(layout), {.text = fps.text, .Style = {.Scale = 0.5}});
 
-    layout.Offset.y = 6;
+    layout.Move_Y();
     Text(Anchor(layout), {.text = "Cpu Times:", .Style = {.Scale = 0.5}});
+
     static TextCache FrameTime;
     UpdateText(FrameTime, PerfS.EntireTime, "Frame Time: %.3fms");
-    layout.Offset.y = 11;
+    layout.Move_Y();
     Text(Anchor(layout), {.text = FrameTime.text, .Style = {.Scale = 0.5}});
 
     static TextCache MeshTime;
     UpdateText(MeshTime, PerfS.mesh, "Mesh Time: %.3fms");
-    layout.Offset.y = 16;
+    layout.Move_Y();
     Text(Anchor(layout), {.text = MeshTime.text, .Style = {.Scale = 0.5}});
 
     static TextCache RenderTime;
     UpdateText(RenderTime, PerfS.render, "Render Time: %.3fms");
-    layout.Offset.y = 21;
+    layout.Move_Y();
     Text(Anchor(layout), {.text = RenderTime.text, .Style = {.Scale = 0.5}});
 
     static TextCache GuiTime;
     UpdateText(GuiTime, PerfS.gui, "Gui Time: %.3fms");
-    layout.Offset.y = 26;
+    layout.Move_Y();
     Text(Anchor(layout), {.text = GuiTime.text, .Style = {.Scale = 0.5}});
 
     static TextCache TickTime;
     UpdateText(TickTime, PerfS.tick, "Tick Time: %.3fms");
-    layout.Offset.y = 31;
+    layout.Move_Y();
     Text(Anchor(layout), {.text = TickTime.text, .Style = {.Scale = 0.5}});
 
     static ProgressStyle ram_style = {.TextureId = Texture_Id::None};
@@ -240,7 +255,7 @@ void Gui::DebugScreen() {
         label_ram.text = Format("%s/%s", Fun::FormatSize(PerfS.ramUsed).c_str(),Fun::FormatSize(game.Max_Ram * 1024 * 1024).c_str());
         LastRam = PerfS.ramUsed;
     }
-    layout.Offset.y = 37;
+    layout.Move_Y();
     layout.Size = {53, 10};
     ProgressBar(layout, ram_style, &label_ram);
 
@@ -252,8 +267,15 @@ void Gui::DebugScreen() {
         label_tris.text = Format("%s/%s", Fun::FormatNumber(PerfS.Triangles).c_str(), Fun::FormatNumber(PerfS.Total_Triangles).c_str());
         LastTris = PerfS.Triangles;
     }
-    layout.Offset.y = 47;
+    layout.Move_Y();
     ProgressBar(layout, tri_style, &label_tris);
+
+    layout.Move_Y();
+    layout.Size = {0, 5};
+    Text(Anchor(layout), {.text = Format("x: %.1f y: %.1f z: %.1f", Camera.Position.x, Camera.Position.y, Camera.Position.z), .Style = {.Scale = 0.5}});
+
+    layout.Move_Y();
+    Text(Anchor(layout), {.text = Format("Block: %u", Camera.ItemHeld), .Style = {.Scale = 0.5}});
 }
 
 void Gui::Chat() {

@@ -12,11 +12,11 @@ glm::vec4 Gui::Texture(const Texture_Id tex, const glm::vec4 &UV, uint32_t &Flag
 
     switch (tex) {
         case Texture_Id::Block: {
-            int id = UV.x;
+            int id = block_cache[static_cast<int>(static_cast<block_type>(UV.x))]->uv.x;
             const int Variant = UV.y;
             Flags32::Set(Flags, static_cast<int>(FlagBit::UseTexture));
             Flags32::SetTextureId(Flags, 0);
-            id %= 6;
+            id %= (int)block_type::_count;
             return {id*Tile, Variant*Tile, (id+1)*Tile, (Variant+1)*Tile};
         }
         case Texture_Id::Item: {

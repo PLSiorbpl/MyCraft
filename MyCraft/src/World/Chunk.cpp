@@ -1,16 +1,17 @@
 #include <glad/glad.h>
 #include "Chunk.hpp"
 
-std::array<Block, static_cast<int>(block_type::_count)> block_cache;
+std::array<Block *, static_cast<int>(block_type::_count)> block_cache;
 
 void init_block_state() {
-    block_cache[static_cast<int>(block_type::Air)] = Air();
-    block_cache[static_cast<int>(block_type::Stone)] = Stone();
-    block_cache[static_cast<int>(block_type::Grass)] = Grass();
-    block_cache[static_cast<int>(block_type::Dirt)] = Dirt();
-    block_cache[static_cast<int>(block_type::Iron)] = Iron();
-    block_cache[static_cast<int>(block_type::Wool)] = Wool();
-    block_cache[static_cast<int>(block_type::Water)] = Water();
+    block_cache[static_cast<int>(block_type::Air)]   = new Air();
+    block_cache[static_cast<int>(block_type::Stone)] = new Stone();
+    block_cache[static_cast<int>(block_type::Grass)] = new Grass();
+    block_cache[static_cast<int>(block_type::Dirt)]  = new Dirt();
+    block_cache[static_cast<int>(block_type::Iron)]  = new Iron();
+    block_cache[static_cast<int>(block_type::Wool)]  = new Wool();
+    block_cache[static_cast<int>(block_type::Water)] = new Water();
+    block_cache[static_cast<int>(block_type::Lamp)]  = new Lamp();
 }
 
 void Chunk::SendData() {
@@ -30,7 +31,7 @@ void Chunk::SendData() {
     glEnableVertexAttribArray(0);
 
     // atexture (location = 1)
-    glVertexAttribIPointer(1, 2, GL_UNSIGNED_BYTE, sizeof(Vertex), reinterpret_cast<void *>(offsetof(Vertex, uv)));
+    glVertexAttribPointer(1, 2, GL_UNSIGNED_SHORT, GL_TRUE, sizeof(Vertex), reinterpret_cast<void *>(offsetof(Vertex, uv)));
     glEnableVertexAttribArray(1);
 
     // aNormal (location = 2)
