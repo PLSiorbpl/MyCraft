@@ -1,5 +1,5 @@
 #pragma once
-#include <cstdio>
+#include "glm/glm.hpp"
 
 class Block {
 public:
@@ -10,7 +10,10 @@ public:
     bool is_transparent;
     glm::ivec2 uv;
 
-    virtual void OnClick() {}
+    virtual void onPlace(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
+    virtual void onRemove(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
+    virtual void onActivate(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
+    virtual void onNeighborChanged(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
 };
 
 
@@ -87,6 +90,9 @@ public:
         uv = glm::ivec2(4, 0);
     }
 
+    void onPlace(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
+    void onRemove(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
+
 private:
 };
 
@@ -132,7 +138,7 @@ public:
         uv = glm::ivec2(7, 0);
     }
 
-    void OnClick() override {
+    void onActivate(const glm::ivec3& pos, const glm::ivec2 &chunk) override {
         if (!lit) {
             uv = {0, 4};
             lit = true;

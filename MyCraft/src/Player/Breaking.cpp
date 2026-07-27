@@ -1,45 +1,22 @@
 #include "Breaking.hpp"
 #include <algorithm>
-#include <cstdio>
 
+#include "Colisions.hpp"
 #include "World/World.hpp"
 
 void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selection& Sel, float MaxDistance, float StepSize) {
     auto &World = World_Map::World;
 
-    auto SetNeighborsDirty = [&](int localX, int localZ, int chunkX, int chunkZ) {
-        auto mark = [&](int cx, int cz) {
-            auto it = World.find({cx, cz});
-            if (it != World.end()) {
-                it->second.DirtyFlag = true;
-                it->second.has_mesh = false;
-                for (auto& info : World_Map::Render_List) {
-                    if (info.chunkX == cx && info.chunkZ == cz) {
-                        info.Delete = 1;
-                    }
-                }
-                Chunk* chunkPtr = &it->second;
-                if(std::find(World_Map::Mesh_Queue.begin(), World_Map::Mesh_Queue.end(), chunkPtr) == World_Map::Mesh_Queue.end()) {
-                    World_Map::Mesh_Queue.push_back(chunkPtr);
-                }
-            }
-        };
-        if (localX == 0)             mark(chunkX-1, chunkZ);
-        if (localX == Chunk::WIDTH-1) mark(chunkX+1, chunkZ);
-        if (localZ == 0)             mark(chunkX, chunkZ-1);
-        if (localZ == Chunk::DEPTH-1) mark(chunkX, chunkZ+1);
-    };
-
     glm::vec3 direction;
-    direction.x = cos(glm::radians(Camera.Yaw)) * cos(glm::radians(Camera.Pitch));
-    direction.y = sin(glm::radians(Camera.Pitch));
-    direction.z = sin(glm::radians(Camera.Yaw)) * cos(glm::radians(Camera.Pitch));
+    direction.x = std::cos(glm::radians(Camera.Yaw)) * std::cos(glm::radians(Camera.Pitch));
+    direction.y = std::sin(glm::radians(Camera.Pitch));
+    direction.z = std::sin(glm::radians(Camera.Yaw)) * std::cos(glm::radians(Camera.Pitch));
     direction = glm::normalize(direction);
 
     const glm::vec3 Pos = Camera.Position;
     glm::ivec3 c_block = glm::floor(Pos);
 
-    const glm::ivec3 Step = glm::ivec3(direction.x > 0 ? 1 : -1,
+    const auto Step = glm::ivec3(direction.x > 0 ? 1 : -1,
         direction.y > 0 ? 1 : -1,
         direction.z > 0 ? 1 : -1);
 
@@ -50,9 +27,9 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
     if (fabs(safeDir.y) < eps.x) safeDir.y = (safeDir.y >= 0 ? eps.x : -eps.x);
     if (fabs(safeDir.z) < eps.x) safeDir.z = (safeDir.z >= 0 ? eps.x : -eps.x);
     
-    glm::vec3 tMax = glm::vec3(((Step.x > 0 ? (c_block.x + 1) : c_block.x) - Pos.x) / safeDir.x,
-        ((Step.y > 0 ? (c_block.y + 1) : c_block.y) - Pos.y) / safeDir.y,
-        ((Step.z > 0 ? (c_block.z + 1) : c_block.z) - Pos.z) / safeDir.z);
+    glm::vec3 tMax = glm::vec3(((Step.x > 0 ? static_cast<float>(c_block.x) + 1 : static_cast<float>(c_block.x)) - Pos.x) / safeDir.x,
+        ((Step.y > 0 ? static_cast<float>(c_block.y) + 1 : static_cast<float>(c_block.y)) - Pos.y) / safeDir.y,
+        ((Step.z > 0 ? static_cast<float>(c_block.z) + 1 : static_cast<float>(c_block.z)) - Pos.z) / safeDir.z);
 
     const glm::vec3 tDelta = glm::abs(1.0f / (direction + eps));
 
@@ -67,8 +44,8 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
     // RayCast
     while(distance < MaxDistance) {
         if (distance > MaxDistance) break;
-        const int cx = floor(c_block.x / static_cast<float>(Chunk::WIDTH));
-        const int cz = floor(c_block.z / static_cast<float>(Chunk::DEPTH));
+        const int cx = std::floor(c_block.x / static_cast<float>(Chunk::WIDTH));
+        const int cz = std::floor(c_block.z / static_cast<float>(Chunk::DEPTH));
 
         const int LocalX = c_block.x - cx * Chunk::WIDTH;
         const int LocalZ = c_block.z - cz * Chunk::DEPTH;
@@ -77,29 +54,23 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
         if (it != World.end()) {
             Chunk& chunk = it->second;
 
-            // Actions  Break | Place | Show SelectionBox
+            // Actions:  Break | Place | Interact | Show SelectionBox
             if (c_block.y >= 0 && c_block.y < Chunk::HEIGHT) {
-                // Break
                 if (Action == 1 && Camera.Break_CoolDown == 0) {
+                    // -------------------------------------
+                    // Breaking block
                     if (chunk.get_state(LocalX, c_block.y, LocalZ)->is_solid) {
+                        chunk.get_state(LocalX, c_block.y, LocalZ)->onRemove({LocalX, c_block.y, LocalZ}, {cx, cz}).w;
                         chunk.set(LocalX, c_block.y, LocalZ, Chunk::block(block_type::Air));
-                        chunk.DirtyFlag = true;
-                        chunk.has_mesh = false;
-                        for (auto& info : World_Map::Render_List) {
-                            if (info.chunkX == cx && info.chunkZ == cz) {
-                                info.Delete = 1;
-                            }
-                        }
-                        Chunk* chunkPtr = &it->second;
-                        if(std::find(World_Map::Mesh_Queue.begin(), World_Map::Mesh_Queue.end(), chunkPtr) == World_Map::Mesh_Queue.end()) {
-                            World_Map::Mesh_Queue.push_back(chunkPtr);
-                        }
-                        SetNeighborsDirty(LocalX, LocalZ, cx, cz);
+
+                        World_Map::Set_Dirty(cx, cz);
+                        World_Map::Set_Neighbors_Dirty(LocalX, LocalZ, cx, cz);
                         Camera.Break_CoolDown = 8;
                         break;
                     }
-                    // Place
                 } else if (Action == 2 && Camera.Place_CoolDown == 0 && !firstrun) {
+                    // -------------------------------------
+                    // Placing/Interacting block
                     if (chunk.get_state(LocalX, c_block.y, LocalZ)->is_solid && !LastBlock->is_solid) {
                         const Chunk::block TryBlock = LastChunk->get(LastCord.x, LastCord.y, LastCord.z);
 
@@ -107,46 +78,26 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                             const Chunk::block &bl = chunk.get(LocalX, c_block.y, LocalZ);
                             if (bl.state == 0) {
                                 chunk.create_state(LocalX, c_block.y, LocalZ);
-                                printf("yes ");
                             }
                             Block *b = chunk.get_state(LocalX, c_block.y, LocalZ);
-                            b->OnClick();
+                            b->onActivate({LocalX, c_block.y, LocalZ}, {cz, cz});
 
-                            chunk.DirtyFlag = true;
-                            chunk.has_mesh = false;
-                            for (auto& info : World_Map::Render_List) {
-                                if (info.chunkX == cx && info.chunkZ == cz) {
-                                    info.Delete = 1;
-                                }
-                            }
-                            Chunk* chunkPtr = &it->second;
-                            if(std::find(World_Map::Mesh_Queue.begin(), World_Map::Mesh_Queue.end(), chunkPtr) == World_Map::Mesh_Queue.end()) {
-                                World_Map::Mesh_Queue.push_back(chunkPtr);
-                            }
-                            SetNeighborsDirty(LocalX, LocalZ, cx, cz);
+                            World_Map::Set_Dirty(cx, cz);
+                            World_Map::Set_Neighbors_Dirty(LocalX, LocalZ, cx, cz);
                             Camera.Place_CoolDown = 1;
                             break;
                         }
 
                         LastChunk->set(LastCord.x, LastCord.y, LastCord.z, Chunk::block(static_cast<block_type>(block)));
 
-                        if (Colision.isSolidAround(Camera.Position)) {
+                        if (colisions::isSolidAround(Camera.Position)) {
                             LastChunk->set(LastCord.x, LastCord.y, LastCord.z, TryBlock);
                             Camera.Place_CoolDown = 8;
                             break;
                         } else {
-                            LastChunk->DirtyFlag = true;
-                            LastChunk->has_mesh = false;
-                            for (auto& info : World_Map::Render_List) {
-                                if (info.chunkX == LastC.x && info.chunkZ == LastC.y) { // vec2 so x and y but y is z
-                                    info.Delete = 1;
-                                }
-                            }
-                            Chunk* chunkPtr = LastChunk;
-                            if(std::find(World_Map::Mesh_Queue.begin(), World_Map::Mesh_Queue.end(), chunkPtr) == World_Map::Mesh_Queue.end()) {
-                                World_Map::Mesh_Queue.push_back(chunkPtr);
-                            }
-                            SetNeighborsDirty(LastCord.x, LastCord.z, LastC.x, LastC.y);
+                            LastChunk->get_state(LastCord.x, LastCord.y, LastCord.z)->onPlace({LastCord.x, LastCord.y, LastCord.z}, LastC);
+                            World_Map::Set_Dirty(LastC.x, LastC.y);
+                            World_Map::Set_Neighbors_Dirty(LastCord.x, LastCord.z, LastC.x, LastC.y);
                             Camera.Place_CoolDown = 12;
                             break;
                         }

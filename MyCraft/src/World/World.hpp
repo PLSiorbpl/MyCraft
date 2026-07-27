@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "Chunk.hpp"
-#include "Block.hpp"
 
 class World_Map {
     public:
@@ -40,5 +39,65 @@ class World_Map {
         if (c != World.end())
             return &c->second;
         return nullptr;
+    }
+
+    static void Set_Dirty(int chunkx, int chunkz);
+    static void Set_Neighbors_Dirty(int localx, int localz, int chunkx, int chunkz);
+
+    template<typename Func>
+    static void notifyNeighborBlocks(const glm::ivec3& pos, const glm::ivec2& chunkPos, Func&& fn) {
+        auto* c = find_chunk(chunkPos.x, chunkPos.y);
+        if (!c) return;
+
+        auto call = [&](Chunk* ch, int x, int y, int z, const glm::ivec2& cpos) {
+            if (!ch) return;
+
+            if (ch->get(x, y, z).state == 0)
+                ch->create_state(x, y, z);
+
+            fn(*ch, x, y, z, cpos);
+        };
+
+        // X-
+        if (pos.x - 1 < 0) {
+            auto* n = find_chunk(chunkPos.x - 1, chunkPos.y);
+            if (n) call(n, Chunk::WIDTH - 1, pos.y, pos.z, {chunkPos.x - 1, chunkPos.y});
+        } else {
+            call(c, pos.x - 1, pos.y, pos.z, chunkPos);
+        }
+
+        // X+
+        if (pos.x + 1 >= Chunk::WIDTH) {
+            auto* n = find_chunk(chunkPos.x + 1, chunkPos.y);
+            if (n) call(n, 0, pos.y, pos.z, {chunkPos.x + 1, chunkPos.y});
+        } else {
+            call(c, pos.x + 1, pos.y, pos.z, chunkPos);
+        }
+
+        // Z-
+        if (pos.z - 1 < 0) {
+            auto* n = find_chunk(chunkPos.x, chunkPos.y - 1);
+            if (n) call(n, pos.x, pos.y, Chunk::DEPTH - 1, {chunkPos.x, chunkPos.y - 1});
+        } else {
+            call(c, pos.x, pos.y, pos.z - 1, chunkPos);
+        }
+
+        // Z+
+        if (pos.z + 1 >= Chunk::DEPTH) {
+            auto* n = find_chunk(chunkPos.x, chunkPos.y + 1);
+            if (n) call(n, pos.x, pos.y, 0, {chunkPos.x, chunkPos.y + 1});
+        } else {
+            call(c, pos.x, pos.y, pos.z + 1, chunkPos);
+        }
+
+        // Y+
+        if (pos.y + 1 < Chunk::HEIGHT) {
+            call(c, pos.x, pos.y + 1, pos.z, chunkPos);
+        }
+
+        // Y-
+        if (pos.y - 1 >= 0) {
+            call(c, pos.x, pos.y - 1, pos.z, chunkPos);
+        }
     }
 };

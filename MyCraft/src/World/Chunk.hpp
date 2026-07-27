@@ -2,9 +2,7 @@
 #include <array>
 #include <glm/glm.hpp>
 #include <vector>
-#include <memory>
 #include <cstdint>
-#include <cstdio>
 
 #include "Block.hpp"
 
