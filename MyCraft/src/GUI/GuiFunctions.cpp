@@ -7,17 +7,14 @@
 using namespace gui;
 
 glm::vec4 Gui::Texture(const Texture_Id tex, const glm::vec4 &UV, uint32_t &Flags) {
-    constexpr float Pixel = 1.0f / 128.0f;
-    constexpr float Tile  = 16 * Pixel;
+    constexpr float Tile = 1.0f / 8.0f;
 
     switch (tex) {
         case Texture_Id::Block: {
-            int id = block_cache[static_cast<int>(static_cast<block_type>(UV.x))]->uv.x;
-            const int Variant = UV.y;
+            glm::vec2 uv = block_cache[static_cast<int>(static_cast<block_type>(static_cast<int>(UV.x)))]->uv;
             Flags32::Set(Flags, static_cast<int>(FlagBit::UseTexture));
             Flags32::SetTextureId(Flags, 0);
-            id %= (int)block_type::_count;
-            return {id*Tile, Variant*Tile, (id+1)*Tile, (Variant+1)*Tile};
+            return {uv.x*Tile, uv.y*Tile, (uv.x+1)*Tile, (uv.y+1)*Tile};
         }
         case Texture_Id::Item: {
 

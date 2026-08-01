@@ -8,9 +8,10 @@ class Mesh {
     public:
     static void GenerateMesh(Chunk& chunk);
 
-    static void MeshZFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& w, int width, const glm::ivec2& texCoord, int dir);
-    static void MeshYFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& w, int width, const glm::ivec2& texCoord, int dir);
-    static void MeshXFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& w, int width, const glm::ivec2& texCoord, int dir);
+    static void MeshZFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& world, const Element &elem, const Face &face, int dir);
+    static void MeshYFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& world, const Element &elem, const Face &face, int dir);
+    static void MeshXFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& world, const Element &elem, const Face &face, int dir);
 
-    static inline bool IsBlockAt(int WorldX, int y, int WorldZ);
+    static void getUVs(std::array<glm::vec2, 4>& outUV, const Face& face);
+    static bool shouldRender(std::optional<Face> face, bool visible);
 };

@@ -1,0 +1,33 @@
+{
+  "name": "Redstone_dust_powered",
+
+  "elements": [
+    {
+      "from": [6, 0, 0],
+      "to": [10, 1, 16],
+
+      "faces": {
+        "up": {    "texture": [7, 1], "uv": [6, 0, 10, 16], "cull": "no" },
+        "down": {  "texture": [7, 1], "uv": [6, 0, 10, 16], "cull": "no"},
+        "north": { "texture": [7, 1], "uv": [6, 15, 10, 16], "cull": "no" },
+        "south": { "texture": [7, 1], "uv": [6, 0, 10, 1], "cull": "no" },
+        "west": {  "texture": [7, 1], "uv": [0, 6, 16, 7], "cull": "no" },
+        "east": {  "texture": [7, 1], "uv": [0, 9, 16, 10], "cull": "no" }
+      }
+    },
+
+    {
+      "from": [0, 0, 6],
+      "to": [16, 1, 10],
+
+      "faces": {
+        "up": {    "texture": [7, 1], "uv": [0, 6, 16, 10], "cull": "no" },
+        "down": {  "texture": [7, 1], "uv": [0, 6, 16, 10], "cull": "no"},
+        "west": {  "texture": [7, 1], "uv": [6, 15, 10, 16], "cull": "no" },
+        "east": {  "texture": [7, 1], "uv": [6, 0, 10, 1], "cull": "no" },
+        "north": { "texture": [7, 1], "uv": [0, 6, 16, 7], "cull": "no" },
+        "south": { "texture": [7, 1], "uv": [0, 9, 16, 10], "cull": "no" }
+      }
+    }
+  ]
+}

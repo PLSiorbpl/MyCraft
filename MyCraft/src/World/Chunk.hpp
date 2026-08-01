@@ -2,22 +2,22 @@
 #include <array>
 #include <glm/glm.hpp>
 #include <vector>
-#include <cstdint>
 
 #include "Block.hpp"
 
 typedef unsigned int GLuint;
 typedef int GLsizei;
 
-enum class block_type : uint8_t {
+enum class block_type : uint16_t {
     Air,
     Stone,
-    Grass ,
+    Grass,
     Dirt,
     Iron,
     Wool,
     Water,
     Lamp,
+    Redstone_dust,
 
     _count
 };
@@ -49,6 +49,7 @@ public:
     static constexpr int SIZE = WIDTH*HEIGHT*DEPTH;
     std::array<block, SIZE> blocks;
     std::vector<Block *> block_state;
+    std::vector<int> block_state_owner;
     int chunkX, chunkZ;
 
     // Mesh Stuff
@@ -84,9 +85,12 @@ public:
     Block* get_state(const int x, const int y, const int z) noexcept {
         const auto& b = blocks[index(x, y, z)];
 
-        if (b.state == 0)
+        if (b.state == 0) {
             return block_cache[static_cast<size_t>(b.id)];
+        }
 
+        assert(b.state - 1 < block_state.size());
+        assert(block_state[b.state - 1] != nullptr);
         return block_state[b.state - 1];
     }
 
@@ -104,6 +108,7 @@ public:
         auto &b = blocks[index(x, y, z)];
         if (b.state == 0) {
             block_state.push_back(block_cache[static_cast<size_t>(b.id)]->clone());
+            block_state_owner.push_back(index(x, y, z));
             b.state = block_state.size();
         }
     }
@@ -111,7 +116,19 @@ public:
     void set(const int x, const int y, const int z, const block& block) {
         auto &b = blocks[index(x, y, z)];
         if (b.state != 0) {
-            delete block_state[b.state - 1];
+            const size_t removeIdx = b.state - 1;
+            delete block_state[removeIdx];
+
+            const size_t lastIdx = block_state.size() - 1;
+            if (removeIdx != lastIdx) {
+                block_state[removeIdx] = block_state[lastIdx];
+                block_state_owner[removeIdx] = block_state_owner[lastIdx];
+
+                blocks[block_state_owner[removeIdx]].state = static_cast<uint16_t>(removeIdx + 1);
+            }
+
+            block_state.pop_back();
+            block_state_owner.pop_back();
         }
         b = block;
     }

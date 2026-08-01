@@ -35,6 +35,7 @@ public:
     void MainLoop();
     static void CleanUp();
     void Init_Settings(const std::string& Path);
+    void Init_JSON();
 };
 
 void framebuffer_size_callback(GLFWwindow* window, const int width, const int height);

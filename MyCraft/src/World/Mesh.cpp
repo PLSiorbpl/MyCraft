@@ -17,40 +17,51 @@ void Mesh::GenerateMesh(Chunk& chunk) {
 
     auto *vertices = &chunk.Mesh;
 
-    std::vector<uint32_t> Visible;
-    Visible.resize(static_cast<size_t>(Chunk::HEIGHT) * static_cast<size_t>(Chunk::DEPTH));
-
-    auto VisibleAt = [&](int y, int z) -> uint32_t& {
-        return Visible[static_cast<size_t>(y) * static_cast<size_t>(Chunk::DEPTH) + static_cast<size_t>(z)];
-    };
+    std::array<std::vector<uint32_t>, 6> Occlusion;
+    for (auto& v : Occlusion)
+        v.resize(Chunk::HEIGHT * Chunk::DEPTH);
 
     // Visible Blocks
     for (int y = 0; y < Chunk::HEIGHT; y++) {
         for (int z = 0; z < Chunk::DEPTH; z++) {
-            uint32_t bits = 0;
             for (int x = 0; x < Chunk::WIDTH; x++) {
-                if (chunk.get_state(x, y, z)->is_solid) {
-                    bits |= (static_cast<uint32_t>(1) << x);
-                }
+                const auto &b = chunk.get_state(x, y, z);
+                if (!b || !b->model) continue;
+                const auto &m = b->model->occlusionMask;
+                const auto idx = y * Chunk::DEPTH + z;
+
+                if (m & XP)
+                    Occlusion[1][idx] |= 1u << x;
+                if (m & XN)
+                    Occlusion[0][idx] |= 1u << x;
+                if (m & ZP)
+                    Occlusion[5][idx] |= 1u << x;
+                if (m & ZN)
+                    Occlusion[4][idx] |= 1u << x;
+                if (m & YP)
+                    Occlusion[3][idx] |= 1u << x;
+                if (m & YN)
+                    Occlusion[2][idx] |= 1u << x;
             }
-            VisibleAt(y, z) = bits;
         }
     }
 
     // Visible Faces
     for (int y = 0; y < Chunk::HEIGHT; y++) {
         for (int z = 0; z < Chunk::DEPTH; z++) {
-            const uint32_t current = VisibleAt(y, z);
+            const auto idx = y * Chunk::DEPTH + z;
             //-------------------------
             // Z+
+            uint32_t current = Occlusion[5][idx];
             uint32_t next;
             if (z + 1 < Chunk::DEPTH) {
-                next = VisibleAt(y, z+1);
+                const auto n_idx = y * Chunk::DEPTH + (z+1);
+                next = Occlusion[4][n_idx];
             } else {
                 uint32_t bits = 0;
                 for (int x = 0; x < Chunk::WIDTH; x++) {
                     if (czp) {
-                        if (czp->get_state(x, y, 0)->is_solid)
+                        if (czp->get_state(x, y, 0)->model->occlusionMask & ZN)
                             bits |= (static_cast<uint32_t>(1) << x);
                     } else
                         bits |= (static_cast<uint32_t>(1) << x);
@@ -60,14 +71,16 @@ void Mesh::GenerateMesh(Chunk& chunk) {
             const uint32_t visibleZp = current & ~next;
             //-------------------------
             // Z-
+            current = Occlusion[4][idx];
             uint32_t prev;
             if (z - 1 >= 0) {
-                prev = VisibleAt(y, z-1);
+                const auto n_idx = y * Chunk::DEPTH + z-1;
+                prev = Occlusion[5][n_idx];
             } else {
                 uint32_t bits = 0;
                 for (int x = 0; x < Chunk::WIDTH; x++) {
                     if (czn) {
-                        if (czn->get_state(x, y, Chunk::DEPTH - 1)->is_solid)
+                        if (czn->get_state(x, y, Chunk::DEPTH - 1)->model->occlusionMask & ZP)
                             bits |= (static_cast<uint32_t>(1) << x);
                     } else
                         bits |= (static_cast<uint32_t>(1) << x);
@@ -77,184 +90,200 @@ void Mesh::GenerateMesh(Chunk& chunk) {
             const uint32_t visibleZm = current & ~prev;
             //-------------------------
             // Y+
-            uint32_t nextY;
-            if (y + 1  < Chunk::HEIGHT) {
-                nextY = VisibleAt(y+1, z);
-            } else {
-                uint32_t bits = 0;
-                for (int x = 0; x < Chunk::WIDTH; x++) {
-                    if (y+1 < Chunk::HEIGHT) {
-                        if (IsBlockAt(worldOffsetX + x, y + 1, worldOffsetZ + z)) {
-                            bits |= (static_cast<uint32_t>(1) << x);
-                        }
-                    }
-                }
-                nextY = bits;
-            }
+            current = Occlusion[3][idx];
+            auto n_idx = (y+1) * Chunk::DEPTH + z;
+            const uint32_t nextY = (y+1 < Chunk::HEIGHT) ? Occlusion[2][n_idx] : 0;
             const uint32_t visibleYp = current & ~nextY;
             //-------------------------
             // Y-
-            const uint32_t prevY = (y > 0) ? VisibleAt(y-1, z) : 0ULL;
+            current = Occlusion[2][idx];
+            n_idx = (y-1) * Chunk::DEPTH + z;
+            const uint32_t prevY = (y-1 > 0) ? Occlusion[3][n_idx] : 0;
             const uint32_t visibleYm = current & ~prevY;
 
             //-------------------------
             // Meshing
             for (int x = 0; x < Chunk::WIDTH; x++) {
                 auto block = chunk.get_state(x, y, z);
+                if (!block) continue;
                 if (!block->is_solid) continue;
-                const glm::vec3 w = {worldOffsetX + x, static_cast<float>(y), worldOffsetZ + z};
+                
+                if (!block->model) continue;
+                for (const auto &elem : block->model->elements) {
+                    const glm::vec3 w = {worldOffsetX + x, static_cast<float>(y), worldOffsetZ + z};
 
-                const glm::ivec2 &tex = block->uv;
-
-                const uint32_t mask = (static_cast<uint32_t>(1) << x);
-                if (visibleZp & mask) MeshZFace(vertices, w, 1, tex,  1);
-                if (visibleZm & mask) MeshZFace(vertices, w, 1, tex, -1);
-                if (visibleYp & mask) MeshYFace(vertices, w, 1, tex,  1);
-                if (visibleYm & mask) MeshYFace(vertices, w, 1, tex, -1);
-                //-------------------------
-                // X+
-                if (x + 1 < Chunk::WIDTH) {
-                    if (!chunk.get_state(x+1, y, z)->is_solid)
-                        MeshXFace(vertices, w, 1, tex, 1);
-                } else if (cxp && !cxp->get_state(0, y, z)->is_solid) {
-                    MeshXFace(vertices, w, 1, tex, 1);
-                }
-                //-------------------------
-                // X-
-                if (x - 1 >= 0) {
-                    if (!chunk.get_state(x-1, y, z)->is_solid)
-                        MeshXFace(vertices, w, 1, tex, -1);
-                } else if (cxn && !cxn->get_state(Chunk::WIDTH - 1, y, z)->is_solid) {
-                    MeshXFace(vertices, w, 1, tex, -1);
+                    const uint32_t mask = (static_cast<uint32_t>(1) << x);
+                    if (shouldRender(elem.south, visibleZp & mask)) MeshZFace(vertices, w, elem, elem.south.value(),  1);
+                    if (shouldRender(elem.north, visibleZm & mask)) MeshZFace(vertices, w, elem, elem.north.value(), -1);
+                    if (shouldRender(elem.up, visibleYp & mask)) MeshYFace(vertices, w, elem, elem.up.value(),  1);
+                    if (shouldRender(elem.down, visibleYm & mask)) MeshYFace(vertices, w, elem, elem.down.value(), -1);
+                    //-------------------------
+                    // X+
+                    if (x + 1 < Chunk::WIDTH) {
+                        if (shouldRender(elem.east, !(chunk.get_state(x+1, y, z)->model->occlusionMask & XN)))
+                            MeshXFace(vertices, w, elem, elem.east.value(), 1);
+                    } else if (shouldRender(elem.east, cxp && !(cxp->get_state(0, y, z)->model->occlusionMask & XN))) {
+                        MeshXFace(vertices, w, elem, elem.east.value(), 1);
+                    }
+                    //-------------------------
+                    // X-
+                    if (x - 1 >= 0) {
+                        if (shouldRender(elem.west, !(chunk.get_state(x-1, y, z)->model->occlusionMask & XP)))
+                            MeshXFace(vertices, w, elem, elem.west.value(), -1);
+                    } else if (shouldRender(elem.west, cxn && !(cxn->get_state(Chunk::WIDTH - 1, y, z)->model->occlusionMask & XP))) {
+                        MeshXFace(vertices, w, elem, elem.west.value(), -1);
+                    }
                 }
             }
         }
     }
-    Visible.clear();
-    Visible.shrink_to_fit();
 }
-// 0 - Top | 1 - Right | 2 - Left | 3 - Bottom
-inline void getUVs(std::array<glm::vec2, 4>& outUV, const glm::ivec2& BaseCoord, const float Side) {
-    constexpr float tileSize = 1.0f / 8.0f; // 0.125 8 textures in a row
 
-    const float u = BaseCoord.x * tileSize;
-    const float v = (BaseCoord.y + Side) * tileSize;
+bool Mesh::shouldRender(const std::optional<Face> face, const bool visible) {
+    if (!face)
+        return false;
 
-    const float u1 = u + tileSize;
-    const float v1 = v + tileSize;
+    switch (face->cull) {
+        case Cull::No: return true;
+        case Cull::Yes: return visible;
+        case Cull::Force: return false;
+    }
 
-    outUV[0] = {u,  v1};
-    outUV[1] = {u,  v};
+    return false;
+}
+
+void Mesh::getUVs(std::array<glm::vec2, 4>& outUV, const Face& face) {
+    constexpr float tileSize = 1.0f / 8.0f;
+
+    const float tileU = face.texture.x * tileSize;
+    const float tileV = face.texture.y * tileSize;
+
+    const float u0 = tileU + face.uv.x * tileSize;
+    const float v0 = tileV + face.uv.y * tileSize;
+
+    const float u1 = tileU + face.uv.z * tileSize;
+    const float v1 = tileV + face.uv.w * tileSize;
+
+    outUV[0] = {u0, v1};
+    outUV[1] = {u0, v0};
     outUV[2] = {u1, v1};
-    outUV[3] = {u1, v};
-};
+    outUV[3] = {u1, v0};
+}
 
-void Mesh::MeshXFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& w, const int width, const glm::ivec2& texCoord, const int dir) {
-    constexpr float size = 1.0f;
-    const float z1 = w.z;
-    const float y1 = w.y;
-    const float z2 = w.z + width * size;
-    const float y2 = w.y + size;
+void Mesh::MeshXFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& world, const Element &elem, const Face &face, const int dir) {
+    const float z1 = world.z + elem.from.z;
+    const float y1 = world.y + elem.from.y;
+    const float z2 = world.z + elem.to.z;
+    const float y2 = world.y + elem.to.y;
 
-    const float x = w.x + (dir > 0 ? size : 0.0f); // X+ lub X-
+    const float x = world.x + (dir > 0 ? elem.to.x : elem.from.x);
 
     std::array<glm::vec2, 4> uv = {};
-    getUVs(uv, texCoord, 1);
+    getUVs(uv, face);
 
-    auto push = [&](float x, float y, float z, float u, float v) {
+    auto push = [&](const float x_, const float y_, const float z_, const glm::vec2 &uv_) {
         Chunk::Vertex ver;
-        ver.position = {x,y,z};
-        ver.uv[0] = static_cast<uint16_t>(u * 65535.0f);
-        ver.uv[1] = static_cast<uint16_t>(v * 65535.0f);
+        ver.position = {x_,y_,z_};
+        ver.uv[0] = static_cast<uint16_t>(uv_.x * 65535.0f);
+        ver.uv[1] = static_cast<uint16_t>(uv_.y * 65535.0f);
         ver.normal = (dir > 0 ? 1 : 0);
         vertices->push_back(ver);
     };
 
-    // First Triangle
-    push(x, y1, z1, uv[0].x, uv[0].y);
-    push(x, y1, z2, uv[2].x, uv[2].y);
-    push(x, y2, z2, uv[3].x, uv[3].y);
+    if (dir > 0) { // X+
+        push(x,y1,z1,uv[0]);
+        push(x,y2,z1,uv[1]);
+        push(x,y2,z2,uv[3]);
 
-    // Second Triangle
-    push(x, y1, z1, uv[0].x, uv[0].y);
-    push(x, y2, z2, uv[3].x, uv[3].y);
-    push(x, y2, z1, uv[1].x, uv[1].y);
+        push(x,y1,z1,uv[0]);
+        push(x,y2,z2,uv[3]);
+        push(x,y1,z2,uv[2]);
+    } else { // X-
+        push(x,y1,z1,uv[0]);
+        push(x,y1,z2,uv[2]);
+        push(x,y2,z2,uv[3]);
+
+        push(x,y1,z1,uv[0]);
+        push(x,y2,z2,uv[3]);
+        push(x,y2,z1,uv[1]);
+    }
 }
 
-void Mesh::MeshYFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& w, const int width, const glm::ivec2& texCoord, const int dir) {
-    constexpr float size = 1.0f;
-    const float x1 = w.x;
-    const float z1 = w.z;
-    const float x2 = w.x + width * size;
-    const float z2 = w.z + size;
+void Mesh::MeshYFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& world, const Element &elem, const Face &face, const int dir) {
+    const float x1 = world.x + elem.from.x;
+    const float z1 = world.z + elem.from.z;
+    const float x2 = world.x + elem.to.x;
+    const float z2 = world.z + elem.to.z;
 
-    const float y = w.y + (dir > 0 ? size : 0.0f);
+    const float y = world.y + (dir > 0 ? elem.to.y : elem.from.y);
 
     std::array<glm::vec2, 4> uv = {};
-    getUVs(uv, texCoord, (dir > 0 ? 0 : 3));
+    getUVs(uv, face);
 
-    auto push = [&](float x, float y, float z, float u, float v) {
+    auto push = [&](const float x, const float y, const float z, const glm::vec2 &uv_) {
         Chunk::Vertex ver;
         ver.position = {x,y,z};
-        ver.uv[0] = static_cast<uint16_t>(u * 65535.0f);
-        ver.uv[1] = static_cast<uint16_t>(v * 65535.0f);
+        ver.uv[0] = static_cast<uint16_t>(uv_.x * 65535.0f);
+        ver.uv[1] = static_cast<uint16_t>(uv_.y * 65535.0f);
         ver.normal = (dir > 0 ? 3 : 2);
         vertices->push_back(ver);
     };
 
-    // First Triangle
-    push(x1, y, z1, uv[0].x, uv[0].y);
-    push(x2, y, z1, uv[2].x, uv[2].y);
-    push(x2, y, z2, uv[3].x, uv[3].y);
+    if (dir > 0) { // Y+
+        push(x1, y, z1, uv[0]);
+        push(x1, y, z2, uv[1]);
+        push(x2, y, z2, uv[3]);
 
-    // Second Triangle
-    push(x1, y, z1, uv[0].x, uv[0].y);
-    push(x2, y, z2, uv[3].x, uv[3].y);
-    push(x1, y, z2, uv[1].x, uv[1].y);
+        push(x1, y, z1, uv[0]);
+        push(x2, y, z2, uv[3]);
+        push(x2, y, z1, uv[2]);
+    } else { // Y-
+        push(x1, y, z1, uv[0]);
+        push(x2, y, z1, uv[2]);
+        push(x2, y, z2, uv[3]);
+
+        push(x1, y, z1, uv[0]);
+        push(x2, y, z2, uv[3]);
+        push(x1, y, z2, uv[1]);
+    }
 }
 
-void Mesh::MeshZFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& w, const int width, const glm::ivec2& texCoord, const int dir) {
+void Mesh::MeshZFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& world, const Element &elem, const Face &face, const int dir) {
     constexpr float size = 1.0f;
-    const float x1 = w.x;
-    const float y1 = w.y;
-    const float x2 = w.x + width * size;
-    const float y2 = w.y + size;
+    const float x1 = world.x + elem.from.x;
+    const float y1 = world.y + elem.from.y;
+    const float x2 = world.x + elem.to.x;
+    const float y2 = world.y + elem.to.y;
 
-    const float z = w.z + (dir > 0 ? size : 0.0f);
+    const float z = world.z + (dir > 0 ? elem.to.z : elem.from.z);
 
     std::array<glm::vec2, 4> uv = {};
-    getUVs(uv, texCoord, 2);
+    getUVs(uv, face);
 
-    auto push = [&](float x, float y, float z, float u, float v) {
+    auto push = [&](const float x, const float y, const float z, const glm::vec2 &uv_) {
         Chunk::Vertex ver;
         ver.position = {x,y,z};
-        ver.uv[0] = static_cast<uint16_t>(u * 65535.0f);
-        ver.uv[1] = static_cast<uint16_t>(v * 65535.0f);
+        ver.uv[0] = static_cast<uint16_t>(uv_.x * 65535.0f);
+        ver.uv[1] = static_cast<uint16_t>(uv_.y * 65535.0f);
         ver.normal = (dir > 0 ? 5 : 4);
         vertices->push_back(ver);
     };
 
-    // First Triangle
-    push(x1, y1, z, uv[0].x, uv[0].y);
-    push(x2, y1, z, uv[2].x, uv[2].y);
-    push(x2, y2, z, uv[3].x, uv[3].y);
+    if (dir > 0) { // Z+
+        push(x1, y1, z, uv[0]);
+        push(x2, y1, z, uv[2]);
+        push(x2, y2, z, uv[3]);
 
-    // Second Triangle
-    push(x1, y1, z, uv[0].x, uv[0].y);
-    push(x2, y2, z, uv[3].x, uv[3].y);
-    push(x1, y2, z, uv[1].x, uv[1].y);
-}
+        push(x1, y1, z, uv[0]);
+        push(x2, y2, z, uv[3]);
+        push(x1, y2, z, uv[1]);
+    } else { // Z-
+        push(x1, y1, z, uv[0]);
+        push(x1, y2, z, uv[1]);
+        push(x2, y2, z, uv[3]);
 
-inline bool Mesh::IsBlockAt(const int WorldX, int y, const int WorldZ) {
-    const int chunkX = (WorldX >= 0) ? WorldX / Chunk::WIDTH : (WorldX - Chunk::WIDTH + 1) / Chunk::WIDTH;
-    const int chunkZ = (WorldZ >= 0) ? WorldZ / Chunk::DEPTH : (WorldZ - Chunk::DEPTH + 1) / Chunk::DEPTH;
-
-    const int localX = WorldX - chunkX * Chunk::WIDTH;
-    const int localZ = WorldZ - chunkZ * Chunk::DEPTH;
-
-    const auto it = World_Map::World.find({chunkX, chunkZ});
-    if (it == World_Map::World.end()) return true;
-
-    const Chunk& chunk = it->second;
-    return chunk.get_state(localX, y, localZ)->is_solid;
+        push(x1, y1, z, uv[0]);
+        push(x2, y2, z, uv[3]);
+        push(x2, y1, z, uv[2]);
+    }
 }

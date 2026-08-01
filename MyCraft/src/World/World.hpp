@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 #include <unordered_map>
 #include <memory>
 #include <vector>
@@ -52,8 +53,12 @@ class World_Map {
         auto call = [&](Chunk* ch, int x, int y, int z, const glm::ivec2& cpos) {
             if (!ch) return;
 
-            if (ch->get(x, y, z).state == 0)
+            if (ch->get(x, y, z).id == block_type::Air)
+                return;
+
+            if (ch->get(x, y, z).state == 0) {
                 ch->create_state(x, y, z);
+            }
 
             fn(*ch, x, y, z, cpos);
         };

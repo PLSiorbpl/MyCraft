@@ -1,0 +1,19 @@
+{
+  "name": "Air",
+
+  "elements": [
+    {
+      "from": [0, 0, 0],
+      "to": [0, 0, 0],
+
+      "faces": {
+        "up": { "texture": [0, 0], "uv": [0, 0, 0, 0], "cull": "force" },
+        "down": { "texture": [0, 0], "uv": [0, 0, 0, 0], "cull": "force"},
+        "north": { "texture": [0, 0], "uv": [0, 0, 0, 0], "cull": "force" },
+        "west": { "texture": [0, 0], "uv": [0, 0, 0, 0], "cull": "force" },
+        "south": { "texture": [0, 0], "uv": [0, 0, 0, 0], "cull": "force" },
+        "east": { "texture": [0, 0], "uv": [0, 0, 0, 0], "cull": "force" }
+      }
+    }
+  ]
+}

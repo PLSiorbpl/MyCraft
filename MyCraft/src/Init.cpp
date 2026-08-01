@@ -1,7 +1,76 @@
 #include "Main.hpp"
 #include <iostream>
+#include <fstream>
+#include <filesystem>
+#include <nlohmann/json.hpp>
 
 #include "Utils/InputManager.hpp"
+#include "World/Models.hpp"
+
+namespace fs = std::filesystem;
+using json = nlohmann::json;
+
+void Game::Init_JSON() {
+    const std::string main_dir = "Mycraft/Assets";
+    const std::string models_path = main_dir + "/Textures/Models";
+
+    if (!fs::exists(models_path) || !fs::is_directory(models_path)) {
+        std::cerr << "Directory not found: " << models_path << std::endl;
+        return;
+    }
+
+    for (const auto &entry : fs::directory_iterator(models_path)) {
+        if (!entry.is_regular_file() || entry.path().extension() != ".json") {
+            continue;
+        }
+        std::ifstream file(entry.path());
+
+        if (!file.is_open()) {
+            std::cerr << "Failed to open file: " << entry.path() << std::endl;
+            continue;
+        }
+
+        try {
+            json data = json::parse(file);
+            Model model;
+            model.name = data["name"];
+
+            for (const auto &elem : data["elements"]) {
+                Element e = {};
+
+                e.from = {elem["from"][0], elem["from"][1], elem["from"][2]};
+                e.to = {elem["to"][0], elem["to"][1], elem["to"][2]};
+                e.from /= 16.0f;
+                e.to /= 16.0f;
+
+                const auto &faces = elem["faces"];
+                for (auto it = faces.begin(); it != faces.end(); ++it) {
+                    Face f = {};
+                    f.texture = {it.value()["texture"][0], it.value()["texture"][1]};
+                    f.uv = {it.value()["uv"][0], it.value()["uv"][1], it.value()["uv"][2], it.value()["uv"][3]};
+                    f.uv /= 16.0f;
+
+                    if (it.value()["cull"] == "no") f.cull = Cull::No;
+                    if (it.value()["cull"] == "yes") f.cull = Cull::Yes;
+                    if (it.value()["cull"] == "force") f.cull = Cull::Force;
+
+                    if (it.key() == "north") { e.north = f; if (f.cull == Cull::Yes) model.occlusionMask |= ZN; }
+                    else if (it.key() == "south") { e.south = f; if (f.cull == Cull::Yes) model.occlusionMask |= ZP; }
+                    else if (it.key() == "east") { e.east = f; if (f.cull == Cull::Yes) model.occlusionMask |= XP; }
+                    else if (it.key() == "west") { e.west = f; if (f.cull == Cull::Yes) model.occlusionMask |= XN; }
+                    else if (it.key() == "up") { e.up = f; if (f.cull == Cull::Yes) model.occlusionMask |= YP; }
+                    else if (it.key() == "down") { e.down = f; if (f.cull == Cull::Yes) model.occlusionMask |= YN; }
+                }
+                model.elements.push_back(e);
+            }
+
+            Models_cache.emplace(model.name, std::move(model));
+
+        } catch (const json::parse_error& e) {
+            std::cerr << "JSON parse error in " << entry.path().filename() << ": " << e.what() << std::endl;
+        }
+    }
+}
 
 void Game::Init_Settings(const std::string& Path) {
     Settings.Load_Settings(Path);

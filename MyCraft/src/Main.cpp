@@ -265,6 +265,9 @@ void Game::MainLoop() {
         // Drawing Mesh to Screen
         //-------------------------
         time.Reset();
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        glFrontFace(GL_CCW);
         PerfS.Capacity = 0; PerfS.Mesh_Size = 0; PerfS.Triangles = 0; PerfS.Total_Triangles = 0;
         if (game_settings.width != 0 && game_settings.height != 0) {
             for (auto& info : World_Map::Render_List) {
@@ -296,6 +299,7 @@ void Game::MainLoop() {
                 glDrawArrays(GL_LINES, 0, 24);
             }
         }
+        glDisable(GL_CULL_FACE);
         PerfS.render = time.ElapsedMs();
 
         //-------------------------
@@ -365,6 +369,8 @@ int main() {
 
     std::cout << "Initializing Settings:\n";
     main.Init_Settings("MyCraft/Assets/Settings.myc");
+    std::cout << "Initializing JSON files:\n";
+    main.Init_JSON();
     if (main.Init_Window()) return -1;
     std::cout << "Initializing Shaders:\n";
     Game::Init_Shader();

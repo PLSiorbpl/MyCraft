@@ -61,6 +61,7 @@ void main() {
     // Albedo
     // ----------------------------
     vec4 baseColor = texture(BaseTexture, TexCoord);
+    if (baseColor.a < 0.5) discard;
     vec3 albedo = pow(baseColor.rgb, vec3(2.2));
 
     // ----------------------------

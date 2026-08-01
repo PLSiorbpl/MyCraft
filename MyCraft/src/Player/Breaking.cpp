@@ -37,9 +37,9 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
     float distance = 0.0f;
     bool firstrun = true;
     Chunk* LastChunk = nullptr;
-    Block *LastBlock;
-    glm::ivec3 LastCord;
-    glm::ivec2 LastC;
+    Block *LastBlock = nullptr;
+    glm::ivec3 LastCord{};
+    glm::ivec2 LastC{};
 
     // RayCast
     while(distance < MaxDistance) {
@@ -60,7 +60,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                     // -------------------------------------
                     // Breaking block
                     if (chunk.get_state(LocalX, c_block.y, LocalZ)->is_solid) {
-                        chunk.get_state(LocalX, c_block.y, LocalZ)->onRemove({LocalX, c_block.y, LocalZ}, {cx, cz}).w;
+                        chunk.get_state(LocalX, c_block.y, LocalZ)->onRemove({LocalX, c_block.y, LocalZ}, {cx, cz});
                         chunk.set(LocalX, c_block.y, LocalZ, Chunk::block(block_type::Air));
 
                         World_Map::Set_Dirty(cx, cz);
@@ -75,12 +75,12 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                         const Chunk::block TryBlock = LastChunk->get(LastCord.x, LastCord.y, LastCord.z);
 
                         if (block == 0) {
-                            const Chunk::block &bl = chunk.get(LocalX, c_block.y, LocalZ);
+                            auto &bl = chunk.get(LocalX, c_block.y, LocalZ);
                             if (bl.state == 0) {
                                 chunk.create_state(LocalX, c_block.y, LocalZ);
                             }
                             Block *b = chunk.get_state(LocalX, c_block.y, LocalZ);
-                            b->onActivate({LocalX, c_block.y, LocalZ}, {cz, cz});
+                            b->onActivate({LocalX, c_block.y, LocalZ}, {cx, cz});
 
                             World_Map::Set_Dirty(cx, cz);
                             World_Map::Set_Neighbors_Dirty(LocalX, LocalZ, cx, cz);
@@ -95,6 +95,9 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                             Camera.Place_CoolDown = 8;
                             break;
                         } else {
+                            auto &b = LastChunk->get(LastCord.x, LastCord.y, LastCord.z);
+                            if (b.state == 0) LastChunk->create_state(LastCord.x, LastCord.y, LastCord.z);
+
                             LastChunk->get_state(LastCord.x, LastCord.y, LastCord.z)->onPlace({LastCord.x, LastCord.y, LastCord.z}, LastC);
                             World_Map::Set_Dirty(LastC.x, LastC.y);
                             World_Map::Set_Neighbors_Dirty(LastCord.x, LastCord.z, LastC.x, LastC.y);

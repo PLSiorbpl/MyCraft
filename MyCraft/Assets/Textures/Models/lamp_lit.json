@@ -1,0 +1,19 @@
+{
+  "name": "Lamp_lit",
+
+  "elements": [
+    {
+      "from": [0, 0, 0],
+      "to": [16, 16, 16],
+
+      "faces": {
+        "up": {    "texture": [6, 1], "uv": [0, 0, 16, 16], "cull": "yes" },
+        "down": {  "texture": [6, 1], "uv": [0, 0, 16, 16], "cull": "yes"},
+        "north": { "texture": [6, 1], "uv": [0, 0, 16, 16], "cull": "yes" },
+        "west": {  "texture": [6, 1], "uv": [0, 0, 16, 16], "cull": "yes" },
+        "south": { "texture": [6, 1], "uv": [0, 0, 16, 16], "cull": "yes" },
+        "east": {  "texture": [6, 1], "uv": [0, 0, 16, 16], "cull": "yes" }
+      }
+    }
+  ]
+}
