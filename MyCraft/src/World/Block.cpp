@@ -73,7 +73,6 @@ void Redstone_dust::onNeighborChanged(const glm::ivec3 &pos, const glm::ivec2 &c
 
     const bool changed = (p != powered);
     powered = p;
-    model = powered ? &Models_cache["Redstone_dust_powered"] : &Models_cache["Redstone_dust"];
 
     updated = false;
 

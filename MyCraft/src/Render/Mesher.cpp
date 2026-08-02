@@ -63,7 +63,7 @@ void Mesher::Manager(const Frustum::Frust &Frust, const glm::ivec3 Chunk_Size) {
                 // Lazy Updates
         if (!visible && game.Updates < game.Lazy_Mesh_Updates) {
             std::lock_guard lock(QueueMutex);
-            Queue.push({{chunk->chunkX, chunk->chunkZ}, chunk->blocks});
+            //Queue.push({{chunk->chunkX, chunk->chunkZ}, chunk->blocks});
             game.Updates++;
         }
     }

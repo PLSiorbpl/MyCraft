@@ -1,4 +1,6 @@
 #include "GuiBackend.hpp"
+#include <algorithm>
+
 #include "Utils/Globals.hpp"
 #include "Shader.hpp"
 #include "Utils/InputManager.hpp"

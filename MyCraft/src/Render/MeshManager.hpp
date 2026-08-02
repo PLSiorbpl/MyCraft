@@ -41,7 +41,7 @@ namespace Meshing {
         void Create_Workers(const int threads) {
             Running = true;
             for (int n = 0; n < threads; ++n) {
-                Workers.emplace_back(&Meshing_Worker, this);
+                Workers.emplace_back(&Mesher::Meshing_Worker, this);
             }
             std::cout << "Created #" << threads << " Meshing Workers\n";
         }

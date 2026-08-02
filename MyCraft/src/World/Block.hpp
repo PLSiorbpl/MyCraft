@@ -1,4 +1,6 @@
 #pragma once
+#include <algorithm>
+
 #include "glm/glm.hpp"
 
 #include "Models.hpp"
@@ -18,6 +20,10 @@ public:
     virtual void onRemove(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
     virtual void onActivate(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
     virtual void onNeighborChanged(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
+
+    virtual std::string get_name() { if (model) return model->name; else return "No Model!"; }
+
+    virtual glm::vec3 get_overlay() { return {1.0f, 1.0f, 1.0f}; }
 };
 
 
@@ -89,7 +95,6 @@ private:
 class Iron : public Block {
 public:
     [[nodiscard]] Block* clone() const override {
-        std::printf("yes");
         return new Iron(*this);
     }
 
@@ -156,6 +161,8 @@ public:
     void onPlace(const glm::ivec3 &pos, const glm::ivec2 &chunk) override { onNeighborChanged(pos, chunk); }
     void onNeighborChanged(const glm::ivec3& pos, const glm::ivec2 &chunk) override;
 
+    std::string get_name() override { if (model) return model->name + (lit ? ": ON" : ": OFF"); else return "No Model!"; }
+
 private:
     bool lit = false;
 };
@@ -177,6 +184,18 @@ public:
     void onRemove(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
     bool isPowered(const glm::ivec3 &pos, const glm::ivec2 &chunk, bool is_source) override;
     void onNeighborChanged(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
+
+    std::string get_name() override { if (model) return model->name + (powered ? ": ON" : ": OFF"); else return "No Model!"; }
+
+    glm::vec3 get_overlay() override {
+        float p = std::clamp((float)powered, 0.0f, 1.0f);
+
+        float r = p * 0.6f + (p > 0.0f ? 0.4f : 0.3f);
+        float g = std::clamp(p * p * 0.7f - 0.5f * p, 0.0f, 1.0f);
+        float b = std::clamp(p * p * 0.6f - 0.7f * p, 0.0f, 1.0f);
+
+        return {r, g, b};
+    }
 
 private:
     bool powered = false;

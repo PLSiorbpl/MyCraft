@@ -2,7 +2,7 @@
 layout(location = 0) in vec3 aPos;
 layout(location = 1) in vec2 aTexCoord;
 layout(location = 2) in uint aNormal;
-//layout(location = 3) in vec3 aVColor;
+layout(location = 3) in vec3 aOverlay;
 
 uniform mat4 Model;
 uniform mat4 View;
@@ -12,6 +12,7 @@ uniform mat4 Proj;
 out vec2 TexCoord;
 out vec3 FragPos;
 out vec3 Normal;
+out vec3 Overlay;
 
 vec3 getNormal(uint dir) {
     if (dir == 0u) return vec3(-1, 0, 0);   // -X
@@ -28,5 +29,6 @@ void main() {
     TexCoord = aTexCoord;
     FragPos = aPos;
     Normal = mat3(transpose(inverse(Model))) * getNormal(aNormal);
+    Overlay = aOverlay;
     gl_Position = MVP * vec4(aPos, 1.0);
 }

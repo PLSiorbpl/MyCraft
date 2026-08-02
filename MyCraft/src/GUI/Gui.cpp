@@ -202,9 +202,10 @@ void Gui::DebugScreen() {
      Triangle
      Coordinates
      Block held
+     Looking at
      */
 
-    Layout layout = {Anch::TopLeft, {70, (8*6)+(2*10)}, {1,1}};
+    Layout layout = {Anch::TopLeft, {80, (9*6)+(2*10)}, {1,1}};
 
     DrawRectangle(layout, {{rgb(0x101010)}});
     layout.Size = {0, 5};
@@ -274,8 +275,15 @@ void Gui::DebugScreen() {
     layout.Size = {0, 5};
     Text(Anchor(layout), {.text = Format("x: %.1f y: %.1f z: %.1f", Camera.Position.x, Camera.Position.y, Camera.Position.z), .Style = {.Scale = 0.5}});
 
-    layout.Move_Y();
-    Text(Anchor(layout), {.text = Format("Block: %u", Camera.ItemHeld), .Style = {.Scale = 0.5}});
+    if (block_cache[Camera.ItemHeld]) {
+        layout.Move_Y();
+        Text(Anchor(layout), {.text = Format("Block: %s", block_cache[Camera.ItemHeld]->get_name().c_str()), .Style = {.Scale = 0.5}});
+    }
+
+    if (Camera.looking_at) {
+        layout.Move_Y();
+        Text(Anchor(layout), {.text = Format("Looking at: %s", Camera.looking_at->get_name().c_str()), .Style = {.Scale = 0.5}});
+    }
 }
 
 void Gui::Chat() {

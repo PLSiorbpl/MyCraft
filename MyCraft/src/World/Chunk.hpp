@@ -39,7 +39,7 @@ public:
         glm::vec3 position;
         uint16_t uv[2];
         uint8_t normal;
-        uint8_t pad = 0;
+        uint8_t overlay[3] = {255, 255, 255};
     };
 
     // World Stuff

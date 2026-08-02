@@ -55,7 +55,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
             Chunk& chunk = it->second;
 
             // Actions:  Break | Place | Interact | Show SelectionBox
-            if (c_block.y >= 0 && c_block.y < Chunk::HEIGHT) {
+            if (c_block.y >= 0 && c_block.y < Chunk::HEIGHT - 1) {
                 if (Action == 1 && Camera.Break_CoolDown == 0) {
                     // -------------------------------------
                     // Breaking block
@@ -66,6 +66,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                         World_Map::Set_Dirty(cx, cz);
                         World_Map::Set_Neighbors_Dirty(LocalX, LocalZ, cx, cz);
                         Camera.Break_CoolDown = 8;
+                        RayCastBlock(Camera, 0, 0, Sel, MaxDistance, StepSize);
                         break;
                     }
                 } else if (Action == 2 && Camera.Place_CoolDown == 0 && !firstrun) {
@@ -85,6 +86,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                             World_Map::Set_Dirty(cx, cz);
                             World_Map::Set_Neighbors_Dirty(LocalX, LocalZ, cx, cz);
                             Camera.Place_CoolDown = 1;
+                            RayCastBlock(Camera, 0, 0, Sel, MaxDistance, StepSize);
                             break;
                         }
 
@@ -102,11 +104,13 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                             World_Map::Set_Dirty(LastC.x, LastC.y);
                             World_Map::Set_Neighbors_Dirty(LastCord.x, LastCord.z, LastC.x, LastC.y);
                             Camera.Place_CoolDown = 12;
+                            RayCastBlock(Camera, 0, 0, Sel, MaxDistance, StepSize);
                             break;
                         }
                     }
                     // Show SelectionBox
                 } else if (Action == 0) {
+                    Camera.looking_at = chunk.get_state(LocalX, c_block.y, LocalZ);
                     if (chunk.get_state(LocalX, c_block.y, LocalZ)->is_solid) {
                         Sel.Draw(glm::vec3(c_block));
                         Camera.Draw_Selection = true;
@@ -117,10 +121,10 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                 }
             LastChunk = &chunk;
             LastBlock = chunk.get_state(LocalX, c_block.y, LocalZ);
-            }
             LastCord = glm::ivec3(LocalX, c_block.y, LocalZ);
             LastC = glm::ivec2(cx, cz);
             firstrun = false;
+            }
         }
         if (tMax.x < tMax.y) {
             if (tMax.x < tMax.z) {

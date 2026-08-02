@@ -3,6 +3,7 @@
 in vec2 TexCoord;
 in vec3 Normal;
 in vec3 FragPos;
+in vec3 Overlay;
 
 uniform sampler2D BaseTexture;
 uniform vec3 ViewPos;
@@ -63,6 +64,7 @@ void main() {
     vec4 baseColor = texture(BaseTexture, TexCoord);
     if (baseColor.a < 0.5) discard;
     vec3 albedo = pow(baseColor.rgb, vec3(2.2));
+    albedo *= Overlay;
 
     // ----------------------------
     // Diffuse

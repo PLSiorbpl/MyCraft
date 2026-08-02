@@ -328,7 +328,7 @@ void Game::MainLoop() {
         if (PerfS.ramUsed >= game.Max_Ram*1024*1024) {
             if (game.ramHandle == 1) {
                 std::cerr << "Out of RAM! Changed RenderDistance by -1" << "\n";
-                if (Camera.RenderDistance > 1) {
+                if (Camera.RenderDistance > 2) {
                     Camera.RenderDistance -= 1;
                     ChunkGeneration::RemoveChunks();
                 }

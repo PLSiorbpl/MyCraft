@@ -1,5 +1,6 @@
 #include "Function.hpp"
 
+#include <sstream>
 #include <iomanip>
 
 float Fun::ConvertHorizontalFovToVertical(float fovX_deg, float aspectRatio) {

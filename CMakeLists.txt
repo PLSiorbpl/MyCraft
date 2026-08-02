@@ -39,9 +39,8 @@ target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
         -march=native
         -g
         -O3
-        -DNDEBUG
-        -Wall
-        -Wextra
+        #-DNDEBUG
+        #-Wall
 )
 
 target_link_options(MyCraft PRIVATE

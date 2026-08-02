@@ -1,6 +1,8 @@
 #pragma once
 #include <glm/glm.hpp>
 
+#include "Block.hpp"
+
 class camera {
 public:
     glm::vec3 Position = glm::vec3(0.0f, 100.0f, 0.0f);
@@ -8,7 +10,8 @@ public:
     float Yaw = -90.0f;
     bool Mouse_Visible = false;
     bool Can_Move = true;
-    int ItemHeld = 1;
+    Block *looking_at = nullptr;
+    int ItemHeld = 0;
     int HotBarSlot = 0;
     
     float CameraDrag = 0.1f;
