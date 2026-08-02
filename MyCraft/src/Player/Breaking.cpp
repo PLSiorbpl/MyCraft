@@ -63,6 +63,11 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                         chunk.get_state(LocalX, c_block.y, LocalZ)->onRemove({LocalX, c_block.y, LocalZ}, {cx, cz});
                         chunk.set(LocalX, c_block.y, LocalZ, Chunk::block(block_type::Air));
 
+                        World_Map::notifyNeighborBlocks({LocalX, c_block.y, LocalZ}, {cx, cz}, [](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos) {
+                            if (const auto b = ch.get_state(x, y, z))
+                                b->onNeighborChanged({x, y, z}, cpos);
+                        });
+
                         World_Map::Set_Dirty(cx, cz);
                         World_Map::Set_Neighbors_Dirty(LocalX, LocalZ, cx, cz);
                         Camera.Break_CoolDown = 8;
@@ -100,7 +105,14 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                             auto &b = LastChunk->get(LastCord.x, LastCord.y, LastCord.z);
                             if (b.state == 0) LastChunk->create_state(LastCord.x, LastCord.y, LastCord.z);
 
-                            LastChunk->get_state(LastCord.x, LastCord.y, LastCord.z)->onPlace({LastCord.x, LastCord.y, LastCord.z}, LastC);
+                            LastChunk->get_state(LastCord.x, LastCord.y, LastCord.z)->onPlace(LastCord, LastC);
+                            LastChunk->get_state(LastCord.x, LastCord.y, LastCord.z)->onNeighborChanged(LastCord, LastC);
+
+                            World_Map::notifyNeighborBlocks(LastCord, LastC, [](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos) {
+                                if (const auto b = ch.get_state(x, y, z))
+                                    b->onNeighborChanged({x, y, z}, cpos);
+                            });
+
                             World_Map::Set_Dirty(LastC.x, LastC.y);
                             World_Map::Set_Neighbors_Dirty(LastCord.x, LastCord.z, LastC.x, LastC.y);
                             Camera.Place_CoolDown = 12;

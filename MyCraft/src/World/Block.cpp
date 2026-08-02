@@ -2,31 +2,15 @@
 #include "glm/glm.hpp"
 #include "World.hpp"
 
-void Iron::onPlace(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
-    powered = true;
-    World_Map::notifyNeighborBlocks(pos, chunk, [](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos) {
-        if (auto* b = ch.get_state(x, y, z))
-            b->onNeighborChanged({x, y, z}, cpos);
-    });
-}
-
-void Iron::onRemove(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
-    powered = false;
-    World_Map::notifyNeighborBlocks(pos, chunk, [](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos) {
-        if (auto* b = ch.get_state(x, y, z))
-            b->onNeighborChanged({x, y, z}, cpos);
-    });
-}
-
 void Lamp::onNeighborChanged(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
-    bool p = false;
+    uint8_t p = 0;
     World_Map::notifyNeighborBlocks(pos, chunk, [&p](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos) {
-        if (p) return;
+        if (p > 0) return;
         if (auto* b = ch.get_state(x, y, z))
-            p = b->isPowered({x, y, z}, cpos, true);
+            p = b->getPower({x, y, z}, cpos, true);
     });
 
-    lit = p;
+    lit = p > 0;
 
     if (lit) {
         uv = {0, 4};
@@ -37,49 +21,31 @@ void Lamp::onNeighborChanged(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
     }
 }
 
-void Redstone_dust::onPlace(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
-    onNeighborChanged(pos, chunk);
-}
-
-void Redstone_dust::onRemove(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
-    onNeighborChanged(pos, chunk);
-}
-
-bool Redstone_dust::isPowered(const glm::ivec3 &pos, const glm::ivec2 &chunk, const bool is_source) {
-    if (updated) return false;
-    updated = true;
-
-    bool p = false;
-    World_Map::notifyNeighborBlocks(pos, chunk, [&p, is_source](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos) {
-        if (p) return;
-        if (auto* b = ch.get_state(x, y, z))
-            p = b->isPowered({x, y, z}, cpos, is_source);
-    });
-
-    updated = false;
-    return p;
+uint8_t Redstone_dust::getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, const bool is_source) {
+    return power;
 }
 
 void Redstone_dust::onNeighborChanged(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
-    if (updated) return;
-    updated = true;
-
-    bool p = false;
+    uint8_t p = 0;
     World_Map::notifyNeighborBlocks(pos, chunk, [&p](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos) {
-        if (p) return;
-        if (auto *b = ch.get_state(x, y, z))
-            p = b->isPowered({x, y, z}, cpos, true);
+        if (const auto b = ch.get_state(x, y, z))
+            p = std::max(p, b->getPower({x, y, z}, cpos));
     });
 
-    const bool changed = (p != powered);
-    powered = p;
+    if (p > 0)
+        p = p - 1;
+    else
+        p = 0;
 
-    updated = false;
+    if (p == power) return;
 
-    if (changed) {
-        World_Map::notifyNeighborBlocks(pos, chunk, [](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos) {
-            if (auto* b = ch.get_state(x, y, z))
-                b->onNeighborChanged({x, y, z}, cpos);
-        });
-    }
+    power = p;
+
+    World_Map::Set_Dirty(chunk.x, chunk.y);
+    World_Map::Set_Neighbors_Dirty(pos.x, pos.z, chunk.x, chunk.y);
+
+    World_Map::notifyNeighborBlocks(pos, chunk, [](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos) {
+        if (const auto b = ch.get_state(x, y, z))
+            b->onNeighborChanged({x, y, z}, cpos);
+    });
 }

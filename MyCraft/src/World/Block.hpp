@@ -16,7 +16,7 @@ public:
     bool is_transparent;
 
     virtual void onPlace(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
-    virtual bool isPowered(const glm::ivec3& pos, const glm::ivec2 &chunk, const bool is_source = false) { return false; }
+    virtual uint8_t getPower(const glm::ivec3& pos, const glm::ivec2 &chunk, const bool is_source = false) { return 0; }
     virtual void onRemove(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
     virtual void onActivate(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
     virtual void onNeighborChanged(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
@@ -105,12 +105,7 @@ public:
         model = &Models_cache["Iron"];
     }
 
-    void onPlace(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
-    void onRemove(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
-    bool isPowered(const glm::ivec3 &pos, const glm::ivec2 &chunk, const bool is_source) override { return powered; }
-
-private:
-    bool powered = true;
+    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, const bool is_source) override { return 16; }
 };
 
 class Wool : public Block {
@@ -180,15 +175,13 @@ public:
         model = &Models_cache["Redstone_dust"];
     }
 
-    void onPlace(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
-    void onRemove(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
-    bool isPowered(const glm::ivec3 &pos, const glm::ivec2 &chunk, bool is_source) override;
+    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, bool is_source) override;
     void onNeighborChanged(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
 
-    std::string get_name() override { if (model) return model->name + (powered ? ": ON" : ": OFF"); else return "No Model!"; }
+    std::string get_name() override { if (model) return model->name + " " + std::to_string(power); else return "No Model!"; }
 
     glm::vec3 get_overlay() override {
-        float p = std::clamp((float)powered, 0.0f, 1.0f);
+        float p = std::clamp(power / 15.0f, 0.0f, 1.0f);
 
         float r = p * 0.6f + (p > 0.0f ? 0.4f : 0.3f);
         float g = std::clamp(p * p * 0.7f - 0.5f * p, 0.0f, 1.0f);
@@ -198,6 +191,5 @@ public:
     }
 
 private:
-    bool powered = false;
-    bool updated = false;
+    uint8_t power = false;
 };
