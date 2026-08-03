@@ -1,5 +1,4 @@
 #include <glad/glad.h>
-#include "Models.hpp"
 #include "Chunk.hpp"
 
 std::array<Block *, static_cast<int>(block_type::_count)> block_cache;
@@ -29,7 +28,7 @@ void Chunk::SendData() {
     glBufferData(GL_ARRAY_BUFFER, Mesh.size() * sizeof(Vertex), Mesh.data(), GL_STATIC_DRAW);
 
     // aPos (location = 0)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), static_cast<void *>(nullptr));
+    glVertexAttribIPointer(0, 3, GL_UNSIGNED_SHORT, sizeof(Vertex), static_cast<void *>(nullptr));
     glEnableVertexAttribArray(0);
 
     // atexture (location = 1)

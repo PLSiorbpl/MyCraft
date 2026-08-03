@@ -1,7 +1,9 @@
 #include <glad/glad.h>
 #include "Gui.hpp"
 #include "Common/Gui_Types.hpp"
+#include "Render/Camera.hpp"
 #include <Utils/InputManager.hpp>
+#include "Chunk.hpp"
 
 using namespace gui;
 
@@ -14,7 +16,7 @@ void Gui::HotBar() {
 
     if (InputManager::ScrollY != 0) {
         Camera.HotBarSlot = wrap(Camera.HotBarSlot - InputManager::ScrollY, 9);
-        Camera.ItemHeld = (Camera.HotBarSlot % (int)block_type::_count);
+        Camera.ItemHeld = (Camera.HotBarSlot % static_cast<int>(block_type::_count));
         InputManager::ScrollY = 0;
     }
 

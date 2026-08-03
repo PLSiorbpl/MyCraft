@@ -1,4 +1,5 @@
 #include "Settings.hpp"
+#include <fstream>
 #include <iostream>
 
 void Settings_Loader::Load_Settings(const std::string& path) {

@@ -3,6 +3,7 @@
 #include "Gui.hpp"
 #include "Common/Gui_Types.hpp"
 #include <Utils/InputManager.hpp>
+#include "Chunk.hpp"
 
 using namespace gui;
 

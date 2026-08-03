@@ -26,7 +26,6 @@ private:
     GLuint sceneFBO;
     GLuint sceneTex;
 public:
-    static window_context ctx;
     Settings_Loader Settings;
 
     bool Init_Window();

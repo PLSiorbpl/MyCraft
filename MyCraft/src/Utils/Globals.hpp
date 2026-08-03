@@ -3,11 +3,11 @@
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
 #if defined(_WIN32) // Windows
+    //#define NOMINMAX
     #include <windows.h>
     #include <psapi.h>
 #endif
 
-#include "Render/Camera.hpp"
 #include "Network/Network.hpp"
 
 struct Game_Variables {
@@ -111,13 +111,7 @@ struct Shaders {
     Sh combineShader;
 };
 
-struct window_context {
-    camera *Camera;
-    Game_Settings *game_settings;
-};
-
 extern GLFWwindow* window;
-extern camera Camera;
 extern Game_Variables game;
 extern Terrain_Settings terrain_settings;
 extern Game_Settings game_settings;

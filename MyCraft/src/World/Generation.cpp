@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include "Generation.hpp"
 #include <iostream>
+#include "Render/Camera.hpp"
 
 void ChunkGeneration::LookForChunks() {
     auto& World = World_Map::World;

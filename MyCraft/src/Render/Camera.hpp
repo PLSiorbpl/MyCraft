@@ -35,3 +35,5 @@ public:
 
     bool operator!=(const camera& other) const;
 };
+
+extern camera Camera;

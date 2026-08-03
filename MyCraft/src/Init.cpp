@@ -6,6 +6,7 @@
 
 #include "Utils/InputManager.hpp"
 #include "World/Models.hpp"
+#include "Shader_Utils/Shader.hpp"
 
 namespace fs = std::filesystem;
 using json = nlohmann::json;
@@ -40,8 +41,8 @@ void Game::Init_JSON() {
 
                 e.from = {elem["from"][0], elem["from"][1], elem["from"][2]};
                 e.to = {elem["to"][0], elem["to"][1], elem["to"][2]};
-                e.from /= 16.0f;
-                e.to /= 16.0f;
+                //e.from /= 16.0f;
+                //e.to /= 16.0f;
 
                 const auto &faces = elem["faces"];
                 for (auto it = faces.begin(); it != faces.end(); ++it) {
@@ -54,12 +55,12 @@ void Game::Init_JSON() {
                     if (it.value()["cull"] == "yes") f.cull = Cull::Yes;
                     if (it.value()["cull"] == "force") f.cull = Cull::Force;
 
-                    if (it.key() == "north") { e.north = f; if (f.cull == Cull::Yes) model.occlusionMask |= ZN; }
-                    else if (it.key() == "south") { e.south = f; if (f.cull == Cull::Yes) model.occlusionMask |= ZP; }
-                    else if (it.key() == "east") { e.east = f; if (f.cull == Cull::Yes) model.occlusionMask |= XP; }
-                    else if (it.key() == "west") { e.west = f; if (f.cull == Cull::Yes) model.occlusionMask |= XN; }
-                    else if (it.key() == "up") { e.up = f; if (f.cull == Cull::Yes) model.occlusionMask |= YP; }
-                    else if (it.key() == "down") { e.down = f; if (f.cull == Cull::Yes) model.occlusionMask |= YN; }
+                    if (it.key() == "north") { e.north = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::ZN); }
+                    else if (it.key() == "south") { e.south = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::ZP); }
+                    else if (it.key() == "east") { e.east = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::XP); }
+                    else if (it.key() == "west") { e.west = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::XN); }
+                    else if (it.key() == "up") { e.up = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::YP); }
+                    else if (it.key() == "down") { e.down = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::YN); }
                 }
                 model.elements.push_back(e);
             }
@@ -169,8 +170,6 @@ bool Game::Init_Window() {
     glfwSetKeyCallback(window, InputManager::Key_Callback);
     glfwSetScrollCallback(window, InputManager::Scroll_Callback);
     glfwSetCursorPosCallback(window, InputManager::Mouse_Callback);
-
-    glfwSetWindowUserPointer(window, &ctx);
 
     game.Last_Chunk = glm::ivec3(999, 999, 999);
 

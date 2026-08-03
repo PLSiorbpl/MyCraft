@@ -7,10 +7,10 @@
 
 void Movement::Init(GLFWwindow* window, Selection& Sel) {
     direction = glm::vec3(0.0f);
-    Cos.x = cos(glm::radians(Camera.Pitch));
-    Cos.y = cos(glm::radians(Camera.Yaw));
-    Sin.x = sin(glm::radians(Camera.Pitch));
-    Sin.y = sin(glm::radians(Camera.Yaw));
+    Cos.x = std::cos(glm::radians(Camera.Pitch));
+    Cos.y = std::cos(glm::radians(Camera.Yaw));
+    Sin.x = std::sin(glm::radians(Camera.Pitch));
+    Sin.y = std::sin(glm::radians(Camera.Yaw));
 
     if (Camera.Can_Move) {
         Input(window, Sel);
@@ -110,9 +110,9 @@ void Movement::Damp() {
 
 glm::mat4 Movement::GetViewMatrix() {
     const auto direction = glm::vec3(
-        cos(glm::radians(Camera.Yaw)) * cos(glm::radians(Camera.Pitch)),
-        sin(glm::radians(Camera.Pitch)),
-        sin(glm::radians(Camera.Yaw)) * cos(glm::radians(Camera.Pitch))
+        std::cos(glm::radians(Camera.Yaw)) * std::cos(glm::radians(Camera.Pitch)),
+        std::sin(glm::radians(Camera.Pitch)),
+        std::sin(glm::radians(Camera.Yaw)) * std::cos(glm::radians(Camera.Pitch))
     );
 
     const glm::vec3 front = glm::normalize(direction);

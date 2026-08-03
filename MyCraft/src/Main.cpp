@@ -17,17 +17,13 @@
 #include "Render/Frustum.hpp"
 #include "World/Generation.hpp"
 #include "World/Mesh.hpp"
+#include "Shader_Utils/Shader.hpp"
 
 void framebuffer_size_callback(GLFWwindow* window, const int width, const int height) {
-    const auto* ctx = static_cast<window_context*>(
-        glfwGetWindowUserPointer(window)
-    );
-    ctx->game_settings->width = width;
-    ctx->game_settings->height = height;
+    game_settings.width = width;
+    game_settings.height = height;
     glViewport(0, 0, width, height);
 }
-
-window_context Game::ctx = {&Camera, &game_settings};
 
 void Tick_Update(GLFWwindow* window, Movement &movement, Selection &Sel) {
     movement.Init(window, Sel);
@@ -279,6 +275,7 @@ void Game::MainLoop() {
                 const glm::vec3 chunkMax = chunkMin + glm::vec3(Chunk::WIDTH, Chunk::HEIGHT, Chunk::DEPTH);
 
                 if (Frustum::IsAABBVisible(Frust, chunkMin, chunkMax)) {
+                    Shader::Set_Vec3(SH.Solid_Shader_Blocks.Shader, "ChunkOffset", {info.chunkX * 16, 0, info.chunkZ * 16});
                     glBindVertexArray(info.vao);
                     glDrawArrays(GL_TRIANGLES, 0, info.indexCount);
                     PerfS.Triangles += info.Triangles;

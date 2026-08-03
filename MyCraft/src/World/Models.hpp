@@ -5,7 +5,16 @@
 #include <vector>
 #include <string>
 
-enum Face_v : uint8_t {
+enum class Face_id : uint8_t {
+    XN = 0,
+    XP = 1,
+    YN = 2,
+    YP = 3,
+    ZN = 4,
+    ZP = 5
+};
+
+enum class Face_dir : uint8_t {
     XN = 1 << 0,
     XP = 1 << 1,
     YN = 1 << 2,

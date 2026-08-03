@@ -1,13 +1,11 @@
 #pragma once
 #include <iostream>
 #include <unordered_map>
-#include <memory>
 #include <vector>
 
 #include "Chunk.hpp"
 
-class World_Map {
-    public:
+namespace World_Map {
     struct PairHash {
         std::size_t operator()(const std::pair<int, int>& p) const {
             uint64_t z = (static_cast<uint64_t>(static_cast<uint32_t>(p.first)) << 32) | static_cast<uint32_t>(p.second);
@@ -31,22 +29,22 @@ class World_Map {
         int Delete;
     };
 
-    static std::unordered_map<std::pair<int, int>, Chunk, PairHash> World;
-    static std::vector<Render_Info> Render_List;
-    static std::vector<Chunk*> Mesh_Queue;
+    extern std::unordered_map<std::pair<int, int>, Chunk, PairHash> World;
+    extern std::vector<Render_Info> Render_List;
+    extern std::vector<Chunk*> Mesh_Queue;
 
-    static Chunk *find_chunk(const int chunkx, const int chunkz) {
+    inline Chunk *find_chunk(const int chunkx, const int chunkz) {
         const auto c = World.find({chunkx, chunkz});
         if (c != World.end())
             return &c->second;
         return nullptr;
     }
 
-    static void Set_Dirty(int chunkx, int chunkz);
-    static void Set_Neighbors_Dirty(int localx, int localz, int chunkx, int chunkz);
+    void Set_Dirty(int chunkx, int chunkz);
+    void Set_Neighbors_Dirty(int localx, int localz, int chunkx, int chunkz);
 
     template<typename Func>
-    static void notifyNeighborBlocks(const glm::ivec3& pos, const glm::ivec2& chunkPos, Func&& fn) {
+    void notifyNeighborBlocks(const glm::ivec3& pos, const glm::ivec2& chunkPos, Func&& fn) {
         auto* c = find_chunk(chunkPos.x, chunkPos.y);
         if (!c) return;
 

@@ -1,5 +1,4 @@
 #include "Mesh.hpp"
-
 #include <array>
 
 #include "World.hpp"
@@ -30,18 +29,18 @@ void Mesh::GenerateMesh(Chunk& chunk) {
                 const auto &m = b->model->occlusionMask;
                 const auto idx = y * Chunk::DEPTH + z;
 
-                if (m & XP)
-                    Occlusion[1][idx] |= 1u << x;
-                if (m & XN)
-                    Occlusion[0][idx] |= 1u << x;
-                if (m & ZP)
-                    Occlusion[5][idx] |= 1u << x;
-                if (m & ZN)
-                    Occlusion[4][idx] |= 1u << x;
-                if (m & YP)
-                    Occlusion[3][idx] |= 1u << x;
-                if (m & YN)
-                    Occlusion[2][idx] |= 1u << x;
+                if (m & static_cast<int>(Face_dir::XP))
+                    Occlusion[static_cast<int>(Face_id::XP)][idx] |= 1u << x;
+                if (m & static_cast<int>(Face_dir::XN))
+                    Occlusion[static_cast<int>(Face_id::XN)][idx] |= 1u << x;
+                if (m & static_cast<int>(Face_dir::ZP))
+                    Occlusion[static_cast<int>(Face_id::ZP)][idx] |= 1u << x;
+                if (m & static_cast<int>(Face_dir::ZN))
+                    Occlusion[static_cast<int>(Face_id::ZN)][idx] |= 1u << x;
+                if (m & static_cast<int>(Face_dir::YP))
+                    Occlusion[static_cast<int>(Face_id::YP)][idx] |= 1u << x;
+                if (m & static_cast<int>(Face_dir::YN))
+                    Occlusion[static_cast<int>(Face_id::YN)][idx] |= 1u << x;
             }
         }
     }
@@ -52,16 +51,16 @@ void Mesh::GenerateMesh(Chunk& chunk) {
             const auto idx = y * Chunk::DEPTH + z;
             //-------------------------
             // Z+
-            uint32_t current = Occlusion[5][idx];
+            uint32_t current = Occlusion[static_cast<int>(Face_id::ZP)][idx];
             uint32_t next;
             if (z + 1 < Chunk::DEPTH) {
                 const auto n_idx = y * Chunk::DEPTH + (z+1);
-                next = Occlusion[4][n_idx];
+                next = Occlusion[static_cast<int>(Face_id::ZN)][n_idx];
             } else {
                 uint32_t bits = 0;
                 for (int x = 0; x < Chunk::WIDTH; x++) {
                     if (czp) {
-                        if (czp->get_state(x, y, 0)->model->occlusionMask & ZN)
+                        if (czp->get_state(x, y, 0)->model->occlusionMask & static_cast<int>(Face_dir::ZN))
                             bits |= (static_cast<uint32_t>(1) << x);
                     } else
                         bits |= (static_cast<uint32_t>(1) << x);
@@ -71,16 +70,16 @@ void Mesh::GenerateMesh(Chunk& chunk) {
             const uint32_t visibleZp = current & ~next;
             //-------------------------
             // Z-
-            current = Occlusion[4][idx];
+            current = Occlusion[static_cast<int>(Face_id::ZN)][idx];
             uint32_t prev;
             if (z - 1 >= 0) {
                 const auto n_idx = y * Chunk::DEPTH + z-1;
-                prev = Occlusion[5][n_idx];
+                prev = Occlusion[static_cast<int>(Face_id::ZP)][n_idx];
             } else {
                 uint32_t bits = 0;
                 for (int x = 0; x < Chunk::WIDTH; x++) {
                     if (czn) {
-                        if (czn->get_state(x, y, Chunk::DEPTH - 1)->model->occlusionMask & ZP)
+                        if (czn->get_state(x, y, Chunk::DEPTH - 1)->model->occlusionMask & static_cast<int>(Face_dir::ZP))
                             bits |= (static_cast<uint32_t>(1) << x);
                     } else
                         bits |= (static_cast<uint32_t>(1) << x);
@@ -90,15 +89,15 @@ void Mesh::GenerateMesh(Chunk& chunk) {
             const uint32_t visibleZm = current & ~prev;
             //-------------------------
             // Y+
-            current = Occlusion[3][idx];
+            current = Occlusion[static_cast<int>(Face_id::YP)][idx];
             auto n_idx = (y+1) * Chunk::DEPTH + z;
-            const uint32_t nextY = (y+1 < Chunk::HEIGHT) ? Occlusion[2][n_idx] : 0;
+            const uint32_t nextY = (y+1 < Chunk::HEIGHT) ? Occlusion[static_cast<int>(Face_id::YN)][n_idx] : 0;
             const uint32_t visibleYp = current & ~nextY;
             //-------------------------
             // Y-
-            current = Occlusion[2][idx];
+            current = Occlusion[static_cast<int>(Face_id::YN)][idx];
             n_idx = (y-1) * Chunk::DEPTH + z;
-            const uint32_t prevY = (y-1 > 0) ? Occlusion[3][n_idx] : 0;
+            const uint32_t prevY = (y-1 > 0) ? Occlusion[static_cast<int>(Face_id::YP)][n_idx] : 0;
             const uint32_t visibleYm = current & ~prevY;
 
             //-------------------------
@@ -110,27 +109,28 @@ void Mesh::GenerateMesh(Chunk& chunk) {
                 
                 if (!block->model) continue;
                 for (const auto &elem : block->model->elements) {
-                    const glm::vec3 w = {worldOffsetX + x, static_cast<float>(y), worldOffsetZ + z};
+                    const glm::ivec3 w = {x * 16, y * 16, z * 16};
 
                     const uint32_t mask = (static_cast<uint32_t>(1) << x);
                     if (shouldRender(elem.south, visibleZp & mask)) MeshZFace(vertices, w, elem, block,  1);
                     if (shouldRender(elem.north, visibleZm & mask)) MeshZFace(vertices, w, elem, block, -1);
                     if (shouldRender(elem.up, visibleYp & mask)) MeshYFace(vertices, w, elem, block,  1);
                     if (shouldRender(elem.down, visibleYm & mask)) MeshYFace(vertices, w, elem, block, -1);
+
                     //-------------------------
                     // X+
                     if (x + 1 < Chunk::WIDTH) {
-                        if (shouldRender(elem.east, !(chunk.get_state(x+1, y, z)->model->occlusionMask & XN)))
+                        if (shouldRender(elem.east, !(chunk.get_state(x+1, y, z)->model->occlusionMask & static_cast<int>(Face_dir::XN))))
                             MeshXFace(vertices, w, elem, block, 1);
-                    } else if (shouldRender(elem.east, cxp && !(cxp->get_state(0, y, z)->model->occlusionMask & XN))) {
+                    } else if (shouldRender(elem.east, cxp && !(cxp->get_state(0, y, z)->model->occlusionMask & static_cast<int>(Face_dir::XN)))) {
                         MeshXFace(vertices, w, elem, block, 1);
                     }
                     //-------------------------
                     // X-
                     if (x - 1 >= 0) {
-                        if (shouldRender(elem.west, !(chunk.get_state(x-1, y, z)->model->occlusionMask & XP)))
+                        if (shouldRender(elem.west, !(chunk.get_state(x-1, y, z)->model->occlusionMask & static_cast<int>(Face_dir::XP))))
                             MeshXFace(vertices, w, elem, block, -1);
-                    } else if (shouldRender(elem.west, cxn && !(cxn->get_state(Chunk::WIDTH - 1, y, z)->model->occlusionMask & XP))) {
+                    } else if (shouldRender(elem.west, cxn && !(cxn->get_state(Chunk::WIDTH - 1, y, z)->model->occlusionMask & static_cast<int>(Face_dir::XP)))) {
                         MeshXFace(vertices, w, elem, block, -1);
                     }
                 }
@@ -170,22 +170,24 @@ void Mesh::getUVs(std::array<glm::vec2, 4>& outUV, const Face& face) {
     outUV[3] = {u1, v0};
 }
 
-void Mesh::MeshXFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& world, const Element &elem, Block *block, const int dir) {
+void Mesh::MeshXFace(std::vector<Chunk::Vertex> *vertices, const glm::ivec3& local, const Element &elem, Block *block, const int dir) {
     const auto &face = dir > 0 ? elem.west.value() : elem.east.value();
-    const float z1 = world.z + elem.from.z;
-    const float y1 = world.y + elem.from.y;
-    const float z2 = world.z + elem.to.z;
-    const float y2 = world.y + elem.to.y;
+    const float z1 = local.z + elem.from.z;
+    const float y1 = local.y + elem.from.y;
+    const float z2 = local.z + elem.to.z;
+    const float y2 = local.y + elem.to.y;
 
-    const float x = world.x + (dir > 0 ? elem.to.x : elem.from.x);
+    const float x = local.x + (dir > 0 ? elem.to.x : elem.from.x);
 
     std::array<glm::vec2, 4> uv = {};
     getUVs(uv, face);
     const auto overlay = block->get_overlay() * 255.0f;
 
-    auto push = [&](const float x_, const float y_, const float z_, const glm::vec2 &uv_) {
+    auto push = [&](const int x_, const int y_, const int z_, const glm::vec2 &uv_) {
         Chunk::Vertex ver;
-        ver.position = {x_,y_,z_};
+        ver.position[0] = x_;
+        ver.position[1] = y_;
+        ver.position[2] = z_;
         ver.uv[0] = static_cast<uint16_t>(uv_.x * 65535.0f);
         ver.uv[1] = static_cast<uint16_t>(uv_.y * 65535.0f);
         ver.normal = (dir > 0 ? 1 : 0);
@@ -214,22 +216,24 @@ void Mesh::MeshXFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& worl
     }
 }
 
-void Mesh::MeshYFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& world, const Element &elem, Block *block, const int dir) {
+void Mesh::MeshYFace(std::vector<Chunk::Vertex> *vertices, const glm::ivec3& local, const Element &elem, Block *block, const int dir) {
     const auto &face = dir > 0 ? elem.up.value() : elem.down.value();
-    const float x1 = world.x + elem.from.x;
-    const float z1 = world.z + elem.from.z;
-    const float x2 = world.x + elem.to.x;
-    const float z2 = world.z + elem.to.z;
+    const float x1 = local.x + elem.from.x;
+    const float z1 = local.z + elem.from.z;
+    const float x2 = local.x + elem.to.x;
+    const float z2 = local.z + elem.to.z;
 
-    const float y = world.y + (dir > 0 ? elem.to.y : elem.from.y);
+    const float y = local.y + (dir > 0 ? elem.to.y : elem.from.y);
 
     std::array<glm::vec2, 4> uv = {};
     getUVs(uv, face);
     const auto overlay = block->get_overlay() * 255.0f;
 
-    auto push = [&](const float x, const float y, const float z, const glm::vec2 &uv_) {
+    auto push = [&](const int x_, const int y_, const int z_, const glm::vec2 &uv_) {
         Chunk::Vertex ver;
-        ver.position = {x,y,z};
+        ver.position[0] = x_;
+        ver.position[1] = y_;
+        ver.position[2] = z_;
         ver.uv[0] = static_cast<uint16_t>(uv_.x * 65535.0f);
         ver.uv[1] = static_cast<uint16_t>(uv_.y * 65535.0f);
         ver.normal = (dir > 0 ? 3 : 2);
@@ -258,22 +262,24 @@ void Mesh::MeshYFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& worl
     }
 }
 
-void Mesh::MeshZFace(std::vector<Chunk::Vertex> *vertices, const glm::vec3& world, const Element &elem, Block *block, const int dir) {
+void Mesh::MeshZFace(std::vector<Chunk::Vertex> *vertices, const glm::ivec3& local, const Element &elem, Block *block, const int dir) {
     const auto &face = dir > 0 ? elem.south.value() : elem.north.value();
-    const float x1 = world.x + elem.from.x;
-    const float y1 = world.y + elem.from.y;
-    const float x2 = world.x + elem.to.x;
-    const float y2 = world.y + elem.to.y;
+    const float x1 = local.x + elem.from.x;
+    const float y1 = local.y + elem.from.y;
+    const float x2 = local.x + elem.to.x;
+    const float y2 = local.y + elem.to.y;
 
-    const float z = world.z + (dir > 0 ? elem.to.z : elem.from.z);
+    const float z = local.z + (dir > 0 ? elem.to.z : elem.from.z);
 
     std::array<glm::vec2, 4> uv = {};
     getUVs(uv, face);
     const auto overlay = block->get_overlay() * 255.0f;
 
-    auto push = [&](const float x, const float y, const float z, const glm::vec2 &uv_) {
+    auto push = [&](const int x_, const int y_, const int z_, const glm::vec2 &uv_) {
         Chunk::Vertex ver;
-        ver.position = {x,y,z};
+        ver.position[0] = x_;
+        ver.position[1] = y_;
+        ver.position[2] = z_;
         ver.uv[0] = static_cast<uint16_t>(uv_.x * 65535.0f);
         ver.uv[1] = static_cast<uint16_t>(uv_.y * 65535.0f);
         ver.normal = (dir > 0 ? 5 : 4);

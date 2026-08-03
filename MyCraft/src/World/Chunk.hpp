@@ -35,11 +35,13 @@ public:
             : id(id) {}
     };
 
+    // Before 20B
+    // New 14B
     struct Vertex {
-        glm::vec3 position;
+        uint16_t position[3];
         uint16_t uv[2];
         uint8_t normal;
-        uint8_t overlay[3] = {255, 255, 255};
+        uint8_t overlay[3];
     };
 
     // World Stuff

@@ -1,5 +1,6 @@
 #include "InputManager.hpp"
-#include "Globals.hpp"
+#include "Utils/Globals.hpp"
+#include "Render/Camera.hpp"
 #include <algorithm>
 
 bool InputManager::keysToggle[512] = {false};

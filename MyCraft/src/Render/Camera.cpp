@@ -10,3 +10,5 @@ bool camera::operator!=(const camera& other) const {
            LastX != other.LastX ||
            LastY != other.LastY;
 }
+
+camera Camera;

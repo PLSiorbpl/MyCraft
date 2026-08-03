@@ -10,15 +10,14 @@ project(MyCraft C CXX)
 
 add_subdirectory(MyCraft/Include/glad)
 
-file(GLOB_RECURSE GLAD CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/Include/glad/*.cpp")
 file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/src/*.cpp")
 
 set(WINDOWS_ICON "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/src/Utils/resource.rc")
 
 if(WIN32)
-    add_executable(${CMAKE_PROJECT_NAME} ${MY_SOURCES} ${GLAD} ${WINDOWS_ICON})
+    add_executable(${CMAKE_PROJECT_NAME} ${MY_SOURCES} ${WINDOWS_ICON})
 else()
-    add_executable(${CMAKE_PROJECT_NAME} ${MY_SOURCES} ${GLAD})
+    add_executable(${CMAKE_PROJECT_NAME} ${MY_SOURCES})
 endif()
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
@@ -51,6 +50,7 @@ target_link_options(MyCraft PRIVATE
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE glad
         ${CMAKE_SOURCE_DIR}/MyCraft/Lib/libglfw3.a
+        #${CMAKE_SOURCE_DIR}/MyCraft/Lib/lib-vc2022/glfw3.lib
         opengl32
         gdi32
         winmm

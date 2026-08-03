@@ -1,10 +1,6 @@
 #pragma once
-#include <chrono>
 #include "EasingFunctions.hpp"
-
-/*
-    original video: when i find it
- */
+#include <chrono>
 
 template <typename T>
 struct Interpolate {

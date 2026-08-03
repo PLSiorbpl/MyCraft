@@ -1,6 +1,6 @@
 #include "SkyBox.hpp"
+#include <Shader_Utils/Shader.hpp>
 #include "Utils/Globals.hpp"
-#include "Shader_Utils/Shader.hpp"
 
 void SkyBox::Create_SkyBox() {
     glGenVertexArrays(1, &vao);

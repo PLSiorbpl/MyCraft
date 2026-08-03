@@ -15,7 +15,7 @@ void Selection::Init(const GLuint& id) {
 }
 
 void Selection::Draw(const glm::vec3& pos) {
-    float offset = 0.001f;
+    constexpr float offset = 0.001f;
     boxLinesCopy = boxLines;
     for (int i = 0; i < 72; i += 3) {
         boxLinesCopy[i]   += pos.x + (boxLinesCopy[i]   > 0 ? offset : -offset);
