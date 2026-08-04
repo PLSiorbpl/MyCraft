@@ -17,16 +17,13 @@
 #include "Render/Frustum.hpp"
 #include "World/Generation.hpp"
 #include "World/Mesh.hpp"
+#include "Tick/Tick.hpp"
 #include "Shader_Utils/Shader.hpp"
 
 void framebuffer_size_callback(GLFWwindow* window, const int width, const int height) {
     game_settings.width = width;
     game_settings.height = height;
     glViewport(0, 0, width, height);
-}
-
-void Tick_Update(GLFWwindow* window, Movement &movement, Selection &Sel) {
-    movement.Init(window, Sel);
 }
 
 void Game::MainLoop() {
@@ -121,7 +118,7 @@ void Game::MainLoop() {
         while (game.Tick_Timer >= game.TickRate) {
             game.Tick_Timer -= game.TickRate;
             if (!game.ChunkUpdated) {
-                Tick_Update(window, movement, selection);
+                Tick::Tick(movement, selection);
             }
         }
         PerfS.tick = time.ElapsedMs();
@@ -365,10 +362,10 @@ int main() {
     Game main;
 
     std::cout << "Initializing Settings:\n";
-    main.Init_Settings("MyCraft/Assets/Settings.myc");
+    if (!main.Init_Settings("MyCraft/Assets/Settings.myc")) return 1;
     std::cout << "Initializing JSON files:\n";
-    main.Init_JSON();
-    if (main.Init_Window()) return -1;
+    if (!main.Init_JSON()) return 2;
+    if (main.Init_Window()) return 3;
     std::cout << "Initializing Shaders:\n";
     Game::Init_Shader();
     std::cout << "Launching Game:\n";

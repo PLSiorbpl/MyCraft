@@ -15,7 +15,8 @@ public:
     bool is_transparent;
 
     virtual void onPlace(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
-    virtual uint8_t getPower(const glm::ivec3& pos, const glm::ivec2 &chunk, const bool is_source = false) { return 0; }
+    virtual uint8_t getPower(const glm::ivec3& pos, const glm::ivec2 &chunk) { return 0; }
+    virtual bool conductsPower() { return true; }
     virtual void onRemove(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
     virtual void onActivate(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
     virtual void onNeighborChanged(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
@@ -39,6 +40,8 @@ public:
         uv = glm::ivec2(0, 0);
         model = &Models_cache["Air"];
     }
+
+    bool conductsPower() override { return false; }
 
 private:
 };
@@ -104,7 +107,7 @@ public:
         model = &Models_cache["Iron"];
     }
 
-    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, const bool is_source) override { return 16; }
+    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk) override { return 16; }
 };
 
 class Wool : public Block {
@@ -135,6 +138,8 @@ public:
         uv = glm::ivec2(5, 0);
         model = &Models_cache["Water"];
     }
+
+    bool conductsPower() override { return false; }
 
 private:
 };
@@ -174,7 +179,8 @@ public:
         model = &Models_cache["Redstone_dust"];
     }
 
-    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, bool is_source) override;
+    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
+    bool conductsPower() override { return false; }
     void onNeighborChanged(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
 
     std::string get_name() override { if (model) return model->name + " " + std::to_string(power); else return "No Model!"; }

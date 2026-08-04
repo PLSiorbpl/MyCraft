@@ -5,7 +5,7 @@
 #include "Utils/InputManager.hpp"
 #include "Colisions.hpp"
 
-void Movement::Init(GLFWwindow* window, Selection& Sel) {
+void Movement::Init(Selection& Sel) {
     direction = glm::vec3(0.0f);
     Cos.x = std::cos(glm::radians(Camera.Pitch));
     Cos.y = std::cos(glm::radians(Camera.Yaw));
@@ -13,8 +13,8 @@ void Movement::Init(GLFWwindow* window, Selection& Sel) {
     Sin.y = std::sin(glm::radians(Camera.Yaw));
 
     if (Camera.Can_Move) {
-        Input(window, Sel);
-        Special_Keys(window);
+        Input(Sel);
+        Special_Keys();
     }
         TestColisions();
         Damp();
@@ -23,7 +23,7 @@ void Movement::Init(GLFWwindow* window, Selection& Sel) {
         if (Camera.Break_CoolDown > 0) Camera.Break_CoolDown -= 1;
 }
 
-void Movement::Input(GLFWwindow* window, Selection& Sel) {
+void Movement::Input(Selection& Sel) {
     glm::vec2 moveVec(0.0f, 0.0f);
     float speed = Camera.Speed;
     if (InputManager::keysState[GLFW_KEY_LEFT_SHIFT]) speed += Camera.SprintSpeed;
@@ -58,8 +58,8 @@ void Movement::Input(GLFWwindow* window, Selection& Sel) {
     Camera.Vel.y = std::clamp(Camera.Vel.y, -0.5f, 0.2f);
 }
 
-void Movement::Special_Keys(GLFWwindow* window) {
-    Camera.Mode = InputManager::keysToggle[GLFW_KEY_1] ? true : false;
+void Movement::Special_Keys() {
+    Camera.Mode = InputManager::keysToggle[GLFW_KEY_1];
     Camera.crouching = InputManager::keysState[GLFW_KEY_LEFT_CONTROL];
 }
 

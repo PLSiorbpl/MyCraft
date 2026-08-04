@@ -11,13 +11,17 @@
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
-void Game::Init_JSON() {
+bool Game::Init_JSON() {
     const std::string main_dir = "Mycraft/Assets";
     const std::string models_path = main_dir + "/Textures/Models";
 
+    if (!fs::exists(main_dir) || !fs::is_directory(main_dir)) {
+        std::cerr << "Directory not found: " << main_dir << std::endl;
+        return false;
+    }
     if (!fs::exists(models_path) || !fs::is_directory(models_path)) {
         std::cerr << "Directory not found: " << models_path << std::endl;
-        return;
+        return false;
     }
 
     for (const auto &entry : fs::directory_iterator(models_path)) {
@@ -71,9 +75,15 @@ void Game::Init_JSON() {
             std::cerr << "JSON parse error in " << entry.path().filename() << ": " << e.what() << std::endl;
         }
     }
+    return true;
 }
 
-void Game::Init_Settings(const std::string& Path) {
+bool Game::Init_Settings(const std::string& Path) {
+    if (!fs::exists(Path) || !fs::is_regular_file(Path)) {
+        std::cerr << "File not found: " << Path << std::endl;
+        return false;
+    }
+
     Settings.Load_Settings(Path);
 
     // General Options:
@@ -115,6 +125,7 @@ void Game::Init_Settings(const std::string& Path) {
     game.FOV = Settings.Get<float>("FOV", 80);
     Camera.Speed = Settings.Get<float>("Speed", 0.0f);
     Camera.SprintSpeed = Settings.Get<float>("Sprint Speed", 0.0f);
+    return true;
 }
 
 bool Game::Init_Window() {

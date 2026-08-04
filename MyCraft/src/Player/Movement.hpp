@@ -13,10 +13,10 @@ class Movement {
     glm::vec2 Sin;
     glm::vec3 testPos;
 
-    void Init(GLFWwindow* window, Selection& Sel);
-    void Input(GLFWwindow* window, Selection& Sel);
+    void Init(Selection& Sel);
+    void Input(Selection& Sel);
 
-    static void Special_Keys(GLFWwindow* window);
+    static void Special_Keys();
     void TestColisions();
 
     static void Damp();

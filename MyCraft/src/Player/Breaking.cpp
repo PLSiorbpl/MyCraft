@@ -3,6 +3,7 @@
 
 #include "Colisions.hpp"
 #include "World/World.hpp"
+#include "Tick/Tick.hpp"
 
 void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selection& Sel, float MaxDistance, float StepSize) {
     auto &World = World_Map::World;
@@ -64,8 +65,15 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                         chunk.set(LocalX, c_block.y, LocalZ, Chunk::block(block_type::Air));
 
                         World_Map::notifyNeighborBlocks({LocalX, c_block.y, LocalZ}, {cx, cz}, [](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos) {
-                            if (const auto b = ch.get_state(x, y, z))
-                                b->onNeighborChanged({x, y, z}, cpos);
+                            if (const auto b = ch.get_state(x, y, z)) {
+                                if (b->conductsPower()) {
+                                    World_Map::notifyNeighborBlocks({x, y, z}, cpos, [](Chunk& ch_2, int x_2, int y_2, int z_2, const glm::ivec2& cpos_2) {
+                                        if (const auto b = ch_2.get_state(x_2, y_2, z_2))
+                                            Tick::Instant_queue.push({{x_2, y_2, z_2}, cpos_2});
+                                    });
+                                }
+                                Tick::Instant_queue.push({{x, y, z}, cpos});
+                            }
                         });
 
                         World_Map::Set_Dirty(cx, cz);
@@ -110,7 +118,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
 
                             World_Map::notifyNeighborBlocks(LastCord, LastC, [](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos) {
                                 if (const auto b = ch.get_state(x, y, z))
-                                    b->onNeighborChanged({x, y, z}, cpos);
+                                    Tick::Instant_queue.push({{x, y, z}, cpos});
                             });
 
                             World_Map::Set_Dirty(LastC.x, LastC.y);
