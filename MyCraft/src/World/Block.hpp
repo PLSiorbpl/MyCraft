@@ -8,6 +8,7 @@ class Block {
 public:
     virtual ~Block() = default;
     [[nodiscard]] virtual Block* clone() const = 0;
+    [[nodiscard]] virtual bool needsState() const { return false; }
 
     Model *model;
     glm::ivec2 uv;
@@ -18,8 +19,9 @@ public:
     virtual uint8_t getPower(const glm::ivec3& pos, const glm::ivec2 &chunk) { return 0; }
     virtual bool conductsPower() { return true; }
     virtual void onRemove(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
-    virtual void onActivate(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
-    virtual void onNeighborChanged(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
+    virtual void onInteraction(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
+    virtual void onInstantUpdate(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
+    virtual void onTickUpdate(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
 
     virtual std::string get_name() { if (model) return model->name; else return "No Model!"; }
 
@@ -149,6 +151,7 @@ public:
     [[nodiscard]] Block* clone() const override {
         return new Lamp(*this);
     }
+    [[nodiscard]] bool needsState() const override { return true; }
 
     Lamp() {
         is_solid = true;
@@ -157,8 +160,8 @@ public:
         model = &Models_cache["Lamp"];
     }
 
-    void onPlace(const glm::ivec3 &pos, const glm::ivec2 &chunk) override { onNeighborChanged(pos, chunk); }
-    void onNeighborChanged(const glm::ivec3& pos, const glm::ivec2 &chunk) override;
+    void onPlace(const glm::ivec3 &pos, const glm::ivec2 &chunk) override { onInstantUpdate(pos, chunk); }
+    void onInstantUpdate(const glm::ivec3& pos, const glm::ivec2 &chunk) override;
 
     std::string get_name() override { if (model) return model->name + (lit ? ": ON" : ": OFF"); else return "No Model!"; }
 
@@ -171,6 +174,7 @@ public:
     [[nodiscard]] Block* clone() const override {
         return new Redstone_dust(*this);
     }
+    [[nodiscard]] bool needsState() const override { return true; }
 
     Redstone_dust() {
         is_solid = true;
@@ -181,7 +185,7 @@ public:
 
     uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
     bool conductsPower() override { return false; }
-    void onNeighborChanged(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
+    void onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
 
     std::string get_name() override { if (model) return model->name + " " + std::to_string(power); else return "No Model!"; }
 
@@ -197,4 +201,31 @@ public:
 
 private:
     uint8_t power = false;
+};
+
+class Repeater : public Block {
+public:
+    [[nodiscard]] Block* clone() const override {
+        return new Repeater(*this);
+    }
+    [[nodiscard]] bool needsState() const override { return true; }
+
+    Repeater() {
+        is_solid = true;
+        is_transparent = false;
+        uv = glm::ivec2(7, 1);
+        model = &Models_cache["Repeater Off"];
+    }
+
+    bool conductsPower() override { return false; }
+    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk) override { if (powered) return 16; return 0; }
+    void onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
+    void onTickUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
+
+    std::string get_name() override { if (model) return model->name + " delay:" + std::to_string(delay); else return "No Model!"; }
+
+private:
+    bool powered = false;
+    uint8_t delay = 20;
+    bool scheduled = false;
 };

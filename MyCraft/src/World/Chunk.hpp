@@ -18,6 +18,7 @@ enum class block_type : uint16_t {
     Water,
     Lamp,
     Redstone_dust,
+    Repeater,
 
     _count
 };
@@ -108,7 +109,7 @@ public:
 
     void create_state(const int x, const int y, const int z) {
         auto &b = blocks[index(x, y, z)];
-        if (b.state == 0) {
+        if (b.state == 0 && block_cache[static_cast<size_t>(b.id)]->needsState()) {
             block_state.push_back(block_cache[static_cast<size_t>(b.id)]->clone());
             block_state_owner.push_back(index(x, y, z));
             b.state = block_state.size();

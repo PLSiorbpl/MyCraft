@@ -13,6 +13,7 @@ void init_block_state() {
     block_cache[static_cast<int>(block_type::Water)] = new Water();
     block_cache[static_cast<int>(block_type::Lamp)]  = new Lamp();
     block_cache[static_cast<int>(block_type::Redstone_dust)]  = new Redstone_dust();
+    block_cache[static_cast<int>(block_type::Repeater)]  = new Repeater();
 }
 
 void Chunk::SendData() {

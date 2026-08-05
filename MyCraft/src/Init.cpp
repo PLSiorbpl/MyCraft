@@ -58,13 +58,14 @@ bool Game::Init_JSON() {
                     if (it.value()["cull"] == "no") f.cull = Cull::No;
                     if (it.value()["cull"] == "yes") f.cull = Cull::Yes;
                     if (it.value()["cull"] == "force") f.cull = Cull::Force;
+                    if (it.value()["cullface"] != "") f.cull = Cull::Yes;
 
-                    if (it.key() == "north") { e.north = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::ZN); }
-                    else if (it.key() == "south") { e.south = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::ZP); }
-                    else if (it.key() == "east") { e.east = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::XP); }
-                    else if (it.key() == "west") { e.west = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::XN); }
-                    else if (it.key() == "up") { e.up = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::YP); }
-                    else if (it.key() == "down") { e.down = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::YN); }
+                    if (it.key() == "north") { e.north = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::North); }
+                    else if (it.key() == "south") { e.south = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::South); }
+                    else if (it.key() == "east") { e.east = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::East); }
+                    else if (it.key() == "west") { e.west = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::West); }
+                    else if (it.key() == "up") { e.up = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::Up); }
+                    else if (it.key() == "down") { e.down = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::Down); }
                 }
                 model.elements.push_back(e);
             }

@@ -5,22 +5,22 @@
 #include <vector>
 #include <string>
 
-enum class Face_id : uint8_t {
-    XN = 0,
-    XP = 1,
-    YN = 2,
-    YP = 3,
-    ZN = 4,
-    ZP = 5
+enum class Direction : uint8_t {
+    West = 0, // -X
+    East = 1, // +X
+    Down = 2, // -Y
+    Up = 3, // +Y
+    North = 4, // -Z
+    South = 5  // +Z
 };
 
 enum class Face_dir : uint8_t {
-    XN = 1 << 0,
-    XP = 1 << 1,
-    YN = 1 << 2,
-    YP = 1 << 3,
-    ZN = 1 << 4,
-    ZP = 1 << 5
+    West = 1 << 0,
+    East = 1 << 1,
+    Down = 1 << 2,
+    Up = 1 << 3,
+    North = 1 << 4,
+    South = 1 << 5
 };
 
 enum class Cull : uint8_t {
@@ -32,12 +32,12 @@ enum class Cull : uint8_t {
 struct Face {
     glm::ivec2 texture;
     glm::vec4 uv;
-    Cull cull;
+    Cull cull = Cull::No;
 };
 
 struct Element {
-    glm::vec3 from;
-    glm::vec3 to;
+    glm::ivec3 from;
+    glm::ivec3 to;
 
     std::optional<Face> north;
     std::optional<Face> south;
