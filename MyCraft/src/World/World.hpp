@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "Chunk.hpp"
+#include "Direction.hpp"
 
 namespace World_Map {
     struct PairHash {
@@ -44,6 +45,9 @@ namespace World_Map {
     uint8_t getMAX_Neighbor_Conduct_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos);
     uint8_t getANY_Neighbor_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos);
     uint8_t getANY_Neighbor_Conduct_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos);
+    uint8_t get_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos, Direction direction);
+    uint8_t getMAX_Conduct_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos, Direction direction);
+    uint8_t getANY_Conduct_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos, Direction direction);
 
     void Set_Dirty(int chunkx, int chunkz);
     void Set_Neighbors_Dirty(int localx, int localz, int chunkx, int chunkz);
@@ -56,7 +60,7 @@ namespace World_Map {
         auto* c = find_chunk(chunkPos.x, chunkPos.y);
         if (!c) return;
 
-        auto call = [&](Chunk* ch, int x, int y, int z, const glm::ivec2& cpos) {
+        auto call = [&](Chunk* ch, int x, int y, int z, const glm::ivec2& cpos, Direction dir) {
             if (!ch) return;
 
             if (ch->get(x, y, z).id == block_type::Air)
@@ -66,49 +70,49 @@ namespace World_Map {
                 ch->create_state(x, y, z);
             }
 
-            fn(*ch, x, y, z, cpos);
+            fn(*ch, x, y, z, cpos, dir);
         };
 
         // X-
         if (pos.x - 1 < 0) {
             auto* n = find_chunk(chunkPos.x - 1, chunkPos.y);
-            if (n) call(n, Chunk::WIDTH - 1, pos.y, pos.z, {chunkPos.x - 1, chunkPos.y});
+            if (n) call(n, Chunk::WIDTH - 1, pos.y, pos.z, {chunkPos.x - 1, chunkPos.y}, Direction::West);
         } else {
-            call(c, pos.x - 1, pos.y, pos.z, chunkPos);
+            call(c, pos.x - 1, pos.y, pos.z, chunkPos, Direction::West);
         }
 
         // X+
         if (pos.x + 1 >= Chunk::WIDTH) {
             auto* n = find_chunk(chunkPos.x + 1, chunkPos.y);
-            if (n) call(n, 0, pos.y, pos.z, {chunkPos.x + 1, chunkPos.y});
+            if (n) call(n, 0, pos.y, pos.z, {chunkPos.x + 1, chunkPos.y}, Direction::East);
         } else {
-            call(c, pos.x + 1, pos.y, pos.z, chunkPos);
+            call(c, pos.x + 1, pos.y, pos.z, chunkPos, Direction::East);
         }
 
         // Z-
         if (pos.z - 1 < 0) {
             auto* n = find_chunk(chunkPos.x, chunkPos.y - 1);
-            if (n) call(n, pos.x, pos.y, Chunk::DEPTH - 1, {chunkPos.x, chunkPos.y - 1});
+            if (n) call(n, pos.x, pos.y, Chunk::DEPTH - 1, {chunkPos.x, chunkPos.y - 1}, Direction::North);
         } else {
-            call(c, pos.x, pos.y, pos.z - 1, chunkPos);
+            call(c, pos.x, pos.y, pos.z - 1, chunkPos, Direction::North);
         }
 
         // Z+
         if (pos.z + 1 >= Chunk::DEPTH) {
             auto* n = find_chunk(chunkPos.x, chunkPos.y + 1);
-            if (n) call(n, pos.x, pos.y, 0, {chunkPos.x, chunkPos.y + 1});
+            if (n) call(n, pos.x, pos.y, 0, {chunkPos.x, chunkPos.y + 1}, Direction::South);
         } else {
-            call(c, pos.x, pos.y, pos.z + 1, chunkPos);
+            call(c, pos.x, pos.y, pos.z + 1, chunkPos, Direction::South);
         }
 
         // Y+
         if (pos.y + 1 < Chunk::HEIGHT) {
-            call(c, pos.x, pos.y + 1, pos.z, chunkPos);
+            call(c, pos.x, pos.y + 1, pos.z, chunkPos, Direction::Up);
         }
 
         // Y-
         if (pos.y - 1 >= 0) {
-            call(c, pos.x, pos.y - 1, pos.z, chunkPos);
+            call(c, pos.x, pos.y - 1, pos.z, chunkPos, Direction::Down);
         }
     }
 };

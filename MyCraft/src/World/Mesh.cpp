@@ -2,6 +2,7 @@
 #include <array>
 
 #include "World.hpp"
+#include "Direction.hpp"
 
 void Mesh::GenerateMesh(Chunk& chunk) {
     const int chunkX = chunk.chunkX;

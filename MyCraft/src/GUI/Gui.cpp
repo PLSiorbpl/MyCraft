@@ -3,7 +3,7 @@
 #include "Common/Gui_Types.hpp"
 #include "Render/Camera.hpp"
 #include <Utils/InputManager.hpp>
-#include "Chunk.hpp"
+#include "World/Chunk.hpp"
 
 using namespace gui;
 
@@ -15,14 +15,14 @@ void Gui::HotBar() {
     DrawRectangle({Anch::BottomCenter, Size, {0.0f, -2.0f}}, {rgb(0x303030), Texture_Id::None});
 
     if (InputManager::ScrollY != 0) {
-        Camera.HotBarSlot = wrap(Camera.HotBarSlot - InputManager::ScrollY, 10);
+        Camera.HotBarSlot = wrap(Camera.HotBarSlot - InputManager::ScrollY, 11);
         Camera.ItemHeld = (Camera.HotBarSlot % static_cast<int>(block_type::_count));
         InputManager::ScrollY = 0;
     }
 
     Size = glm::vec2(slotSize);
     if (!Camera.Mode) {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 11; i++) {
             DrawRectangle({Anch::BottomCenter, Size, {-84.0f+(i*slotSpacing), -3.5f}}, {{i, 0,0,0}, Texture_Id::Block});
         }
         // Selected Slot

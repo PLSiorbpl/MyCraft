@@ -58,7 +58,7 @@ bool Game::Init_JSON() {
                     if (it.value()["cull"] == "no") f.cull = Cull::No;
                     if (it.value()["cull"] == "yes") f.cull = Cull::Yes;
                     if (it.value()["cull"] == "force") f.cull = Cull::Force;
-                    if (it.value()["cullface"] != "") f.cull = Cull::Yes;
+                    if (it.key() == "cullface") f.cull = Cull::Yes;
 
                     if (it.key() == "north") { e.north = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::North); }
                     else if (it.key() == "south") { e.south = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::South); }

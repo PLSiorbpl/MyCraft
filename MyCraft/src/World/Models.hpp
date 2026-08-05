@@ -5,15 +5,6 @@
 #include <vector>
 #include <string>
 
-enum class Direction : uint8_t {
-    West = 0, // -X
-    East = 1, // +X
-    Down = 2, // -Y
-    Up = 3, // +Y
-    North = 4, // -Z
-    South = 5  // +Z
-};
-
 enum class Face_dir : uint8_t {
     West = 1 << 0,
     East = 1 << 1,

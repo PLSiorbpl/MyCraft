@@ -4,16 +4,17 @@
 std::array<Block *, static_cast<int>(block_type::_count)> block_cache;
 
 void init_block_state() {
-    block_cache[static_cast<int>(block_type::Air)]   = new Air();
-    block_cache[static_cast<int>(block_type::Stone)] = new Stone();
-    block_cache[static_cast<int>(block_type::Grass)] = new Grass();
-    block_cache[static_cast<int>(block_type::Dirt)]  = new Dirt();
-    block_cache[static_cast<int>(block_type::Iron)]  = new Iron();
-    block_cache[static_cast<int>(block_type::Wool)]  = new Wool();
-    block_cache[static_cast<int>(block_type::Water)] = new Water();
-    block_cache[static_cast<int>(block_type::Lamp)]  = new Lamp();
+    block_cache[static_cast<int>(block_type::Air)]            = new Air();
+    block_cache[static_cast<int>(block_type::Stone)]          = new Stone();
+    block_cache[static_cast<int>(block_type::Grass)]          = new Grass();
+    block_cache[static_cast<int>(block_type::Dirt)]           = new Dirt();
+    block_cache[static_cast<int>(block_type::Iron)]           = new Iron();
+    block_cache[static_cast<int>(block_type::Wool)]           = new Wool();
+    block_cache[static_cast<int>(block_type::Water)]          = new Water();
+    block_cache[static_cast<int>(block_type::Lamp)]           = new Lamp();
     block_cache[static_cast<int>(block_type::Redstone_dust)]  = new Redstone_dust();
-    block_cache[static_cast<int>(block_type::Repeater)]  = new Repeater();
+    block_cache[static_cast<int>(block_type::Repeater)]       = new Repeater();
+    block_cache[static_cast<int>(block_type::Redstone_Torch)] = new Redstone_Torch();
 }
 
 void Chunk::SendData() {

@@ -22,13 +22,6 @@ endif()
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/Include"
-        #"${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/src/GUI"
-        "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/src/Network"
-        "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/src/Player"
-        "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/src/Render"
-        "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/src/Shader_Utils"
-        "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/src/World"
-        "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/src/Utils"
         "${CMAKE_CURRENT_SOURCE_DIR}/MyCraft/src"
 )
 

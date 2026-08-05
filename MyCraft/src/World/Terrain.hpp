@@ -2,7 +2,7 @@
 #include "FastNoiseLite.h"
 #include <glm/glm.hpp>
 
-#include "Globals.hpp"
+#include "Utils/Globals.hpp"
 #include "World.hpp"
 
 class TerrainGen {

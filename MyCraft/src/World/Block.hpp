@@ -3,6 +3,7 @@
 #include "glm/glm.hpp"
 
 #include "Models.hpp"
+#include "Direction.hpp"
 
 class Block {
 public:
@@ -16,7 +17,7 @@ public:
     bool is_transparent;
 
     virtual void onPlace(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
-    virtual uint8_t getPower(const glm::ivec3& pos, const glm::ivec2 &chunk) { return 0; }
+    virtual uint8_t getPower(const glm::ivec3& pos, const glm::ivec2 &chunk, const Direction dir) { return 0; }
     virtual bool conductsPower() { return true; }
     virtual void onRemove(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
     virtual void onInteraction(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
@@ -109,7 +110,7 @@ public:
         model = &Models_cache["Iron"];
     }
 
-    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk) override { return 16; }
+    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, const Direction dir) override { return 16; }
 };
 
 class Wool : public Block {
@@ -183,7 +184,7 @@ public:
         model = &Models_cache["Redstone_dust"];
     }
 
-    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
+    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, const Direction dir) override { return power; }
     bool conductsPower() override { return false; }
     void onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
 
@@ -218,13 +219,40 @@ public:
     }
 
     bool conductsPower() override { return false; }
-    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk) override { if (powered) return 16; return 0; }
+    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, const Direction dir) override { if (powered && Opposite(dir) == direction_) return 16; return 0; }
     void onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
     void onTickUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
 
     std::string get_name() override { if (model) return model->name + " delay:" + std::to_string(delay); else return "No Model!"; }
 
 private:
+    Direction direction_ = Direction::North;
+    bool powered = false;
+    uint8_t delay = 20;
+    bool scheduled = false;
+};
+
+class Redstone_Torch : public Block {
+public:
+    [[nodiscard]] Block* clone() const override {
+        return new Redstone_Torch(*this);
+    }
+    [[nodiscard]] bool needsState() const override { return true; }
+
+    Redstone_Torch() {
+        is_solid = true;
+        is_transparent = false;
+        uv = glm::ivec2(7, 3);
+        model = &Models_cache["Redstone Torch Off"];
+    }
+
+    bool conductsPower() override { return false; }
+    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, const Direction dir) override { if (!powered && Opposite(dir) == direction_) return 16; return 0; }
+    void onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
+    void onTickUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
+
+private:
+    Direction direction_ = Direction::North;
     bool powered = false;
     uint8_t delay = 20;
     bool scheduled = false;

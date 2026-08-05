@@ -2,7 +2,7 @@
 #include <algorithm>
 
 #include "Utils/Globals.hpp"
-#include "Shader.hpp"
+#include "Shader_Utils/Shader.hpp"
 #include "Utils/InputManager.hpp"
 
 using namespace gui;

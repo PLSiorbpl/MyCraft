@@ -2,8 +2,8 @@
 #include <queue>
 #include <vector>
 
-#include "Movement.hpp"
-#include "SelectionBox.hpp"
+#include "Player/Movement.hpp"
+#include "Render/SelectionBox.hpp"
 
 namespace Tick {
     struct Instant_Update {
