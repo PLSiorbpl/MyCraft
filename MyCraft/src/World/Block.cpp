@@ -16,9 +16,9 @@ void Lamp::onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
 
     if (lit) {
         uv = {0, 4};
-        model = &Models_cache["Lamp_lit"];
+        model = Models_cache["Lamp_lit"].get(Direction::North);
     } else {
-        model = &Models_cache["Lamp"];
+        model = Models_cache["Lamp"].get(Direction::North);
         uv = {7, 0};
     }
 }
@@ -61,8 +61,8 @@ void Repeater::onTickUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
     if (p == powered) return;
     powered = p;
 
-    if (powered) model = &Models_cache["Repeater On"];
-    else model = &Models_cache["Repeater Off"];
+    if (powered) model = Models_cache["Repeater On"].get(direction_);
+    else model = Models_cache["Repeater Off"].get(direction_);
 
     World_Map::Set_Dirty(chunk.x, chunk.y);
     World_Map::Set_Neighbors_Dirty(pos.x, pos.z, chunk.x, chunk.y);
@@ -90,11 +90,29 @@ void Redstone_Torch::onTickUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk
     if (p == powered) return;
     powered = p;
 
-    if (powered) model = &Models_cache["Redstone Torch On"];
-    else model = &Models_cache["Redstone Torch Off"];
+    if (powered) model = Models_cache["Redstone Torch On"].get(direction_);
+    else model = Models_cache["Redstone Torch Off"].get(direction_);
 
     World_Map::Set_Dirty(chunk.x, chunk.y);
     World_Map::Set_Neighbors_Dirty(pos.x, pos.z, chunk.x, chunk.y);
 
     World_Map::notifyNeighborBlocksConduct(pos, chunk);
+}
+
+void Repeater::onPlace(const glm::ivec3 &pos, const glm::ivec2 &chunk, Direction dir) {
+    direction_ = dir;
+    if (powered) model = Models_cache["Repeater On"].get(direction_);
+    else model = Models_cache["Repeater Off"].get(direction_);
+
+    World_Map::Set_Dirty(chunk.x, chunk.y);
+    World_Map::Set_Neighbors_Dirty(pos.x, pos.z, chunk.x, chunk.y);
+}
+
+void Redstone_Torch::onPlace(const glm::ivec3 &pos, const glm::ivec2 &chunk, Direction dir) {
+    direction_ = dir;
+    if (powered) model = Models_cache["Redstone Torch On"].get(direction_);
+    else model = Models_cache["Redstone Torch Off"].get(direction_);
+
+    World_Map::Set_Dirty(chunk.x, chunk.y);
+    World_Map::Set_Neighbors_Dirty(pos.x, pos.z, chunk.x, chunk.y);
 }

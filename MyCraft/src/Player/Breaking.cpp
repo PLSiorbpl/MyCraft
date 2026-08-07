@@ -100,7 +100,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
                             break;
                         } else {
                             LastChunk->create_state(LastCord.x, LastCord.y, LastCord.z);
-                            LastChunk->get_state(LastCord.x, LastCord.y, LastCord.z)->onPlace(LastCord, LastC);
+                            LastChunk->get_state(LastCord.x, LastCord.y, LastCord.z)->onPlace(LastCord, LastC, GetDirection(direction));
 
                             Tick::Instant_queue.push({LastCord, LastC});
                             World_Map::notifyNeighborBlocks(LastCord, LastC);

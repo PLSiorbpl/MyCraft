@@ -10,6 +10,30 @@ enum class Direction : uint8_t {
     All,
 };
 
+inline Direction GetDirection(const glm::vec3& dir) {
+    const float ax = std::abs(dir.x);
+    const float ay = std::abs(dir.y);
+    const float az = std::abs(dir.z);
+
+    if (ay > ax && ay > az)
+        return dir.y > 0 ? Direction::Up : Direction::Down;
+    if (ax > az)
+        return dir.x > 0 ? Direction::East : Direction::West;
+    return dir.z > 0 ? Direction::South : Direction::North;
+}
+
+inline std::string Direction_to_String(const Direction dir) {
+    switch (dir) {
+        case Direction::West: return "West";
+        case Direction::East: return "East";
+        case Direction::Down: return "Down";
+        case Direction::Up: return "Up";
+        case Direction::North: return "North";
+        case Direction::South: return "South";
+        default: return "All";
+    }
+}
+
 inline Direction Opposite(const Direction dir) {
     switch (dir) {
         case Direction::West: return Direction::East;

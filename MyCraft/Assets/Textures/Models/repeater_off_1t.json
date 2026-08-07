@@ -8,6 +8,8 @@
     "unlit": "block/redstone_torch_off"
   },
 
+  "variants": [ "North", "South", "East", "West" ],
+
   "elements": [
     {   "from": [ 0, 0, 0 ],
       "to": [ 16, 2, 16 ],

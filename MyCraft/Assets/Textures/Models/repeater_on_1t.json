@@ -8,6 +8,8 @@
     "lit": "block/redstone_torch_on"
   },
 
+  "variants": [ "North", "South", "East", "West" ],
+
   "elements": [
     {   "from": [ 0, 0, 0 ],
       "to": [ 16, 2, 16 ],

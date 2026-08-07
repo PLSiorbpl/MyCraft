@@ -7,8 +7,6 @@
 void Mesh::GenerateMesh(Chunk& chunk) {
     const int chunkX = chunk.chunkX;
     const int chunkZ = chunk.chunkZ;
-    const int worldOffsetX = chunkX * Chunk::WIDTH;
-    const int worldOffsetZ = chunkZ * Chunk::DEPTH;
 
     const auto cxp = World_Map::find_chunk(chunkX + 1, chunkZ);
     const auto cxn = World_Map::find_chunk(chunkX - 1, chunkZ);
@@ -30,17 +28,17 @@ void Mesh::GenerateMesh(Chunk& chunk) {
                 const auto &m = b->model->occlusionMask;
                 const auto idx = y * Chunk::DEPTH + z;
 
-                if (m & static_cast<int>(Face_dir::East))
+                if (m & static_cast<int>(Face_mask::East))
                     Occlusion[static_cast<int>(Direction::East)][idx] |= 1u << x;
-                if (m & static_cast<int>(Face_dir::West))
+                if (m & static_cast<int>(Face_mask::West))
                     Occlusion[static_cast<int>(Direction::West)][idx] |= 1u << x;
-                if (m & static_cast<int>(Face_dir::South))
+                if (m & static_cast<int>(Face_mask::South))
                     Occlusion[static_cast<int>(Direction::South)][idx] |= 1u << x;
-                if (m & static_cast<int>(Face_dir::North))
+                if (m & static_cast<int>(Face_mask::North))
                     Occlusion[static_cast<int>(Direction::North)][idx] |= 1u << x;
-                if (m & static_cast<int>(Face_dir::Up))
+                if (m & static_cast<int>(Face_mask::Up))
                     Occlusion[static_cast<int>(Direction::Up)][idx] |= 1u << x;
-                if (m & static_cast<int>(Face_dir::Down))
+                if (m & static_cast<int>(Face_mask::Down))
                     Occlusion[static_cast<int>(Direction::Down)][idx] |= 1u << x;
             }
         }
@@ -61,7 +59,7 @@ void Mesh::GenerateMesh(Chunk& chunk) {
                 uint32_t bits = 0;
                 for (int x = 0; x < Chunk::WIDTH; x++) {
                     if (czp) {
-                        if (czp->get_state(x, y, 0)->model->occlusionMask & static_cast<int>(Face_dir::North))
+                        if (czp->get_state(x, y, 0)->model->occlusionMask & static_cast<int>(Face_mask::North))
                             bits |= (static_cast<uint32_t>(1) << x);
                     } else
                         bits |= (static_cast<uint32_t>(1) << x);
@@ -80,7 +78,7 @@ void Mesh::GenerateMesh(Chunk& chunk) {
                 uint32_t bits = 0;
                 for (int x = 0; x < Chunk::WIDTH; x++) {
                     if (czn) {
-                        if (czn->get_state(x, y, Chunk::DEPTH - 1)->model->occlusionMask & static_cast<int>(Face_dir::South))
+                        if (czn->get_state(x, y, Chunk::DEPTH - 1)->model->occlusionMask & static_cast<int>(Face_mask::South))
                             bits |= (static_cast<uint32_t>(1) << x);
                     } else
                         bits |= (static_cast<uint32_t>(1) << x);
@@ -121,17 +119,17 @@ void Mesh::GenerateMesh(Chunk& chunk) {
                     //-------------------------
                     // X+
                     if (x + 1 < Chunk::WIDTH) {
-                        if (shouldRender(elem.east, !(chunk.get_state(x+1, y, z)->model->occlusionMask & static_cast<int>(Face_dir::West))))
+                        if (shouldRender(elem.east, !(chunk.get_state(x+1, y, z)->model->occlusionMask & static_cast<int>(Face_mask::West))))
                             MeshXFace(vertices, w, elem, block, 1);
-                    } else if (shouldRender(elem.east, cxp && !(cxp->get_state(0, y, z)->model->occlusionMask & static_cast<int>(Face_dir::West)))) {
+                    } else if (shouldRender(elem.east, cxp && !(cxp->get_state(0, y, z)->model->occlusionMask & static_cast<int>(Face_mask::West)))) {
                         MeshXFace(vertices, w, elem, block, 1);
                     }
                     //-------------------------
                     // X-
                     if (x - 1 >= 0) {
-                        if (shouldRender(elem.west, !(chunk.get_state(x-1, y, z)->model->occlusionMask & static_cast<int>(Face_dir::East))))
+                        if (shouldRender(elem.west, !(chunk.get_state(x-1, y, z)->model->occlusionMask & static_cast<int>(Face_mask::East))))
                             MeshXFace(vertices, w, elem, block, -1);
-                    } else if (shouldRender(elem.west, cxn && !(cxn->get_state(Chunk::WIDTH - 1, y, z)->model->occlusionMask & static_cast<int>(Face_dir::East)))) {
+                    } else if (shouldRender(elem.west, cxn && !(cxn->get_state(Chunk::WIDTH - 1, y, z)->model->occlusionMask & static_cast<int>(Face_mask::East)))) {
                         MeshXFace(vertices, w, elem, block, -1);
                     }
                 }

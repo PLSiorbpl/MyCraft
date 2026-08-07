@@ -16,7 +16,7 @@ public:
     bool is_solid;
     bool is_transparent;
 
-    virtual void onPlace(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
+    virtual void onPlace(const glm::ivec3& pos, const glm::ivec2 &chunk, Direction dir) {}
     virtual uint8_t getPower(const glm::ivec3& pos, const glm::ivec2 &chunk, const Direction dir) { return 0; }
     virtual bool conductsPower() { return true; }
     virtual void onRemove(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
@@ -24,6 +24,7 @@ public:
     virtual void onInstantUpdate(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
     virtual void onTickUpdate(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
 
+    [[nodiscard]] virtual Direction facing() const { return Direction::North; }
     virtual std::string get_name() { if (model) return model->name; else return "No Model!"; }
 
     virtual glm::vec3 get_overlay() { return {1.0f, 1.0f, 1.0f}; }
@@ -41,7 +42,7 @@ public:
         is_solid = false;
         is_transparent = true;
         uv = glm::ivec2(0, 0);
-        model = &Models_cache["Air"];
+        model = Models_cache["Air"].get(Direction::North);
     }
 
     bool conductsPower() override { return false; }
@@ -59,7 +60,7 @@ public:
         is_solid = true;
         is_transparent = false;
         uv = glm::ivec2(1, 0);
-        model = &Models_cache["Stone"];
+        model = Models_cache["Stone"].get(Direction::North);
     }
 
 private:
@@ -75,7 +76,7 @@ public:
         is_solid = true;
         is_transparent = false;
         uv = glm::ivec2(2, 0);
-        model = &Models_cache["Grass"];
+        model = Models_cache["Grass"].get(Direction::North);
     }
 
 private:
@@ -91,7 +92,7 @@ public:
         is_solid = true;
         is_transparent = false;
         uv = glm::ivec2(2, 2);
-        model = &Models_cache["Dirt"];
+        model = Models_cache["Dirt"].get(Direction::North);
     }
 
 private:
@@ -107,7 +108,7 @@ public:
         is_solid = true;
         is_transparent = false;
         uv = glm::ivec2(3, 0);
-        model = &Models_cache["Iron"];
+        model = Models_cache["Iron"].get(Direction::North);
     }
 
     uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, const Direction dir) override { return 16; }
@@ -123,7 +124,7 @@ public:
         is_solid = true;
         is_transparent = false;
         uv = glm::ivec2(4, 0);
-        model = &Models_cache["Wool"];
+        model = Models_cache["Wool"].get(Direction::North);
     }
 
 private:
@@ -139,7 +140,7 @@ public:
         is_solid = true;
         is_transparent = false;
         uv = glm::ivec2(5, 0);
-        model = &Models_cache["Water"];
+        model = Models_cache["Water"].get(Direction::North);
     }
 
     bool conductsPower() override { return false; }
@@ -158,10 +159,9 @@ public:
         is_solid = true;
         is_transparent = false;
         uv = glm::ivec2(6, 0);
-        model = &Models_cache["Lamp"];
+        model = Models_cache["Lamp"].get(Direction::North);
     }
 
-    void onPlace(const glm::ivec3 &pos, const glm::ivec2 &chunk) override { onInstantUpdate(pos, chunk); }
     void onInstantUpdate(const glm::ivec3& pos, const glm::ivec2 &chunk) override;
 
     std::string get_name() override { if (model) return model->name + (lit ? ": ON" : ": OFF"); else return "No Model!"; }
@@ -181,7 +181,7 @@ public:
         is_solid = true;
         is_transparent = false;
         uv = glm::ivec2(7, 0);
-        model = &Models_cache["Redstone_dust"];
+        model = Models_cache["Redstone_dust"].get(Direction::North);
     }
 
     uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, const Direction dir) override { return power; }
@@ -215,20 +215,22 @@ public:
         is_solid = true;
         is_transparent = false;
         uv = glm::ivec2(7, 1);
-        model = &Models_cache["Repeater Off"];
+        model = Models_cache["Repeater Off"].get(direction_);
     }
 
+    void onPlace(const glm::ivec3 &pos, const glm::ivec2 &chunk, Direction dir) override;
     bool conductsPower() override { return false; }
     uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, const Direction dir) override { if (powered && Opposite(dir) == direction_) return 16; return 0; }
     void onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
     void onTickUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
 
+    [[nodiscard]] Direction facing() const override { return direction_; }
     std::string get_name() override { if (model) return model->name + " delay:" + std::to_string(delay); else return "No Model!"; }
 
 private:
-    Direction direction_ = Direction::North;
+    Direction direction_ = Direction::South;
     bool powered = false;
-    uint8_t delay = 20;
+    uint8_t delay = 6;
     bool scheduled = false;
 };
 
@@ -243,17 +245,20 @@ public:
         is_solid = true;
         is_transparent = false;
         uv = glm::ivec2(7, 3);
-        model = &Models_cache["Redstone Torch Off"];
+        model = Models_cache["Redstone Torch Off"].get(direction_);
     }
 
+    void onPlace(const glm::ivec3 &pos, const glm::ivec2 &chunk, Direction dir) override;
     bool conductsPower() override { return false; }
     uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, const Direction dir) override { if (!powered && Opposite(dir) == direction_) return 16; return 0; }
     void onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
     void onTickUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
 
+    [[nodiscard]] Direction facing() const override { return direction_; }
+
 private:
-    Direction direction_ = Direction::North;
+    Direction direction_ = Direction::East;
     bool powered = false;
-    uint8_t delay = 20;
+    uint8_t delay = 6;
     bool scheduled = false;
 };

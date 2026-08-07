@@ -115,6 +115,8 @@ glm::mat4 Movement::GetViewMatrix() {
         std::sin(glm::radians(Camera.Yaw)) * std::cos(glm::radians(Camera.Pitch))
     );
 
+    Camera.direction = GetDirection(direction);
+
     const glm::vec3 front = glm::normalize(direction);
     const glm::vec3 right = glm::normalize(glm::cross(front, glm::vec3(0,1,0)));
     const glm::vec3 up    = glm::normalize(glm::cross(right, front));

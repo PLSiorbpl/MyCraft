@@ -8,6 +8,7 @@ public:
     glm::vec3 Position = glm::vec3(0.0f, 100.0f, 0.0f);
     float Pitch = 0.0f;
     float Yaw = -90.0f;
+    Direction direction = Direction::North;
     bool Mouse_Visible = false;
     bool Can_Move = true;
     Block *looking_at = nullptr;

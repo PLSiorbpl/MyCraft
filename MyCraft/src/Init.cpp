@@ -38,39 +38,68 @@ bool Game::Init_JSON() {
         try {
             json data = json::parse(file);
             Model model;
+            if (!data.contains("name") && data["name"].is_string()) {
+                std::cerr << "File " << entry.path() << " does not contain any \"name\"!\n";
+                continue;
+            }
             model.name = data["name"];
+
+            if (!data.contains("elements") || !data["elements"].is_array()) {
+                std::cerr << "File " << entry.path() << " does not contain a valid \"elements\" array!\n";
+                continue;
+            }
 
             for (const auto &elem : data["elements"]) {
                 Element e = {};
 
-                e.from = {elem["from"][0], elem["from"][1], elem["from"][2]};
-                e.to = {elem["to"][0], elem["to"][1], elem["to"][2]};
-                //e.from /= 16.0f;
-                //e.to /= 16.0f;
+                if (elem.contains("from") && elem["from"].is_array() && elem["from"].size() == 3)
+                    e.from = {elem["from"][0].get<int>(), elem["from"][1].get<int>(), elem["from"][2].get<int>()};
+                if (elem.contains("to") && elem["to"].is_array() && elem["to"].size() == 3)
+                    e.to = {elem["to"][0].get<int>(), elem["to"][1].get<int>(), elem["to"][2].get<int>()};
 
                 const auto &faces = elem["faces"];
                 for (auto it = faces.begin(); it != faces.end(); ++it) {
                     Face f = {};
-                    f.texture = {it.value()["texture"][0], it.value()["texture"][1]};
-                    f.uv = {it.value()["uv"][0], it.value()["uv"][1], it.value()["uv"][2], it.value()["uv"][3]};
+                    if (it.value().contains("texture") && it.value()["texture"].is_array() && it.value()["texture"].size() == 2)
+                        f.texture = {it.value()["texture"][0], it.value()["texture"][1]};
+                    if (it.value().contains("uv") && it.value()["uv"].is_array() && it.value()["uv"].size() == 4)
+                        f.uv = {it.value()["uv"][0], it.value()["uv"][1], it.value()["uv"][2], it.value()["uv"][3]};
                     f.uv /= 16.0f;
 
-                    if (it.value()["cull"] == "no") f.cull = Cull::No;
-                    if (it.value()["cull"] == "yes") f.cull = Cull::Yes;
-                    if (it.value()["cull"] == "force") f.cull = Cull::Force;
-                    if (it.key() == "cullface") f.cull = Cull::Yes;
+                    if (it.value().contains("cull") && it.value()["cull"].is_string()) {
+                        if (it.value()["cull"] == "no") f.cull = Cull::No;
+                        if (it.value()["cull"] == "yes") f.cull = Cull::Yes;
+                        if (it.value()["cull"] == "force") f.cull = Cull::Force;
+                    }
+                    if (it.value().contains("cullface") && it.value()["cullface"].is_string()) f.cull = Cull::Yes;
 
-                    if (it.key() == "north") { e.north = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::North); }
-                    else if (it.key() == "south") { e.south = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::South); }
-                    else if (it.key() == "east") { e.east = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::East); }
-                    else if (it.key() == "west") { e.west = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::West); }
-                    else if (it.key() == "up") { e.up = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::Up); }
-                    else if (it.key() == "down") { e.down = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_dir::Down); }
+                    if (it.key() == "north") { e.north = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_mask::North); }
+                    else if (it.key() == "south") { e.south = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_mask::South); }
+                    else if (it.key() == "east") { e.east = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_mask::East); }
+                    else if (it.key() == "west") { e.west = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_mask::West); }
+                    else if (it.key() == "up") { e.up = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_mask::Up); }
+                    else if (it.key() == "down") { e.down = f; if (f.cull == Cull::Yes) model.occlusionMask |= static_cast<int>(Face_mask::Down); }
                 }
                 model.elements.push_back(e);
             }
 
-            Models_cache.emplace(model.name, std::move(model));
+            uint8_t variants = 0;
+
+            if (data.contains("variants") && data["variants"].is_array() && data["variants"].size() != 0) {
+                for (const auto& v : data["variants"]) {
+                    const auto dir = v.get<std::string>();
+
+                    if (dir == "West") variants |= 1 << static_cast<uint8_t>(Direction::West);
+                    else if (dir == "East") variants |= 1 << static_cast<uint8_t>(Direction::East);
+                    else if (dir == "Down") variants |= 1 << static_cast<uint8_t>(Direction::Down);
+                    else if (dir == "Up") variants |= 1 << static_cast<uint8_t>(Direction::Up);
+                    else if (dir == "North") variants |= 1 << static_cast<uint8_t>(Direction::North);
+                    else if (dir == "South") variants |= 1 << static_cast<uint8_t>(Direction::South);
+                    else throw std::runtime_error("Unknown direction: " + dir);
+                }
+            }
+
+            Bake(model, variants);
 
         } catch (const json::parse_error& e) {
             std::cerr << "JSON parse error in " << entry.path().filename() << ": " << e.what() << std::endl;
