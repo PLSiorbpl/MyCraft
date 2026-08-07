@@ -52,11 +52,11 @@ namespace World_Map {
     });
     }
 
-    uint8_t getMAX_Neighbor_Power(const glm::ivec3 &pos, const glm::ivec2 &chunkPos) {
+    uint8_t getMAX_Neighbor_Power(const glm::ivec3 &pos, const glm::ivec2 &chunkPos, bool strong) {
         uint8_t p = 0;
-        forEachNeighbor(pos, chunkPos, [&p](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, Direction dir) {
+        forEachNeighbor(pos, chunkPos, [&p, strong](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, Direction dir) {
             if (const auto b = ch.get_state(x, y, z))
-                p = std::max(p, b->getPower({x, y, z}, cpos, dir));
+                p = std::max(p, b->getPower({x, y, z}, cpos, strong, dir));
         });
         return p;
     }
@@ -66,20 +66,20 @@ namespace World_Map {
         forEachNeighbor(pos, chunkPos, [&p](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, Direction dir) {
             if (const auto b = ch.get_state(x, y, z)) {
                 if (b->conductsPower()) {
-                    p = std::max(p, getMAX_Neighbor_Power({x, y, z}, cpos));
+                    p = std::max(p, getMAX_Neighbor_Power({x, y, z}, cpos, true));
                 }
-                p = std::max(p, b->getPower({x, y, z}, cpos, dir));
+                p = std::max(p, b->getPower({x, y, z}, cpos, false, dir));
             }
         });
         return p;
     }
 
-    uint8_t getANY_Neighbor_Power(const glm::ivec3 &pos, const glm::ivec2 &chunkPos) {
+    uint8_t getANY_Neighbor_Power(const glm::ivec3 &pos, const glm::ivec2 &chunkPos, bool strong) {
         uint8_t p = 0;
-        forEachNeighbor(pos, chunkPos, [&p](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, Direction dir) {
+        forEachNeighbor(pos, chunkPos, [&p, strong](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, Direction dir) {
             if (p > 0) return;
             if (const auto b = ch.get_state(x, y, z))
-                p = b->getPower({x, y, z}, cpos, dir);
+                p = b->getPower({x, y, z}, cpos, strong, dir);
         });
         return p;
     }
@@ -90,10 +90,10 @@ namespace World_Map {
             if (p > 0) return;
             if (const auto b = ch.get_state(x, y, z)) {
                 if (b->conductsPower()) {
-                    p = getANY_Neighbor_Power({x, y, z}, cpos);
+                    p = getANY_Neighbor_Power({x, y, z}, cpos, true);
                 }
                 if (p > 0) return;
-                p = b->getPower({x, y, z}, cpos, dir);
+                p = b->getPower({x, y, z}, cpos, false, dir);
             }
         });
         return p;
@@ -104,7 +104,7 @@ namespace World_Map {
         forEachNeighbor(pos, chunkPos, [&p, direction](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, Direction dir) {
             if (direction != dir) return;
             if (const auto b = ch.get_state(x, y, z))
-                p = std::max(p, b->getPower({x, y, z}, cpos, dir));
+                p = std::max(p, b->getPower({x, y, z}, cpos, false, dir));
         });
         return p;
     }
@@ -115,9 +115,9 @@ namespace World_Map {
             if (direction != dir) return;
             if (const auto b = ch.get_state(x, y, z)) {
                 if (b->conductsPower()) {
-                    p = std::max(p, getMAX_Neighbor_Power({x, y, z}, cpos));
+                    p = std::max(p, getMAX_Neighbor_Power({x, y, z}, cpos, true));
                 }
-                p = std::max(p, b->getPower({x, y, z}, cpos, dir));
+                p = std::max(p, b->getPower({x, y, z}, cpos, false, dir));
             }
         });
         return p;
@@ -129,10 +129,10 @@ namespace World_Map {
             if (p > 0 || direction != dir) return;
             if (const auto b = ch.get_state(x, y, z)) {
                 if (b->conductsPower()) {
-                    p = getANY_Neighbor_Power({x, y, z}, cpos);
+                    p = getANY_Neighbor_Power({x, y, z}, cpos, true);
                 }
                 if (p > 0) return;
-                p = b->getPower({x, y, z}, cpos, dir);
+                p = b->getPower({x, y, z}, cpos, false, dir);
             }
         });
         return p;

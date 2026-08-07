@@ -41,9 +41,9 @@ namespace World_Map {
         return nullptr;
     }
 
-    uint8_t getMAX_Neighbor_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos);
+    uint8_t getMAX_Neighbor_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos, bool strong);
     uint8_t getMAX_Neighbor_Conduct_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos);
-    uint8_t getANY_Neighbor_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos);
+    uint8_t getANY_Neighbor_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos, bool strong);
     uint8_t getANY_Neighbor_Conduct_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos);
     uint8_t get_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos, Direction direction);
     uint8_t getMAX_Conduct_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos, Direction direction);

@@ -17,14 +17,13 @@ public:
     bool is_transparent;
 
     virtual void onPlace(const glm::ivec3& pos, const glm::ivec2 &chunk, Direction dir) {}
-    virtual uint8_t getPower(const glm::ivec3& pos, const glm::ivec2 &chunk, const Direction dir) { return 0; }
+    virtual uint8_t getPower(const glm::ivec3& pos, const glm::ivec2 &chunk, bool strong, const Direction dir) { return 0; }
     virtual bool conductsPower() { return true; }
     virtual void onRemove(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
     virtual void onInteraction(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
     virtual void onInstantUpdate(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
     virtual void onTickUpdate(const glm::ivec3& pos, const glm::ivec2 &chunk) {}
 
-    [[nodiscard]] virtual Direction facing() const { return Direction::North; }
     virtual std::string get_name() { if (model) return model->name; else return "No Model!"; }
 
     virtual glm::vec3 get_overlay() { return {1.0f, 1.0f, 1.0f}; }
@@ -111,7 +110,7 @@ public:
         model = Models_cache["Iron"].get(Direction::North);
     }
 
-    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, const Direction dir) override { return 16; }
+    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, bool strong, const Direction dir) override { if (!strong) return 16; return 0;}
 };
 
 class Wool : public Block {
@@ -184,7 +183,7 @@ public:
         model = Models_cache["Redstone_dust"].get(Direction::North);
     }
 
-    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, const Direction dir) override { return power; }
+    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, bool strong, const Direction dir) override { if (!strong) return power; return 0; }
     bool conductsPower() override { return false; }
     void onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
 
@@ -220,15 +219,14 @@ public:
 
     void onPlace(const glm::ivec3 &pos, const glm::ivec2 &chunk, Direction dir) override;
     bool conductsPower() override { return false; }
-    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, const Direction dir) override { if (powered && Opposite(dir) == direction_) return 16; return 0; }
+    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, bool strong, const Direction dir) override { if (powered && Opposite(dir) == direction_) return 16; return 0; }
     void onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
     void onTickUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
 
-    [[nodiscard]] Direction facing() const override { return direction_; }
     std::string get_name() override { if (model) return model->name + " delay:" + std::to_string(delay); else return "No Model!"; }
 
 private:
-    Direction direction_ = Direction::South;
+    Direction direction_ = Direction::North;
     bool powered = false;
     uint8_t delay = 6;
     bool scheduled = false;
@@ -250,15 +248,42 @@ public:
 
     void onPlace(const glm::ivec3 &pos, const glm::ivec2 &chunk, Direction dir) override;
     bool conductsPower() override { return false; }
-    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, const Direction dir) override { if (!powered && Opposite(dir) == direction_) return 16; return 0; }
+    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, bool strong, const Direction dir) override { if (!strong && !powered && Opposite(dir) != direction_) return 16; return 0; }
     void onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
     void onTickUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
 
-    [[nodiscard]] Direction facing() const override { return direction_; }
+private:
+    Direction direction_ = Direction::North;
+    bool powered = false;
+    uint8_t delay = 6;
+    bool scheduled = false;
+};
+
+class Comparator : public Block {
+public:
+    [[nodiscard]] Block* clone() const override {
+        return new Comparator(*this);
+    }
+    [[nodiscard]] bool needsState() const override { return true; }
+
+    Comparator() {
+        is_solid = true;
+        is_transparent = false;
+        uv = glm::ivec2(6, 2);
+        model = Models_cache["Comparator Off"].get(direction_);
+    }
+
+    void onPlace(const glm::ivec3 &pos, const glm::ivec2 &chunk, Direction dir) override;
+    void onInteraction(const glm::ivec3 &pos, const glm::ivec2 &chunk) override { subtract = !subtract; onPlace(pos, chunk, direction_); }
+    bool conductsPower() override { return false; }
+    uint8_t getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, bool strong, const Direction dir) override { if (Opposite(dir) == direction_ && power > 0) return power + 1; return 0; }
+    void onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
+    void onTickUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) override;
 
 private:
-    Direction direction_ = Direction::East;
-    bool powered = false;
+    Direction direction_ = Direction::North;
+    uint8_t power = 0;
+    bool subtract = false;
     uint8_t delay = 6;
     bool scheduled = false;
 };

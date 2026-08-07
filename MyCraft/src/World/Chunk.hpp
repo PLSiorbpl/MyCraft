@@ -20,6 +20,7 @@ enum class block_type : uint16_t {
     Redstone_dust,
     Repeater,
     Redstone_Torch,
+    Comparator,
 
     _count
 };

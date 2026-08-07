@@ -15,6 +15,7 @@ void init_block_state() {
     block_cache[static_cast<int>(block_type::Redstone_dust)]  = new Redstone_dust();
     block_cache[static_cast<int>(block_type::Repeater)]       = new Repeater();
     block_cache[static_cast<int>(block_type::Redstone_Torch)] = new Redstone_Torch();
+    block_cache[static_cast<int>(block_type::Comparator)]     = new Comparator();
 }
 
 void Chunk::SendData() {

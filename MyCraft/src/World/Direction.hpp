@@ -15,8 +15,8 @@ inline Direction GetDirection(const glm::vec3& dir) {
     const float ay = std::abs(dir.y);
     const float az = std::abs(dir.z);
 
-    if (ay > ax && ay > az)
-        return dir.y > 0 ? Direction::Up : Direction::Down;
+    //if (ay > ax && ay > az)
+    //    return dir.y > 0 ? Direction::Up : Direction::Down;
     if (ax > az)
         return dir.x > 0 ? Direction::East : Direction::West;
     return dir.z > 0 ? Direction::South : Direction::North;
@@ -43,6 +43,26 @@ inline Direction Opposite(const Direction dir) {
         case Direction::North: return Direction::South;
         case Direction::South: return Direction::North;
         default: return Direction::All;
+    }
+}
+
+constexpr Direction Right(Direction dir) {
+    switch (dir) {
+        case Direction::North: return Direction::East;
+        case Direction::East:  return Direction::South;
+        case Direction::South: return Direction::West;
+        case Direction::West:  return Direction::North;
+        default:               return dir; // Up, Down, All
+    }
+}
+
+constexpr Direction Left(Direction dir) {
+    switch (dir) {
+        case Direction::North: return Direction::West;
+        case Direction::West:  return Direction::South;
+        case Direction::South: return Direction::East;
+        case Direction::East:  return Direction::North;
+        default:               return dir;
     }
 }
 

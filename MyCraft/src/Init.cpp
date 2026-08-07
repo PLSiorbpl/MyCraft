@@ -68,8 +68,8 @@ bool Game::Init_JSON() {
 
                     if (it.value().contains("cull") && it.value()["cull"].is_string()) {
                         if (it.value()["cull"] == "no") f.cull = Cull::No;
-                        if (it.value()["cull"] == "yes") f.cull = Cull::Yes;
-                        if (it.value()["cull"] == "force") f.cull = Cull::Force;
+                        else if (it.value()["cull"] == "yes") f.cull = Cull::Yes;
+                        else if (it.value()["cull"] == "force") f.cull = Cull::Force;
                     }
                     if (it.value().contains("cullface") && it.value()["cullface"].is_string()) f.cull = Cull::Yes;
 
