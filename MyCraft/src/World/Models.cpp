@@ -37,9 +37,9 @@ void Bake(const Model& model, const uint8_t directions) {
 Model Bake_Model(Model model, const Direction direction) {
     for (auto &elem : model.elements) {
         auto north = elem.north;
-        auto east  = elem.east;
+        auto east = elem.east;
         auto south = elem.south;
-        auto west  = elem.west;
+        auto west = elem.west;
 
         elem.from -= glm::ivec3(8);
         elem.to -= glm::ivec3(8);
@@ -51,6 +51,11 @@ Model Bake_Model(Model model, const Direction direction) {
 
                 std::swap(elem.north, elem.south);
                 std::swap(elem.east,  elem.west);
+
+                if (elem.up)
+                    elem.up->uvRotation = 2;
+                if (elem.down)
+                    elem.down->uvRotation = 2;
                 break;
             }
             case Direction::West: {
@@ -61,6 +66,11 @@ Model Bake_Model(Model model, const Direction direction) {
                 elem.east = north;
                 elem.south = east;
                 elem.west = south;
+
+                if (elem.up)
+                    elem.up->uvRotation = 1;
+                if (elem.down)
+                    elem.down->uvRotation = 1;
                 break;
             }
             case Direction::East: {
@@ -71,6 +81,11 @@ Model Bake_Model(Model model, const Direction direction) {
                 elem.east = south;
                 elem.south = west;
                 elem.west = north;
+
+                if (elem.up)
+                    elem.up->uvRotation = 3;
+                if (elem.down)
+                    elem.down->uvRotation = 3;
                 break;
             }
             default: break;

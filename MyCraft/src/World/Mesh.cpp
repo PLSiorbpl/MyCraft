@@ -167,6 +167,14 @@ void Mesh::getUVs(std::array<glm::vec2, 4>& outUV, const Face& face) {
     outUV[1] = {u0, v0};
     outUV[2] = {u1, v1};
     outUV[3] = {u1, v0};
+
+    for (uint8_t i = 0; i < face.uvRotation; ++i) {
+        const auto tmp = outUV[0];
+        outUV[0] = outUV[2];
+        outUV[2] = outUV[3];
+        outUV[3] = outUV[1];
+        outUV[1] = tmp;
+    }
 }
 
 void Mesh::MeshXFace(std::vector<Chunk::Vertex> *vertices, const glm::ivec3& local, const Element &elem, Block *block, const int dir) {

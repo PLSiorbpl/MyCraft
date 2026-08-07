@@ -26,6 +26,7 @@ struct Face {
     glm::ivec2 texture = {7, 7};
     glm::vec4 uv = {0, 0, 16, 16};
     Cull cull = Cull::No;
+    uint8_t uvRotation = 0;
 };
 
 struct Element {
