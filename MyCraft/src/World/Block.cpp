@@ -51,7 +51,7 @@ uint8_t Redstone_dust::getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, 
             if (b->conductsPower())
                 cond = true;
     });
-    if (cond && direction == Direction::Up) return power;
+    if (cond && direction == Direction::Up && strong == PowerType::Weak) return power;
     return 0;
 }
 
