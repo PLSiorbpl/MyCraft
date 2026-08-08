@@ -52,87 +52,45 @@ namespace World_Map {
     });
     }
 
-    uint8_t getMAX_Neighbor_Power(const glm::ivec3 &pos, const glm::ivec2 &chunkPos, bool strong) {
+    uint8_t get_Power(const glm::ivec3 &pos, const glm::ivec2 &chunkPos, Direction direction, PowerType p_type) {
         uint8_t p = 0;
-        forEachNeighbor(pos, chunkPos, [&p, strong](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, Direction dir) {
-            if (const auto b = ch.get_state(x, y, z))
-                p = std::max(p, b->getPower({x, y, z}, cpos, strong, dir));
-        });
-        return p;
-    }
-
-    uint8_t getMAX_Neighbor_Conduct_Power(const glm::ivec3 &pos, const glm::ivec2 &chunkPos) {
-        uint8_t p = 0;
-        forEachNeighbor(pos, chunkPos, [&p](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, Direction dir) {
-            if (const auto b = ch.get_state(x, y, z)) {
-                if (b->conductsPower()) {
-                    p = std::max(p, getMAX_Neighbor_Power({x, y, z}, cpos, true));
-                }
-                p = std::max(p, b->getPower({x, y, z}, cpos, false, dir));
-            }
-        });
-        return p;
-    }
-
-    uint8_t getANY_Neighbor_Power(const glm::ivec3 &pos, const glm::ivec2 &chunkPos, bool strong) {
-        uint8_t p = 0;
-        forEachNeighbor(pos, chunkPos, [&p, strong](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, Direction dir) {
-            if (p > 0) return;
-            if (const auto b = ch.get_state(x, y, z))
-                p = b->getPower({x, y, z}, cpos, strong, dir);
-        });
-        return p;
-    }
-
-    uint8_t getANY_Neighbor_Conduct_Power(const glm::ivec3 &pos, const glm::ivec2 &chunkPos) {
-        uint8_t p = 0;
-        forEachNeighbor(pos, chunkPos, [&p](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, Direction dir) {
-            if (p > 0) return;
-            if (const auto b = ch.get_state(x, y, z)) {
-                if (b->conductsPower()) {
-                    p = getANY_Neighbor_Power({x, y, z}, cpos, true);
-                }
-                if (p > 0) return;
-                p = b->getPower({x, y, z}, cpos, false, dir);
-            }
-        });
-        return p;
-    }
-
-    uint8_t get_Power(const glm::ivec3 &pos, const glm::ivec2 &chunkPos, Direction direction) {
-        uint8_t p = 0;
-        forEachNeighbor(pos, chunkPos, [&p, direction](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, Direction dir) {
+        forEachNeighbor(pos, chunkPos, [&p, direction, p_type](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, const Direction dir) {
             if (direction != dir) return;
             if (const auto b = ch.get_state(x, y, z))
-                p = std::max(p, b->getPower({x, y, z}, cpos, false, dir));
+                p = std::max(p, b->getPower({x, y, z}, cpos, p_type, dir));
         });
         return p;
     }
 
-    uint8_t getMAX_Conduct_Power(const glm::ivec3 &pos, const glm::ivec2 &chunkPos, Direction direction) {
+    uint8_t get_Neighbor_Power(const glm::ivec3 &pos, const glm::ivec2 &chunkPos, PowerType neighbor_type) {
         uint8_t p = 0;
-        forEachNeighbor(pos, chunkPos, [&p, direction](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, Direction dir) {
+        forEachNeighbor(pos, chunkPos, [&p, neighbor_type](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, const Direction dir) {
+            if (const auto b = ch.get_state(x, y, z))
+                p = std::max(p, b->getPower({x, y, z}, cpos, neighbor_type, dir));
+        });
+        return p;
+    }
+
+    uint8_t get_Conduct_Power(const glm::ivec3 &pos, const glm::ivec2 &chunkPos, Direction direction, PowerType neighbor_type, PowerType conduct_type) {
+        uint8_t p = 0;
+        forEachNeighbor(pos, chunkPos, [&p, direction, neighbor_type, conduct_type](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, const Direction dir) {
             if (direction != dir) return;
             if (const auto b = ch.get_state(x, y, z)) {
-                if (b->conductsPower()) {
-                    p = std::max(p, getMAX_Neighbor_Power({x, y, z}, cpos, true));
-                }
-                p = std::max(p, b->getPower({x, y, z}, cpos, false, dir));
+                if (b->conductsPower())
+                    p = std::max(p, get_Neighbor_Power({x, y, z}, cpos, conduct_type));
+                p = std::max(p, b->getPower({x, y, z}, cpos, neighbor_type, dir));
             }
         });
         return p;
     }
 
-    uint8_t getANY_Conduct_Power(const glm::ivec3 &pos, const glm::ivec2 &chunkPos, Direction direction) {
+    uint8_t get_Neighbor_Conduct_Power(const glm::ivec3 &pos, const glm::ivec2 &chunkPos, PowerType neighbor_type, PowerType conduct_type) {
         uint8_t p = 0;
-        forEachNeighbor(pos, chunkPos, [&p, direction](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, Direction dir) {
-            if (p > 0 || direction != dir) return;
+        forEachNeighbor(pos, chunkPos, [&p, neighbor_type, conduct_type](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, const Direction dir) {
             if (const auto b = ch.get_state(x, y, z)) {
-                if (b->conductsPower()) {
-                    p = getANY_Neighbor_Power({x, y, z}, cpos, true);
-                }
-                if (p > 0) return;
-                p = b->getPower({x, y, z}, cpos, false, dir);
+                if (b->conductsPower())
+                    p = std::max(p, get_Neighbor_Power({x, y, z}, cpos, conduct_type));
+                p = std::max(p, b->getPower({x, y, z}, cpos, neighbor_type, dir));
             }
         });
         return p;

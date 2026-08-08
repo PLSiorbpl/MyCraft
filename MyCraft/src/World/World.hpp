@@ -41,13 +41,14 @@ namespace World_Map {
         return nullptr;
     }
 
-    uint8_t getMAX_Neighbor_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos, bool strong);
-    uint8_t getMAX_Neighbor_Conduct_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos);
-    uint8_t getANY_Neighbor_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos, bool strong);
-    uint8_t getANY_Neighbor_Conduct_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos);
-    uint8_t get_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos, Direction direction);
-    uint8_t getMAX_Conduct_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos, Direction direction);
-    uint8_t getANY_Conduct_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos, Direction direction);
+    // Power from one specific neighbor
+    uint8_t get_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos, Direction direction, PowerType p_type);
+    // Power from all direct neighbors
+    uint8_t get_Neighbor_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos, PowerType neighbor_type);
+    // Power through one specific conducting neighbor including that specific neighbors
+    uint8_t get_Conduct_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos, Direction direction, PowerType neighbor_type, PowerType conduct_type);
+    // Power from all direct neighbors and through all conducting neighbors
+    uint8_t get_Neighbor_Conduct_Power(const glm::ivec3& pos, const glm::ivec2& chunkPos, PowerType neighbor_type, PowerType conduct_type);
 
     void Set_Dirty(int chunkx, int chunkz);
     void Set_Neighbors_Dirty(int localx, int localz, int chunkx, int chunkz);

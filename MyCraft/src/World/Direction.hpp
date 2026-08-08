@@ -1,5 +1,10 @@
 #pragma once
 
+enum class PowerType {
+    Weak,
+    Strong,
+};
+
 enum class Direction : uint8_t {
     West = 0, // -X
     East = 1, // +X

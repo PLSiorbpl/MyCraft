@@ -4,7 +4,7 @@
 #include "Tick/Tick.hpp"
 
 void Lamp::onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
-    uint8_t p = World_Map::getANY_Neighbor_Conduct_Power(pos, chunk);
+    uint8_t p = World_Map::get_Neighbor_Conduct_Power(pos, chunk, PowerType::Weak, PowerType::Weak);
     p = p > 0;
 
     if (lit != p) {
@@ -24,7 +24,7 @@ void Lamp::onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
 }
 
 void Redstone_dust::onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
-    uint8_t p = World_Map::getMAX_Neighbor_Conduct_Power(pos, chunk);
+    uint8_t p = World_Map::get_Neighbor_Conduct_Power(pos, chunk, PowerType::Weak, PowerType::Strong);
 
     if (p > 0)
         p = p - 1;
@@ -41,8 +41,22 @@ void Redstone_dust::onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chu
     World_Map::notifyNeighborBlocksConduct(pos, chunk);
 }
 
+uint8_t Redstone_dust::getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, PowerType strong, const Direction direction) {
+    if (strong == PowerType::Weak && direction != Direction::Up) return power;
+    bool cond = false;
+    World_Map::forEachNeighbor(pos, chunk, [&cond](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, const Direction dir) {
+        if (dir != Direction::Down) return;
+        if (cond) return;
+        if (const auto b = ch.get_state(x, y, z))
+            if (b->conductsPower())
+                cond = true;
+    });
+    if (cond && direction == Direction::Up) return power;
+    return 0;
+}
+
 void Repeater::onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
-    uint8_t p = World_Map::getANY_Conduct_Power(pos, chunk, Opposite(direction_));
+    uint8_t p = World_Map::get_Conduct_Power(pos, chunk, Opposite(direction_), PowerType::Weak, PowerType::Weak);
     p = p > 0;
 
     if (p == powered) return;
@@ -55,7 +69,7 @@ void Repeater::onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
 
 void Repeater::onTickUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
     scheduled = false;
-    uint8_t p = World_Map::getANY_Conduct_Power(pos, chunk, Opposite(direction_));
+    uint8_t p = World_Map::get_Conduct_Power(pos, chunk, Opposite(direction_), PowerType::Weak, PowerType::Weak);
     p = p > 0;
 
     if (p == powered) return;
@@ -71,7 +85,7 @@ void Repeater::onTickUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
 }
 
 void Redstone_Torch::onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
-    uint8_t p = World_Map::getANY_Conduct_Power(pos, chunk, direction_);
+    uint8_t p = World_Map::get_Conduct_Power(pos, chunk, direction_, PowerType::Weak, PowerType::Weak);
     p = p > 0;
 
     if (p == powered) return;
@@ -84,7 +98,7 @@ void Redstone_Torch::onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &ch
 
 void Redstone_Torch::onTickUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
     scheduled = false;
-    uint8_t p = World_Map::getANY_Conduct_Power(pos, chunk, direction_);
+    uint8_t p = World_Map::get_Conduct_Power(pos, chunk, direction_, PowerType::Weak, PowerType::Weak);
     p = p > 0;
 
     if (p == powered) return;
@@ -100,9 +114,9 @@ void Redstone_Torch::onTickUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk
 }
 
 void Comparator::onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
-    const int8_t In = World_Map::getMAX_Conduct_Power(pos, chunk, Opposite(direction_));
-    const int8_t right = World_Map::get_Power(pos, chunk, Right(direction_));
-    const int8_t left = World_Map::get_Power(pos, chunk, Left(direction_));
+    const int8_t In = std::min(World_Map::get_Conduct_Power(pos, chunk, Opposite(direction_), PowerType::Weak, PowerType::Weak), (uint8_t)15);
+    const int8_t right = std::min(World_Map::get_Power(pos, chunk, Right(direction_), PowerType::Weak), (uint8_t)15);
+    const int8_t left = std::min(World_Map::get_Power(pos, chunk, Left(direction_), PowerType::Weak), (uint8_t)15);
 
     if (!subtract) {
         uint8_t Out = In;
@@ -122,9 +136,9 @@ void Comparator::onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk)
 
 void Comparator::onTickUpdate(const glm::ivec3 &pos, const glm::ivec2 &chunk) {
     scheduled = false;
-    const uint8_t In = World_Map::getMAX_Conduct_Power(pos, chunk, Opposite(direction_));
-    const uint8_t right = World_Map::get_Power(pos, chunk, Right(direction_));
-    const uint8_t left = World_Map::get_Power(pos, chunk, Left(direction_));
+    const int8_t In = std::min(World_Map::get_Conduct_Power(pos, chunk, Opposite(direction_), PowerType::Weak, PowerType::Weak), (uint8_t)15);
+    const int8_t right = std::min(World_Map::get_Power(pos, chunk, Right(direction_), PowerType::Weak), (uint8_t)15);
+    const int8_t left = std::min(World_Map::get_Power(pos, chunk, Left(direction_), PowerType::Weak), (uint8_t)15);
 
     if (!subtract) {
         uint8_t Out = In;
