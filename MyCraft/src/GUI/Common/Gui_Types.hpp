@@ -4,6 +4,9 @@
 #include <string>
 #include "Utils/Interpolater.hpp"
 
+// Yes written by PLSiorbpl but too lazy and boring to continue documentation
+// Its better to write more buggy code
+
 /*
 Contains:
     - data-only types used by GUI system
@@ -29,7 +32,7 @@ namespace gui {
             Flags - Represents Flags by using individual bits to save space on gpu
          */
         glm::vec2 Pos;
-        glm::vec3 UV;
+        glm::vec4 UV;
         uint32_t Flags;
         /*
             Flags Layout: (bits)
@@ -61,15 +64,17 @@ namespace gui {
 
     struct Layout  {
         Anch Anchor;
-        glm::vec2 Size;
+        glm::vec2 Size = {0.0f, 0.0f};
         glm::vec2 Offset = {0.0f,0.0f};
 
-        void Move_Y() {
-            Offset.y += Size.y;
+        const Layout *Parent = nullptr;
+
+        void Move_Y(const float offset = 0) {
+            Offset.y += Size.y + offset;
         }
 
-        void Move_X() {
-            Offset.x += Size.x;
+        void Move_X(const float offset = 0) {
+            Offset.x += Size.x + offset;
         }
     };
 

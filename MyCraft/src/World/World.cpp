@@ -41,7 +41,7 @@ namespace World_Map {
     void notifyNeighborBlocksConduct(const glm::ivec3 &pos, const glm::ivec2 &chunkPos) {
         forEachNeighbor(pos, chunkPos, [](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, Direction dir) {
         if (const auto b = ch.get_state(x, y, z)) {
-            if (b->conductsPower()) {
+            if (b->conductsPower() || b->is_transparent) {
                 forEachNeighbor({x, y, z}, cpos, [](Chunk& ch_2, int x_2, int y_2, int z_2, const glm::ivec2& cpos_2, Direction dir) {
                     if (ch_2.get_state(x_2, y_2, z_2))
                         Tick::Instant_queue.push({{x_2, y_2, z_2}, cpos_2});
@@ -90,6 +90,19 @@ namespace World_Map {
             if (const auto b = ch.get_state(x, y, z)) {
                 if (b->conductsPower())
                     p = std::max(p, get_Neighbor_Power({x, y, z}, cpos, conduct_type));
+                else {
+                    if (b->is_transparent && dir == Direction::Down)
+                        forEachNeighbor({x, y, z}, cpos, [&p](Chunk& ch_, int x_, int y_, int z_, const glm::ivec2& cpos_, const Direction dir_) {
+                            if (!IsHorizontal(dir_)) return;
+                            if (const auto bs_ = ch_.get_state(x_, y_, z_)) {
+                                const auto b_ = ch_.get(x_, y_, z_);
+                                const auto b_up = ch_.get_state(x_, y_+1, z_);
+                                    if (b_.id == block_type::Redstone_dust && b_up && b_up->is_transparent)
+                                        p = std::max(p, bs_->getPower({x_, y_, z_}, cpos_, PowerType::Weak, dir_));
+                            }
+
+                        });
+                }
                 p = std::max(p, b->getPower({x, y, z}, cpos, neighbor_type, dir));
             }
         });

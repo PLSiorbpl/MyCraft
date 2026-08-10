@@ -13,6 +13,7 @@ glm::vec4 Gui::Texture(const Texture_Id tex, const glm::vec4 &UV, uint32_t &Flag
     switch (tex) {
         case Texture_Id::Block: {
             glm::vec2 uv = block_cache[static_cast<int>(static_cast<block_type>(static_cast<int>(UV.x)))]->uv;
+            if (UV.x >= static_cast<int>(block_type::_count)) uv = block_cache[static_cast<int>(block_type::Air)]->uv;
             Flags32::Set(Flags, static_cast<int>(FlagBit::UseTexture));
             Flags32::SetTextureId(Flags, 0);
             return {uv.x*Tile, uv.y*Tile, (uv.x+1)*Tile, (uv.y+1)*Tile};
@@ -124,13 +125,13 @@ void Gui::DrawRectangle(const Layout& layout, const BoxStyle& style) {
     } else {
         // Texture
         UV = Texture(style.TextureId, style.BgColor, Flags);
-        backend.PushToMesh({Pos, {UV.x, UV.y, 0}, Flags});
-        backend.PushToMesh({Pos + glm::vec2(Size.x, 0.0f), {UV.z, UV.y, 0}, Flags});
-        backend.PushToMesh({Pos + glm::vec2(0.0f, Size.y), {UV.x, UV.w, 0}, Flags});
+        backend.PushToMesh({Pos, {UV.x, UV.y, 0, 0}, Flags});
+        backend.PushToMesh({Pos + glm::vec2(Size.x, 0.0f), {UV.z, UV.y, 0, 0}, Flags});
+        backend.PushToMesh({Pos + glm::vec2(0.0f, Size.y), {UV.x, UV.w, 0, 0}, Flags});
 
-        backend.PushToMesh({Pos + Size, {UV.z, UV.w, 0}, Flags});
-        backend.PushToMesh({Pos + glm::vec2(Size.x, 0.0f), {UV.z, UV.y, 0}, Flags});
-        backend.PushToMesh({Pos + glm::vec2(0.0f, Size.y), {UV.x, UV.w, 0}, Flags});
+        backend.PushToMesh({Pos + Size, {UV.z, UV.w, 0, 0}, Flags});
+        backend.PushToMesh({Pos + glm::vec2(Size.x, 0.0f), {UV.z, UV.y, 0, 0}, Flags});
+        backend.PushToMesh({Pos + glm::vec2(0.0f, Size.y), {UV.x, UV.w, 0, 0}, Flags});
     }
 }
 
@@ -277,21 +278,27 @@ bool Gui::TextInput(const Layout &layout, const TextInputStyle &style, Label& la
 }
 
 
-glm::vec2 Gui::Anchor(const Layout& layout) const {
-    const float width = game_settings.Scaled_w;
-    const float height = game_settings.Scaled_h;
+glm::vec2 Gui::Anchor(const Layout& layout) {
+    glm::vec2 min = {0, 0};
+    float width = game_settings.Scaled_w;
+    float height = game_settings.Scaled_h;
+    if (layout.Parent) {
+        min = Anchor(*layout.Parent);
+        width = layout.Parent->Size.x;
+        height = layout.Parent->Size.y;
+    }
     const glm::vec2 Size = layout.Size;
     const glm::vec2 Offset = layout.Offset;
     switch (layout.Anchor) {
-        case Anch::BottomLeft:   return glm::vec2(0, height - Size.y) + Offset;
-        case Anch::BottomRight:  return glm::vec2(width - Size.x, height - Size.y) + Offset;
-        case Anch::TopLeft:      return glm::vec2(0, 0) + Offset;
-        case Anch::TopRight:     return glm::vec2(width - Size.x, 0) + Offset;
-        case Anch::Center:       return glm::vec2((width - Size.x)/2, (height - Size.y)/2) + Offset;
-        case Anch::BottomCenter: return glm::vec2((width-Size.x)/2, height-Size.y) + Offset;
-        case Anch::TopCenter:    return glm::vec2((width-Size.x)/2, 0) + Offset;
-        case Anch::LeftCenter:   return glm::vec2(0, (height - Size.y)/2) + Offset;
-        case Anch::RightCenter:  return glm::vec2(width-Size.x, (height - Size.y)/2) + Offset;
+        case Anch::BottomLeft:   return min + glm::vec2(0, height - Size.y) + Offset;
+        case Anch::BottomRight:  return min + glm::vec2(width - Size.x, height - Size.y) + Offset;
+        case Anch::TopLeft:      return min + Offset;
+        case Anch::TopRight:     return min + glm::vec2(width - Size.x, 0) + Offset;
+        case Anch::Center:       return min + glm::vec2((width - Size.x) / 2,(height - Size.y) / 2) + Offset;
+        case Anch::BottomCenter: return min + glm::vec2((width-Size.x)/2, height-Size.y) + Offset;
+        case Anch::TopCenter:    return min + glm::vec2((width-Size.x)/2, 0) + Offset;
+        case Anch::LeftCenter:   return min + glm::vec2(0, (height - Size.y)/2) + Offset;
+        case Anch::RightCenter:  return min + glm::vec2(width-Size.x, (height - Size.y)/2) + Offset;
         case Anch::None:         return Offset;
     }
     return glm::vec2(0);

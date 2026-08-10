@@ -1,0 +1,19 @@
+{
+  "name": "Glass",
+
+  "elements": [
+    {
+      "from": [0, 0, 0],
+      "to": [16, 16, 16],
+
+      "faces": {
+        "up": {    "texture": [3, 1], "uv": [0, 0, 16, 16], "cull": "no" },
+        "down": {  "texture": [3, 1], "uv": [0, 0, 16, 16], "cull": "no"},
+        "north": { "texture": [3, 1], "uv": [0, 0, 16, 16], "cull": "no" },
+        "west": {  "texture": [3, 1], "uv": [0, 0, 16, 16], "cull": "no" },
+        "south": { "texture": [3, 1], "uv": [0, 0, 16, 16], "cull": "no" },
+        "east": {  "texture": [3, 1], "uv": [0, 0, 16, 16], "cull": "no" }
+      }
+    }
+  ]
+}

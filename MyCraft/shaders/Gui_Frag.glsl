@@ -1,7 +1,7 @@
 #version 330 core
 
 in vec2 FragPos;
-in vec3 TexCoord;
+in vec4 TexCoord;
 flat in uint Flags;
 
 out vec4 FragColor;
@@ -29,7 +29,7 @@ void main() {
             color = vec4(vec3(0.9647f, 0.9569f, 0.9255f), tex);
         }
     } else {
-        color = vec4(TexCoord, 0.85);
+        color = vec4(TexCoord);
     }
     FragColor = color;
 }

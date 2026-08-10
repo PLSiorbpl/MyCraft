@@ -129,6 +129,23 @@ public:
 private:
 };
 
+class Glass : public Block {
+public:
+    [[nodiscard]] Block* clone() const override {
+        return new Glass(*this);
+    }
+
+    Glass() {
+        is_solid = true;
+        is_transparent = true;
+        uv = glm::ivec2(3, 1);
+        model = Models_cache["Glass"].get(Direction::North);
+    }
+
+    bool conductsPower() override { return false; }
+private:
+};
+
 class Water : public Block {
 public:
     [[nodiscard]] Block* clone() const override {

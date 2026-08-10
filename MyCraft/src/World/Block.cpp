@@ -42,16 +42,22 @@ void Redstone_dust::onInstantUpdate(const glm::ivec3 &pos, const glm::ivec2 &chu
 }
 
 uint8_t Redstone_dust::getPower(const glm::ivec3 &pos, const glm::ivec2 &chunk, PowerType strong, const Direction direction) {
-    if (strong == PowerType::Weak && direction != Direction::Up) return power;
-    bool cond = false;
+    if (strong == PowerType::Weak && IsHorizontal(direction)) return power;
+    int cond = 0;
     World_Map::forEachNeighbor(pos, chunk, [&cond](Chunk& ch, int x, int y, int z, const glm::ivec2& cpos, const Direction dir) {
-        if (dir != Direction::Down) return;
-        if (cond) return;
-        if (const auto b = ch.get_state(x, y, z))
-            if (b->conductsPower())
-                cond = true;
+        if (cond > 0) return;
+        if (const auto b = ch.get_state(x, y, z)) {
+            if (dir == Direction::Down) { // Dust \/
+                if (b->conductsPower())   //  Solid -> Repeater
+                    cond = 1;
+            } else if (dir == Direction::Up) { // Dust        Transparent
+                if (b->is_transparent)         // Transparent /\ <- Dust
+                    cond = 2;
+            }
+        }
     });
-    if (cond && direction == Direction::Up && strong == PowerType::Weak) return power;
+    if (cond == 1 && direction == Direction::Up && strong == PowerType::Weak) return power;
+    if (cond == 2 && direction == Direction::Down && strong == PowerType::Strong) return power;
     return 0;
 }
 

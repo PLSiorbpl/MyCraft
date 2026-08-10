@@ -36,6 +36,14 @@ Note:
     - Favors clarity and control over strict abstraction
  */
 
+enum class Gui_State {
+    None,
+    Chat,
+    Health,
+    Menu,
+    Inventory,
+};
+
 class Gui {
 public:
     // State
@@ -43,6 +51,7 @@ public:
     Flags32 F32;
     Fun fun;
 
+    Gui_State gui_state;
     int ActiveId = 0;
     int ID = 0;
     static const int Advance[('~'-' ')+1];
@@ -50,6 +59,7 @@ public:
 
     // Frame
     void Generate();
+    void Update();
 
     // Primitive
     void DrawRectangle(const gui::Layout& layout, const gui::BoxStyle& style);
@@ -61,7 +71,7 @@ public:
     bool TextInput(const gui::Layout& layout, const gui::TextInputStyle& style, gui::Label& label, gui::Animation_State<glm::vec2>* state = nullptr);
 
     // Layout | Metrics
-    [[nodiscard]] glm::vec2 Anchor(const gui::Layout& layout) const;
+    [[nodiscard]] static glm::vec2 Anchor(const gui::Layout& layout);
     static glm::vec2 AnchorText(const glm::vec2& Pos, const glm::vec2& Size, const gui::Label& label);
     static glm::vec2 MeasureText(const gui::Label& label);
 
@@ -70,7 +80,7 @@ public:
     static glm::vec4 Gradient(float x, const glm::vec4& a, const glm::vec4& b);
     static glm::vec4 Gradient(float x, const glm::vec4& a, const glm::vec4& b, const glm::vec4& c);
     static glm::vec4 Color(const glm::vec4& color, uint32_t &Flags) ;
-    [[nodiscard]] static inline glm::vec4 rgb(const uint64_t color) {
+    [[nodiscard]] static inline glm::vec4 rgba(const uint64_t color) {
         const float a = (color > 0xFFFFFFu) ? (color & 0xFF) / 255.0f : 1.0f;
         return {
             ((color >> (color > 0xFFFFFFu ? 24 : 16)) & 0xFF) / 255.0f,
@@ -97,7 +107,7 @@ public:
     // Screens
     void Health();
     void HotBar();
-    void Statistics();
+    void Food_bar();
     void Menu();
     void Settings();
     void Chat();
@@ -106,4 +116,5 @@ public:
     void MultiplayerHost();
     void Crosschair();
     void DebugScreen();
+    void Inventory();
 };

@@ -14,6 +14,7 @@ public:
     Block *looking_at = nullptr;
     int ItemHeld = 0;
     int HotBarSlot = 0;
+    int Hotbar_slots[9] = {};
     
     float CameraDrag = 0.1f;
     float Speed = 0.10f; // 0.10f

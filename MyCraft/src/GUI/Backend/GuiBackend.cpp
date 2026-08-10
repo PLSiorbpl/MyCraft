@@ -40,7 +40,7 @@ void GuiBackend::SendMesh() {
         glEnableVertexAttribArray(0);
 
         // atexture (location = 1)
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GuiVertex), reinterpret_cast<void *>(offsetof(GuiVertex, UV)));
+        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(GuiVertex), reinterpret_cast<void *>(offsetof(GuiVertex, UV)));
         glEnableVertexAttribArray(1);
 
         // aFlags (location = 2)

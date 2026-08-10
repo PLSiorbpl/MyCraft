@@ -35,11 +35,14 @@ void Movement::Input(Selection& Sel) {
     if (InputManager::keysState[GLFW_KEY_D]) moveVec += glm::vec2(-Sin.y,  Cos.y);
     
     // Jump
-    if (InputManager::keysState[GLFW_KEY_SPACE] && Camera.onGround) {
-        Camera.Vel.y = Camera.JumpStrength;
-        Camera.onGround = false;
+    if (InputManager::keysState[GLFW_KEY_SPACE]) {
+        if (Camera.Mode) {
+            Camera.Vel.y = Camera.JumpStrength;
+        } else if (Camera.onGround) {
+            Camera.Vel.y = Camera.JumpStrength;
+            Camera.onGround = false;
+        }
     }
-    if (InputManager::keysState[GLFW_KEY_E]) Camera.Vel.y = Camera.JumpStrength;
     if (InputManager::keysState[GLFW_KEY_LEFT_CONTROL]) Camera.Vel.y = -Camera.JumpStrength;
 
     // Mouse Actions
@@ -101,7 +104,7 @@ void Movement::TestColisions() {
 
 void Movement::Damp() {
     auto damp = [&](float& v) {
-        const float damping = Camera.onGround ? 0.6f : 0.96f;
+        const float damping = Camera.onGround ? 0.6f : 0.93f;
         v *= damping;
     };
     damp(Camera.Vel.x);

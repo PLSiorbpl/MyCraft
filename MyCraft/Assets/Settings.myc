@@ -38,4 +38,4 @@ Tick Rate=60.0f
 // Player:
 FOV=80
 Speed=0.1f
-Sprint Speed=1.08f
+Sprint Speed=0.1f

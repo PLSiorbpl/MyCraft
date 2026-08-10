@@ -31,6 +31,7 @@ target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
         -march=native
         -g
         -O3
+        #-Werror
         #-DNDEBUG
         #-Wall
 )

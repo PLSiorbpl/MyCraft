@@ -15,33 +15,37 @@ std::deque<char> InputManager::charBuffer;
 bool InputManager::MouseVisible = false;
 bool InputManager::InputActive = false;
 
-void InputManager::Key_Callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+void InputManager::Set_Mouse_Visiblility(bool visible) {
+    if (MouseVisible == visible) return;
+
+    if (visible) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        MouseVisible = true;
+        Camera.Mouse_Visible = true;
+        MouseX = game_settings.width/2; MouseY = game_settings.height/2;
+        glfwSetCursorPos(window, MouseX, MouseY);
+        Camera.LastX = MouseX; Camera.LastY = MouseY;
+    } else {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        MouseVisible = false;
+        Camera.Mouse_Visible = false;
+        MouseX = game_settings.width/2; MouseY = game_settings.height/2;
+        glfwSetCursorPos(window, MouseX, MouseY);
+        Camera.LastX = MouseX; Camera.LastY = MouseY;
+    }
+}
+
+void InputManager::Key_Callback(GLFWwindow *window_, int key, int scancode, int action, int mods) {
     if (key >= 0 && key <= GLFW_KEY_LAST) {
         keysState[key] = (action != GLFW_RELEASE);
 
         if (action == GLFW_PRESS) {
             keysToggle[key] = !keysToggle[key];
-
-            if (key == GLFW_KEY_ESCAPE || key == GLFW_KEY_T) {
-                if (game.MenuId > 0) {
-                    keysState[key] = false;
-                    keysToggle[key] = !keysToggle[key];
-                    InputActive = false;
-                    game.MenuId = 0;
-                    InputActive = false;
-                } else {
-                    glfwSetInputMode(window, GLFW_CURSOR, keysToggle[key] ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
-                    Camera.Mouse_Visible = keysToggle[key];
-                    glfwSetCursorPos(window, game_settings.width/2, game_settings.height/2);
-                    MouseX = game_settings.width/2; MouseY = game_settings.height/2;
-                    Camera.LastX = game_settings.width/2; Camera.LastY = game_settings.height/2;
-                }
-            }
         }
     }
 }
 
-void InputManager::Char_Callback(GLFWwindow *window, const unsigned int codepoint) {
+void InputManager::Char_Callback(GLFWwindow *window_, const unsigned int codepoint) {
     if (!InputActive) {
         if (!charBuffer.empty()) charBuffer.clear();
         return;
@@ -54,7 +58,7 @@ void InputManager::Char_Callback(GLFWwindow *window, const unsigned int codepoin
 }
 
 
-void InputManager::Mouse_Callback(GLFWwindow* window, const double xpos, double ypos) {
+void InputManager::Mouse_Callback(GLFWwindow* window_, const double xpos, double ypos) {
     MouseX = xpos;
     MouseY = ypos;
     if (!Camera.Mouse_Visible) {
@@ -80,12 +84,12 @@ void InputManager::Mouse_Callback(GLFWwindow* window, const double xpos, double 
     }
 }
 
-void InputManager::Scroll_Callback(GLFWwindow* window, double xoffset, double yoffset) {
+void InputManager::Scroll_Callback(GLFWwindow* window_, double xoffset, double yoffset) {
     ScrollX = xoffset;
     ScrollY = yoffset;
 }
 
-void InputManager::Mouse_Key_Callback(GLFWwindow* window, int button, int action, int mods) {
+void InputManager::Mouse_Key_Callback(GLFWwindow* window_, int button, int action, int mods) {
     if (button < 0 || button >= 8) return;
 
     if (action == GLFW_PRESS && !MouseState[button]) {

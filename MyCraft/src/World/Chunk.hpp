@@ -15,6 +15,7 @@ enum class block_type : uint16_t {
     Dirt,
     Iron,
     Wool,
+    Glass,
     Water,
     Lamp,
     Redstone_dust,

@@ -301,6 +301,7 @@ void Game::MainLoop() {
         //-------------------------
         time.Reset();
         gui.backend.ResetFrame();
+        gui.Update();
         gui.Generate();
         gui.backend.SendMesh();
         gui.backend.RenderFrame();
