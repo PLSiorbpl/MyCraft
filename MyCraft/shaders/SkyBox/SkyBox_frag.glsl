@@ -105,7 +105,7 @@ void main() {
     float altitudeFade = smoothstep(-0.06, 0.3, rayDir.y);
     float starVisibility = max(nightFactor, horizonFactor * 0.4) * altitudeFade;
     if (starVisibility > 0.001) {
-        vec3 star = starField(rayDir);
+        vec3 star = starField(rayDir+(dayfactor*0.05));
         sky += star * starVisibility;
     }
 

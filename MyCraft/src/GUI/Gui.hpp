@@ -69,6 +69,7 @@ public:
     void ProgressBar(const gui::Layout& layout, const gui::ProgressStyle& style, const gui::Label* label = nullptr);
     void Text(const glm::vec2& Pos, const gui::Label& label);
     bool TextInput(const gui::Layout& layout, const gui::TextInputStyle& style, gui::Label& label, gui::Animation_State<glm::vec2>* state = nullptr);
+    void Slider(const gui::Layout& layout, gui::SliderStyle &style, const gui::Label& label);
 
     // Layout | Metrics
     [[nodiscard]] static glm::vec2 Anchor(const gui::Layout& layout);
@@ -91,7 +92,6 @@ public:
     }
 
     // Text Cache | Format
-    static std::string Format(const char* fmt, ...);
     static bool UpdateText(gui::TextCache& cache, int value, const char* fmt = "");
     static bool UpdateText(gui::TextCache& cache, float value, const char* fmt = "");
     static bool UpdateText(gui::TextCache& cache, double value, const char* fmt = "");

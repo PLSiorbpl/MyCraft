@@ -90,17 +90,6 @@ bool Gui::UpdateText(TextCache& cache, const double value, const char* fmt) {
     return true;
 }
 
-std::string Gui::Format(const char* fmt, ...) {
-    char buffer[256];
-
-    va_list args;
-    va_start(args, fmt);
-    vsnprintf(buffer, sizeof(buffer), fmt, args);
-    va_end(args);
-
-    return buffer;
-}
-
 glm::vec4 Gui::Color(const glm::vec4& color, uint32_t &Flags) {
     Flags32::Clear(Flags, static_cast<int>(FlagBit::UseTexture));
     return color;
@@ -136,18 +125,66 @@ void Gui::DrawRectangle(const Layout& layout, const BoxStyle& style) {
 }
 
 void Gui::ProgressBar(const Layout& layout, const ProgressStyle& style, const Label* label) {
+    const BoxStyle bstyle = {.BgColor = style.BgColor, .TextureId = style.TextureId};
     const glm::vec2 Pos = Anchor(layout);
     const float Progress = glm::clamp(style.Progress, 0.0f, 1.0f);
-    const float filledWidth = layout.Size.x * Progress;
+    Layout filled = layout;
 
-    DrawRectangle(
-        {.Anchor = layout.Anchor, .Size = {filledWidth, layout.Size.y}, .Offset = layout.Offset},
-        {.BgColor = style.BgColor, .TextureId = style.TextureId}
-    );
+    switch (style.direction) {
+        case Widget_Direction::Right:
+            filled.Size.x *= Progress;
+            break;
+        case Widget_Direction::Left:
+            filled.Size.x *= Progress; filled.Offset.x += layout.Size.x - filled.Size.x;
+            break;
+        case Widget_Direction::Up:
+            filled.Size.y *= Progress; filled.Offset.y += layout.Size.y - filled.Size.y;
+            break;
+        case Widget_Direction::Down:
+            filled.Size.y *= Progress;
+            break;
+    }
+
+    DrawRectangle(filled, bstyle);
     if (label != nullptr) {
         const glm::vec2 TextPos = AnchorText(Pos, layout.Size, *label);
         Text(TextPos, *label);
     }
+}
+
+void Gui::Slider(const Layout &layout, SliderStyle &style, const Label &label) {
+    const int id = ID;
+    ID += 1;
+    const glm::vec2 Pos = Anchor(layout);
+    const float slider_width = style.Slider_Width;
+
+    const Layout sl = {.Anchor = Anch::LeftCenter, .Size = {slider_width, layout.Size.y-4}, .Offset = {style.Value*(layout.Size.x - slider_width*2.0f)+slider_width/2.0f,0}, .Parent = &layout};
+
+    const glm::vec2 Slider_Pos = Anchor(sl);
+    const bool hover = MouseInRect(Pos, layout.Size);
+    const bool hover_slider = MouseInRect(Slider_Pos, sl.Size);
+
+    if (hover && InputManager::MouseState[GLFW_MOUSE_BUTTON_1] && ActiveId == -1) { // Select widget
+        ActiveId = id;
+    }
+    if (((hover && !InputManager::MouseState[GLFW_MOUSE_BUTTON_1]) || !hover) && ActiveId == id) { // Unselect widget
+        ActiveId = -1;
+    }
+
+    if (ActiveId == id) {
+        const float x = game_settings.Mouse.x - Anchor(layout).x-slider_width;
+        style.Value = glm::clamp(x / (layout.Size.x - slider_width*2.0f), 0.0f, 1.0f);
+    }
+
+    const glm::vec2 Text_pos = AnchorText(Pos, layout.Size, label);
+    DrawRectangle(layout,{.BgColor = style.BgColor, .TextureId = style.TextureId}); // Background
+    if (hover_slider)
+        Text(Text_pos, {label.text, {{0.9647f, 0.9569f, 0.9255f, 0.5f}, label.Style.Scale, label.Style.PaddingX, label.Style.PaddingY}});
+
+    DrawRectangle(sl, {.BgColor = ActiveId == id ? style.ActiveSliderColor : style.SliderColor, .TextureId = style.TextureId}); // Slider
+
+    if (!hover_slider)
+        Text(Text_pos, label);
 }
 
 bool Gui::TextInput(const Layout &layout, const TextInputStyle &style, Label& label, Animation_State<glm::vec2>* state) {
@@ -193,7 +230,7 @@ bool Gui::TextInput(const Layout &layout, const TextInputStyle &style, Label& la
         }
     }
 
-    if (!hover && InputManager::MouseState[GLFW_MOUSE_BUTTON_1] && ActiveId == id) {
+    if ((!hover && InputManager::MouseState[GLFW_MOUSE_BUTTON_1] || InputManager::keysState[GLFW_KEY_ENTER]) && ActiveId == id) {
         ActiveId = -1;
         InputManager::InputActive = false;
     }
@@ -267,12 +304,13 @@ bool Gui::TextInput(const Layout &layout, const TextInputStyle &style, Label& la
         }
     } else {
         glm::vec2 TextPos;
+        const Label l = {style.Default_str, label.Style, label.Offset, label.anchor};
         if (state != nullptr) {
-            TextPos = AnchorText(Pos, state->inter.getValue(), {style.Default_str, label.Style, label.Offset, label.anchor});
+            TextPos = AnchorText(Pos, state->inter.getValue(), l);
         } else {
-            TextPos = AnchorText(Pos, layout.Size, {style.Default_str, label.Style, label.Offset, label.anchor});
+            TextPos = AnchorText(Pos, layout.Size, l);
         }
-        Text(TextPos, {style.Default_str, label.Style, label.Offset, label.anchor});
+        Text(TextPos, l);
     }
     return clicked;
 }
@@ -344,7 +382,7 @@ bool Gui::Button(const Layout &layout, const ButtonStyle &style, const Label &la
     glm::vec2 Pos;
 
     if (state != nullptr) {
-        Pos = Anchor({layout.Anchor, state->inter.getValue(), layout.Offset});
+        Pos = Anchor(layout.WithSize(state->inter.getValue()));
         hover = MouseInRect(Pos, state->inter.getValue());
     } else {
         Pos = Anchor(layout);
@@ -375,6 +413,7 @@ bool Gui::Button(const Layout &layout, const ButtonStyle &style, const Label &la
     if (state != nullptr) {
         if (state->inter.ended) {
             if (state->state == State::Click) {
+                state->state = State::Idle;
                 clicked = true;
             } else if (hover) {
                 state->state = State::Hover;
@@ -392,7 +431,7 @@ bool Gui::Button(const Layout &layout, const ButtonStyle &style, const Label &la
 
     if (state != nullptr) {
         const glm::vec2 TextPos = AnchorText(Pos, state->inter.getValue(), label);
-        DrawRectangle({layout.Anchor, state->inter.getValue(), layout.Offset},{.BgColor = Col, .TextureId = style.TextureId});
+        DrawRectangle(layout.WithSize(state->inter.getValue()),{.BgColor = Col, .TextureId = style.TextureId});
         Text(TextPos, label);
     } else {
         const glm::vec2 TextPos = AnchorText(Pos, layout.Size, label);

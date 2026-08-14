@@ -4,14 +4,23 @@
 #include "Render/Camera.hpp"
 #include <Utils/InputManager.hpp>
 #include "World/Chunk.hpp"
+#include <format>
+#include "Common/Textures.hpp"
 
 using namespace gui;
 
+// Hotbar
+constexpr glm::vec2 Slot_Size = {24, 24};
+constexpr glm::vec2 Item_Size = {16, 16};
+constexpr glm::vec2 Hotbar_size = {(Slot_Size.x + 1) * 9 + 1, 24.0f};
+constexpr Layout Hotbar_layout = {Anch::BottomCenter, Hotbar_size, {0.0f, -1.0f}};
+// Inventory
+constexpr glm::vec2 Inventory_Size = {371, 223};
+constexpr glm::vec2 Inventory_Slot_Size = {36, 36};
+constexpr glm::vec2 Inventory_Item_Size = {24, 24};
+constexpr Layout Inventory_layout = {.Anchor = Anch::Center, .Size = Inventory_Size, .Offset = {0, -15}};
+
 void Gui::HotBar() {
-    constexpr glm::vec2 Slot_Size = {24, 24};
-    constexpr glm::vec2 Item_Size = {16, 16};
-    constexpr glm::vec2 Hotbar_size = {(Slot_Size.x + 1) * 9 + 1, 24.0f};
-    constexpr Layout Hotbar_layout = {Anch::BottomCenter, Hotbar_size, {0.0f, -1.0f}};
     Layout Slot_layout = {Anch::LeftCenter, Slot_Size, {0, 0}, &Hotbar_layout};
     const Layout Item_layout = {Anch::Center, Item_Size, {0, 0}, &Slot_layout};
 
@@ -28,9 +37,9 @@ void Gui::HotBar() {
     if (true) { // !Camera.Mode
         for (int i = 0; i < 9; i++) {
             if (i != Camera.HotBarSlot)
-                DrawRectangle(Slot_layout, {{222, 0, 244, 21}, Texture_Id::Gui});
+                DrawRectangle(Slot_layout, {Slot_Round, Texture_Id::Gui});
             else {
-                DrawRectangle(Slot_layout, {{222, 23, 244, 44}, Texture_Id::Gui});
+                DrawRectangle(Slot_layout, {Slot_Active, Texture_Id::Gui});
             }
             DrawRectangle(Item_layout, {{Camera.Hotbar_slots[i], 0,0,0}, Texture_Id::Block});
             Slot_layout.Move_X(1);
@@ -43,38 +52,31 @@ void Gui::Inventory() {
     ID = 0;
     static int item_selected = -1;
     if (Camera.Mode || true) {
-        constexpr glm::vec2 Inventory_Size = {371, 223};
-        constexpr glm::vec2 Slot_Size = {36, 36};
-        constexpr glm::vec2 Item_Size = {24, 24};
-        constexpr Layout Inventory_layout = {.Anchor = Anch::Center, .Size = Inventory_Size, .Offset = {0, -15}};
-        Layout Slot_layout = {.Anchor = Anch::TopLeft, .Size = Slot_Size, .Offset = {1, 1}, .Parent = &Inventory_layout};
-        const Layout Item_layout = {.Anchor = Anch::Center, .Size = Item_Size, .Offset = {0, 0}, .Parent = &Slot_layout};
+        Layout Inventory_Slot_layout = {.Anchor = Anch::TopLeft, .Size = Inventory_Slot_Size, .Offset = {1, 1}, .Parent = &Inventory_layout};
+        const Layout Item_layout = {.Anchor = Anch::Center, .Size = Inventory_Item_Size, .Offset = {0, 0}, .Parent = &Inventory_Slot_layout};
 
         DrawRectangle(Inventory_layout, {.BgColor = rgba(0x202020), .TextureId = Texture_Id::None});
 
         for (int y = 0; y < 6; y++) {
             for (int x = 0; x < 10; x++) {
-                if (Button(Slot_layout, {.BgColor = {222, 46, 244, 67}, .HoverColor = {222, 23, 244, 44}, .TextureId = Texture_Id::Gui}, {})) {
+                if (Button(Inventory_Slot_layout, {.BgColor = Slot, .HoverColor = Slot_Active, .TextureId = Texture_Id::Gui}, {})) {
                     item_selected = x+1+(y*10);
                 }
                 DrawRectangle(Item_layout, {.BgColor = {x+1+(y*10),0,0,0}, .TextureId = Texture_Id::Block});
-                Slot_layout.Move_X(1);
+                Inventory_Slot_layout.Move_X(1);
             }
-            Slot_layout.Move_Y(1);
-            Slot_layout.Offset.x = 1;
+            Inventory_Slot_layout.Move_Y(1);
+            Inventory_Slot_layout.Offset.x = 1;
         }
 
         if (item_selected != -1 && item_selected < static_cast<int>(block_type::_count)) {
             DrawRectangle({.Size = Item_Size, .Offset = game_settings.Mouse}, {.BgColor = {item_selected,0,0,0}, .TextureId = Texture_Id::Block});
         }
 
-        constexpr glm::vec2 Hotbar_Slot_Size = {24, 24};
-        constexpr glm::vec2 Hotbar_size = {(Hotbar_Slot_Size.x + 1) * 9 + 1, 24.0f};
-        constexpr Layout Hotbar_layout = {Anch::BottomCenter, Hotbar_size, {0.0f, -1.0f}};
-        Layout Hotbar_Slot_layout = {Anch::LeftCenter, Hotbar_Slot_Size, {0, 0}, &Hotbar_layout};
+        Layout Slot_layout = {Anch::LeftCenter, Slot_Size, {0, 0}, &Hotbar_layout};
 
         for (int i = 0; i < 9; i++) {
-            if (Button(Hotbar_Slot_layout, {}, {})) {
+            if (Button(Slot_layout, {}, {})) {
                 if (item_selected != -1 && item_selected < static_cast<int>(block_type::_count)) {
                     if (InputManager::keysState[GLFW_KEY_LEFT_SHIFT]) { // Erase
                         Camera.Hotbar_slots[i] = 0;
@@ -91,161 +93,166 @@ void Gui::Inventory() {
                 Camera.ItemHeld = Camera.Hotbar_slots[Camera.HotBarSlot];
                 break;
             }
-            Hotbar_Slot_layout.Move_X(1);
+            Slot_layout.Move_X(1);
         }
     }
 }
 
 void Gui::Food_bar() {
-    constexpr float HalfHotBar = 188.0f/2;
-    
+    constexpr float HalfHotBar = Hotbar_size.x/2;
+    constexpr auto StatSize = glm::vec2((HalfHotBar-10), 10);
+    constexpr Layout Food_layout = {Anch::TopLeft, StatSize, {2, -StatSize.y - 2}, &Hotbar_layout};
+    constexpr Layout Water_layout = {Anch::TopRight, StatSize, {-2, -StatSize.y - 2}, &Hotbar_layout};
+    Layout Progress_layout = {Anch::LeftCenter, {StatSize.x-2, 8}, {1, 0}};
+
     // Food
-    auto StatSize = glm::vec2((HalfHotBar-10)+2, 10);
-    DrawRectangle({Anch::BottomCenter, StatSize, {(-HalfHotBar + StatSize.x/2)-1, -25.0f}}, {rgba(0x404040), Texture_Id::None});
-    StatSize = glm::vec2(HalfHotBar-10, 8);
-    ProgressBar({Anch::BottomCenter, StatSize, {-HalfHotBar + StatSize.x/2, -26.0f}}, {1, rgba(0xff8c00), Texture_Id::None});
+    Progress_layout.Parent = &Food_layout;
+    DrawRectangle(Food_layout, {.BgColor = rgba(0x404040)});
+    ProgressBar(Progress_layout, {game.TimeOfDay, rgba(0xff8c00), Texture_Id::None, Widget_Direction::Right});
 
     // Water
-    StatSize = glm::vec2((-HalfHotBar+10)-2, 10);
-    DrawRectangle({Anch::BottomCenter, StatSize, {(HalfHotBar + StatSize.x/2)+1, -25.0f}}, {rgba(0x404040), Texture_Id::None});
-    StatSize = glm::vec2(-HalfHotBar+10, 8);
-    ProgressBar({Anch::BottomCenter, StatSize, {HalfHotBar + StatSize.x/2, -26.0f}}, {1, rgba(0x00f7ff), Texture_Id::None});
+    Progress_layout.Parent = &Water_layout;
+    DrawRectangle(Water_layout, {.BgColor = rgba(0x404040)});
+    ProgressBar(Progress_layout, {game.TimeOfDay, rgba(0x00f7ff), Texture_Id::None, Widget_Direction::Left});
 }
 
 void Gui::Health() {
     constexpr auto Size = glm::vec2(100, 150);
+    constexpr Layout Health_layout = {.Anchor = Anch::BottomLeft, .Size = Size, .Offset = {1.0f, -1.0f}};
+    Layout Text_layout = {.Anchor = Anch::TopLeft, .Size = {}, .Offset = {1, 1}, .Parent = &Health_layout};
 
-    DrawRectangle({Anch::BottomLeft, Size, {1.0f, -1.0f}}, {rgba(0x404040), Texture_Id::None});
-    Text(Anchor({Anch::BottomLeft, Size, {1.0f, -1.0f}}), {.text = R"( !"#$%&'()*+,.-/0123456789:;<=>?@{}~)"});
-    Text(Anchor({Anch::BottomLeft, Size, {1.0f, 10.0f}}), {.text = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"});
-    Text(Anchor({Anch::BottomLeft, Size, {1.0f, 20.0f}}), {.text = "abcdefghijklmnopqrstuvwxyz"});
+    DrawRectangle(Health_layout, {rgba(0x404040), Texture_Id::None});
+    Text(Anchor(Text_layout), {.text = R"( !"#$%&'()*+,.-/0123456789:;<=>?@{}~)"});
+    Text_layout.Move_Y(10);
+    Text(Anchor(Text_layout), {.text = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"});
+    Text_layout.Move_Y(10);
+    Text(Anchor(Text_layout), {.text = "abcdefghijklmnopqrstuvwxyz"});
 }
 
 void Gui::Crosschair() {
-    const glm::vec4 color = rgba(0xffffff);
+    const glm::vec4 color = rgba(0xffffffD9);
 
     auto Size = glm::vec2(0.5f, 5.0f);
-    DrawRectangle({.Anchor = Anch::Center, .Size = Size}, {color, Texture_Id::None});
+    DrawRectangle({.Anchor = Anch::Center, .Size = Size}, {.BgColor = color});
 
     Size = glm::vec2(5.0f, 0.5f);
-    DrawRectangle({.Anchor = Anch::Center, .Size = Size}, {color, Texture_Id::None});
+    DrawRectangle({.Anchor = Anch::Center, .Size = Size}, {.BgColor = color});
 }
 
 void Gui::Menu() {
     ID = 0;
-    static ButtonStyle Big = {{0,0,150,20}, {0,21,150,41}, Texture_Id::Gui};
-    static ButtonStyle Small = {{151,0,221,20}, {151,21,221,41}, Texture_Id::Gui};
     static Animation_State<glm::vec2> Resume_State;
-    static Animation_State<glm::vec2> Exit_State;
     static Animation_State<glm::vec2> Settings_State;
     static Animation_State<glm::vec2> Multiplayer_State;
+    static Animation_State<glm::vec2> Exit_State;
+
+    constexpr ButtonStyle Big = {.BgColor = Button_Big, .HoverColor = Button_Big_Active, .TextureId = Texture_Id::Gui};
+    constexpr ButtonStyle Small = {.BgColor = Button_Small, .HoverColor = Button_Small_Active, .TextureId = Texture_Id::Gui};
+    Layout Menu_layout = {.Anchor = Anch::Center, .Size = {150, 70}, .Offset = {}};
+    Layout layout = {.Anchor = Anch::TopLeft, .Size = {150, 20}, .Offset = {}, .Parent = &Menu_layout};
     
     // Resume
-    Layout layout = {Anch::Center, {150, 20}, {0.0f, -25.0f}};
     Label label = {.text = "Resume", .anchor = Anch::Center};
+    layout.Center_animation(Resume_State, false);
     if (Button(layout, Big, label, &Resume_State)) {
-        Resume_State.state = State::Idle;
         InputManager::Key_Callback(window, GLFW_KEY_ESCAPE, 0, GLFW_PRESS, 0);
     }
+    layout.Center_animation(Resume_State, true);
 
-    // Exit
-    layout.Offset = {0.0f, 25.0f};
-    label.text = "Exit";
-    if (Button(layout, Big, label, &Exit_State)) {
-        Exit_State.state = State::Idle;
-        glfwSetWindowShouldClose(window, true);
-    }
     // Settings
-    layout.Size = {70, 20};
-    layout.Offset = {-(layout.Size.x+10)/2, 0.0f};
+    layout.Move_Y(5);
     label.text = "Settings";
+    layout.Size = {70, 20};
+    layout.Center_animation(Settings_State, false);
     if (Button(layout, Small, label, &Settings_State)) {
-        Settings_State.state = State::Idle;
         game.MenuId = 1;
     }
+    layout.Center_animation(Settings_State, true);
 
     // Multiplayer
-    layout.Offset = {(layout.Size.x+10)/2, 0.0f};
     label.text = "Multiplayer";
+    layout.Size = {70, 20}; layout.Move_X(10);
+    layout.Center_animation(Multiplayer_State, false);
     if (Button(layout, Small, label, &Multiplayer_State)) {
-        Multiplayer_State.state = State::Idle;
         Multiplayer();
         game.MenuId = 2;
     }
+    layout.Move_X(10, true); layout.Center_animation(Multiplayer_State, true);
+
+    // Exit
+    layout.Move_Y(5);
+    label.text = "Exit";
+    layout.Size = {150, 20};
+    layout.Center_animation(Exit_State, false);
+    if (Button(layout, Big, label, &Exit_State)) {
+        glfwSetWindowShouldClose(window, true);
+    }
+    layout.Center_animation(Exit_State, true);
 }
 
 void Gui::Settings() {
-    static int renderd = 0;
     ID = 0;
-    static ButtonStyle Big = {{0,0,150,20}, {0,21,150,41}, Texture_Id::Gui};
-    static ButtonStyle Small = {{151,0,221,20}, {151,21,221,41}, Texture_Id::Gui};
-    static Animation_State<glm::vec2> Render1_State;
-    static Animation_State<glm::vec2> Render2_State;
+    static int renderd = 0; static float y = 0;
+    static ButtonStyle Big = {Button_Big, Button_Big_Active, Texture_Id::Gui};
+    static ButtonStyle Small = {Button_Small, Button_Small_Active, Texture_Id::Gui};
+    const Layout Menu_layout = {.Anchor = Anch::Center, .Size = {150, y}, .Offset = {}};
+    Layout layout = {.Anchor = Anch::TopLeft, .Size = {70, 20}, .Offset = {}, .Parent = &Menu_layout};
+    Layout layout_right = {.Anchor = Anch::TopRight, .Size = {70, 20}, .Offset = {}, .Parent = &Menu_layout};
+    Label label = {.text = {}, .anchor = Anch::Center};
+    static SliderStyle Big_slider = {0.5, Button_Big, Slider_H, Slider_H_Active, Texture_Id::Gui, 7};
+
     static Animation_State<glm::vec2> Save_State;
     static Animation_State<glm::vec2> VSync_State;
+    y = 0;
 
-    Layout layout = {Anch::Center, {70, 20}, {-(70+10)/2, -25.0f}};
-    Label label = {.text = "Render +", .anchor = Anch::Center};
-    if (Button(layout, Small, label, &Render1_State)) {
-        Render1_State.state = State::Idle;
-        renderd += 1;
-        if (Camera.RenderDistance+renderd > 96) renderd -= 1;
-    }
+    layout.Size = {150, 20};
+    renderd = static_cast<int>(std::lerp(2, 96, Big_slider.Value));
+    label.text = std::format("Render Distance {}", renderd);
+    Slider(layout, Big_slider, label);
 
-    layout.Offset.y = 0;
-    if (game.V_Sync == 1) {
-        label.text = "V-sync On";
-    } else {
-        label.text = "V-Sync Off";
-    }
+    layout.Move_Y(10);
+    layout.Size = {70, 20};
+    label.text = game.V_Sync ? "V-sync On" : "V-Sync Off";
+    layout.Center_animation(VSync_State, false);
     if (Button(layout, Small, label, &VSync_State)) {
-        VSync_State.state = State::Idle;
-        if (game.V_Sync == 1) {
-            game.V_Sync = 0;
-        } else {
-            game.V_Sync = 1;
-        }
+        game.V_Sync = !game.V_Sync;
     }
+    layout.Center_animation(VSync_State, true);
 
-    layout.Offset.y = 25;
+    layout.Move_Y(10);
     label.text = "???";
     Button(layout, Small, label);
 
-
-    layout.Offset = {(layout.Size.x+10)/2, -25};
-    label.text = "Render -";
-    if (Button(layout, Small, label, &Render2_State)) {
-        Render2_State.state = State::Idle;
-        renderd -= 1;
-        if (Camera.RenderDistance+renderd < 2) renderd += 1;
-    }
-
-    layout.Offset.y = 0;
+    layout.Move_Y(10);
     label.text = "???";
     Button(layout, Small, label);
 
-    layout.Offset.y = 25;
-    label.text = "???";
-    Button(layout, Small, label);
-
-
-    layout.Offset = {0, 50};
+    layout.Move_Y(10);
     layout.Size = {150, 20};
     label.text = "Save";
+    layout.Center_animation(Save_State, false);
     if (Button(layout, Big, label, &Save_State)) {
-        Save_State.state = State::Idle;
-        Camera.RenderDistance += renderd;
-        renderd = 0;
-        game.MenuId = 0;
-        game.Last_Chunk = glm::ivec3(9999);
+        Camera.RenderDistance = renderd;
+        game.MenuId = 0; game.Last_Chunk = glm::ivec3(9999);
         glfwSwapInterval(game.V_Sync);
     }
+    layout.Center_animation(Save_State, true);
 
-    static TextCache rd;
-    UpdateText(rd, Camera.RenderDistance+renderd, "Render Distance: %d");
-    layout.Offset = {0, -50};
-    label.text = rd.text;
-    Button(layout, Big, label);
+    layout_right.Size = {150, 20};
+    layout_right.Move_Y(10);
+    layout_right.Size = {70, 20};
+    label.text = "???";
+    Button(layout_right, Small, label);
+
+    layout_right.Move_Y(10);
+    label.text = "???";
+    Button(layout_right, Small, label);
+
+    layout_right.Move_Y(10);
+    label.text = "???";
+    Button(layout_right, Small, label);
+
+    y = layout.Offset.y + layout.Size.y;
 }
 
 void Gui::DebugScreen() {
@@ -264,43 +271,40 @@ void Gui::DebugScreen() {
      Looking at
      */
 
-    Layout layout = {Anch::TopLeft, {80, (10*6)+(2*10)}, {1,1}};
+    static float y = 0;
+    Layout box = {Anch::TopLeft, {80, y}, {1,1}};
+    Layout layout = {Anch::TopLeft, {0, 5}, {2, 1}, &box};
+    Label label = {.text = {}, .Style = {.Scale = 0.5}};
 
-    DrawRectangle(layout, {{rgba(0x101010)}});
-    layout.Size = {0, 5};
-    layout.Offset = {2, 1};
+    DrawRectangle(box, {{rgba(0x101010)}});
 
-    static TextCache fps;
-    UpdateText(fps, game.FPS, "FPS: %d");
-    Text(Anchor(layout), {.text = fps.text, .Style = {.Scale = 0.5}});
+    y = 0;
+    label.text = std::format("FPS: {}", game.FPS);
+    Text(Anchor(layout), label);
 
+    label.text = "CPU times:";
     layout.Move_Y();
-    Text(Anchor(layout), {.text = "Cpu Times:", .Style = {.Scale = 0.5}});
+    Text(Anchor(layout), label);
 
-    static TextCache FrameTime;
-    UpdateText(FrameTime, PerfS.EntireTime, "Frame Time: %.3fms");
+    label.text = std::format("Frame Time: {:.3f}ms", PerfS.EntireTime);
     layout.Move_Y();
-    Text(Anchor(layout), {.text = FrameTime.text, .Style = {.Scale = 0.5}});
+    Text(Anchor(layout), label);
 
-    static TextCache MeshTime;
-    UpdateText(MeshTime, PerfS.mesh, "Mesh Time: %.3fms");
+    label.text = std::format("Mesh Time: {:.3f}ms", PerfS.mesh);
     layout.Move_Y();
-    Text(Anchor(layout), {.text = MeshTime.text, .Style = {.Scale = 0.5}});
+    Text(Anchor(layout), label);
 
-    static TextCache RenderTime;
-    UpdateText(RenderTime, PerfS.render, "Render Time: %.3fms");
+    label.text = std::format("Render Time: {:.3f}ms", PerfS.render);
     layout.Move_Y();
-    Text(Anchor(layout), {.text = RenderTime.text, .Style = {.Scale = 0.5}});
+    Text(Anchor(layout), label);
 
-    static TextCache GuiTime;
-    UpdateText(GuiTime, PerfS.gui, "Gui Time: %.3fms");
+    label.text = std::format("Gui Time: {:.3f}ms", PerfS.gui);
     layout.Move_Y();
-    Text(Anchor(layout), {.text = GuiTime.text, .Style = {.Scale = 0.5}});
+    Text(Anchor(layout), label);
 
-    static TextCache TickTime;
-    UpdateText(TickTime, PerfS.tick, "Tick Time: %.3fms");
+    label.text = std::format("Tick Time: {:.3f}ms", PerfS.tick);
     layout.Move_Y();
-    Text(Anchor(layout), {.text = TickTime.text, .Style = {.Scale = 0.5}});
+    Text(Anchor(layout), label);
 
     static ProgressStyle ram_style = {.TextureId = Texture_Id::None};
     static ProgressStyle tri_style = {.TextureId = Texture_Id::None};
@@ -312,7 +316,7 @@ void Gui::DebugScreen() {
     ram_style.Progress = ramUsedRatio;
     if (LastRam != PerfS.ramUsed) {
         ram_style.BgColor = Gradient(ramUsedRatio, rgba(0x00ff00), rgba(0xffff00), rgba(0xff0000));
-        label_ram.text = Format("%s/%s", Fun::FormatSize(PerfS.ramUsed).c_str(),Fun::FormatSize(game.Max_Ram * 1024 * 1024).c_str());
+        label_ram.text = std::format("{}/{}", Fun::FormatSize(PerfS.ramUsed), Fun::FormatSize(game.Max_Ram * 1024 * 1024));
         LastRam = PerfS.ramUsed;
     }
     layout.Move_Y();
@@ -324,7 +328,7 @@ void Gui::DebugScreen() {
     tri_style.Progress = TrisVisibleRatio;
     if (LastTris != PerfS.Triangles) {
         tri_style.BgColor = Gradient(TrisVisibleRatio, rgba(0x00ff00), rgba(0xffff00), rgba(0xff0000));
-        label_tris.text = Format("%s/%s", Fun::FormatNumber(PerfS.Triangles).c_str(), Fun::FormatNumber(PerfS.Total_Triangles).c_str());
+        label_tris.text = std::format("{}/{}", Fun::FormatNumber(PerfS.Triangles), Fun::FormatNumber(PerfS.Total_Triangles));
         LastTris = PerfS.Triangles;
     }
     layout.Move_Y();
@@ -332,38 +336,42 @@ void Gui::DebugScreen() {
 
     layout.Move_Y();
     layout.Size = {0, 5};
-    Text(Anchor(layout), {.text = Format("x: %.1f y: %.1f z: %.1f", Camera.Position.x, Camera.Position.y, Camera.Position.z), .Style = {.Scale = 0.5}});
+    Text(Anchor(layout), {.text = std::format("x: {:.1f} y: {:.1f} z: {:.1f}", Camera.Position.x, Camera.Position.y, Camera.Position.z), .Style = {.Scale = 0.5}});
 
     layout.Move_Y();
-    Text(Anchor(layout), {.text = Format("Looking at: %s", Direction_to_String(Camera.direction).c_str()), .Style = {.Scale = 0.5}});
+    Text(Anchor(layout), {.text = std::format("Looking at: {}", Direction_to_String(Camera.direction)), .Style = {.Scale = 0.5}});
 
     if (block_cache[Camera.ItemHeld]) {
         layout.Move_Y();
-        Text(Anchor(layout), {.text = Format("Block: %s", block_cache[Camera.ItemHeld]->get_name().c_str()), .Style = {.Scale = 0.5}});
+        Text(Anchor(layout), {.text = std::format("Block: {}", block_cache[Camera.ItemHeld]->get_name()), .Style = {.Scale = 0.5}});
     }
 
     if (Camera.looking_at) {
         layout.Move_Y();
-        Text(Anchor(layout), {.text = Format("Looking at: %s", Camera.looking_at->get_name().c_str()), .Style = {.Scale = 0.5}});
+        Text(Anchor(layout), {.text = std::format("Looking at: {}", Camera.looking_at->get_name()), .Style = {.Scale = 0.5}});
     }
+
+    y = layout.Offset.y + layout.Size.y + 1;
 }
 
 void Gui::Chat() {
-    Layout layout = {Anch::LeftCenter, {125, 100}, {1,50}};
-    // Background
-    DrawRectangle(layout, {{rgba(0x404040)}});
-    layout.Size = {125, 10};
-    layout.Offset.y = 95;
-    DrawRectangle(layout, {{rgba(0x505050)}});
+    static int x = 0;
     Label label = {.Style = {.Scale = 0.5}, .anchor = Anch::LeftCenter};
-    int y = Anchor(layout).y - 99;
+    constexpr Layout box = {Anch::LeftCenter, {125, 100}, {1,50}};
+    const Layout input = {Anch::BottomLeft, {125, 10}, {0, 10}, &box};
+    Layout text = {Anch::TopLeft, {0, 5}, {1, 1}, &box};
+    // Background
+    DrawRectangle(box, {{rgba(0x404040D9)}});
+    DrawRectangle(input, {{rgba(0x505050D9)}});
+
     for (const auto& msg : chat) {
         label.text = msg;
-        Text({3, y}, label);
-        y += 10;
+        Text(Anchor(text), label);
+        text.Move_Y();
     }
+
     if (InputManager::keysState[GLFW_KEY_ENTER] && net.client.client) {
-        const std::string msg = "Hello";
+        const std::string msg = "Hello " + std::to_string(x);
         Packet pkt = {.h = {PacketType::CHAT, static_cast<uint16_t>(msg.size())}};
         pkt.data.resize(msg.size());
         pkt.data.assign(msg.begin(), msg.end());
@@ -371,6 +379,7 @@ void Gui::Chat() {
         net.Client_Send(pkt);
         net.client.Send();
         InputManager::keysState[GLFW_KEY_ENTER] = false;
+        x++;
     }
     Packet p;
     if (net.Server_Read(p)) {
@@ -380,6 +389,8 @@ void Gui::Chat() {
     }
     if (net.Client_Read(p)) {
         if (p.h.type == PacketType::CHAT) {
+            while (chat.size() > 19)
+                chat.erase(chat.begin());
             chat.emplace_back(p.data.begin(), p.data.end());
         }
     }

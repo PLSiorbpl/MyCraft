@@ -32,6 +32,12 @@ const float FOG_END = 1.0;
 const float PI = 3.14159265;
 const float two_PI = 2.0*3.14159265;
 
+float hash(vec3 p3) {
+    p3 = fract(p3 * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
 vec3 stylize(vec3 c) {
     float lum = dot(c, vec3(0.2126, 0.7152, 0.0722)); // BT.709 weights or smt
     c = mix(vec3(lum), c, 1.35); // saturation boost
@@ -109,11 +115,13 @@ void main() {
     float azimuthAlign = dot(sunDirXZ, viewDirXZ) * 0.5 + 0.5;
     float sunsetGlow = horizonFactor * viewNearHorizon * mix(0.3, 1.0, azimuthAlign);
     sky = mix(sky, SUNSET_COLOR, sunsetGlow * 0.7);
+    float dither = (hash(vec3(gl_FragCoord.xy, 0.0)) - 0.5) / 255.0;
+    sky += dither;
 
     // ----------------------------
     // Fog
     // ----------------------------
-    float FOG_DENSITY = mix(2.5, 0.9, dayfactor);
+    float FOG_DENSITY = mix(2.5, 0.85, dayfactor);
     float fogStart = mix(0.4, 0.7, dayfactor);
     float dist = length(FragPos - ViewPos) / max(float(RenderDist) * 16.0, 1.0);
     dist *= FOG_DENSITY;

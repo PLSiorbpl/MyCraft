@@ -62,31 +62,11 @@ namespace gui {
         Font = 4
     };
 
-    struct Layout  {
-        Anch Anchor;
-        glm::vec2 Size = {0.0f, 0.0f};
-        glm::vec2 Offset = {0.0f,0.0f};
-
-        const Layout *Parent = nullptr;
-
-        void Move_Y(const float offset = 0) {
-            Offset.y += Size.y + offset;
-        }
-
-        void Move_X(const float offset = 0) {
-            Offset.x += Size.x + offset;
-        }
-    };
-
-    struct ProgressStyle {
-        float Progress = 0;
-        glm::vec4 BgColor = {0.0f, 1.0f, 0.0f, 1.0f};
-        Texture_Id TextureId = Texture_Id::None;
-    };
-
-    struct BoxStyle {
-        glm::vec4 BgColor;
-        Texture_Id TextureId = Texture_Id::None;
+    enum class Widget_Direction {
+        Right,
+        Left,
+        Up,
+        Down,
     };
 
     enum class State {
@@ -101,11 +81,77 @@ namespace gui {
         State state = State::Idle;
     };
 
+    struct Layout  {
+        Anch Anchor;
+        glm::vec2 Size = {0.0f, 0.0f};
+        glm::vec2 Offset = {0.0f,0.0f};
+
+        const Layout *Parent = nullptr;
+
+        void Move_Y(const float offset = 0) {
+            Offset.y += Size.y + offset;
+        }
+
+        void Move_X(const float offset = 0, const bool negative = false) {
+            if (!negative)
+                Offset.x += Size.x + offset;
+            else
+                Offset.x -= Size.x + offset;
+        }
+
+        void Center_animation(Animation_State<glm::vec2> Animation, const bool undo) {
+            if (!undo)
+                Offset += (Size - Animation.inter.getValue()) / glm::vec2(2);
+            else
+                Offset -= (Size - Animation.inter.getValue()) / glm::vec2(2);
+        }
+
+        Layout WithSize(const glm::vec2 size) const {
+            Layout result = *this;
+            result.Size = size;
+            return result;
+        }
+
+        Layout WithOffset(const glm::vec2 offset) const {
+            Layout result = *this;
+            result.Offset = offset;
+            return result;
+        }
+
+        Layout WithAnchor(const Anch anchor) const {
+            Layout result = *this;
+            result.Anchor = anchor;
+            return result;
+        }
+    };
+
+    struct ProgressStyle {
+        float Progress = 0;
+        glm::vec4 BgColor = {0.0f, 1.0f, 0.0f, 1.0f};
+        Texture_Id TextureId = Texture_Id::None;
+        Widget_Direction direction = Widget_Direction::Right;
+    };
+
+    struct BoxStyle {
+        glm::vec4 BgColor;
+        Texture_Id TextureId = Texture_Id::None;
+    };
+
     struct ButtonStyle {
         glm::vec4 BgColor = {0.25098f, 0.25098f, 0.25098f, 0.0f};
         glm::vec4 HoverColor = {0.941176f, 0.941176f, 0.941176f, 0.0f};
         Texture_Id TextureId = Texture_Id::None;
         bool show = true;
+    };
+
+    struct SliderStyle {
+        float Value = 0;
+        glm::vec4 BgColor = {0.25098f, 0.25098f, 0.25098f, 0.0f};
+        glm::vec4 SliderColor = {0.25098f, 0.25098f, 0.25098f, 0.0f};
+        glm::vec4 ActiveSliderColor = {0.941176f, 0.941176f, 0.941176f, 0.0f};
+        Texture_Id TextureId = Texture_Id::Gui;
+        float Slider_Width = 7;
+        Widget_Direction direction = Widget_Direction::Right;
     };
 
     struct TextInputStyle {
@@ -133,6 +179,12 @@ namespace gui {
         TextStyle Style = {.Color = {0.9647f, 0.9569f, 0.9255f, 0.0f}, .Scale = 1, .PaddingX = 1, .PaddingY = 0};
         glm::vec2 Offset = {0.0f, 0.0f};
         Anch anchor = Anch::None;
+
+        Label WithText(const std::string &t) const {
+            Label result = *this;
+            result.text = t;
+            return result;
+        }
     };
 
     struct Button_Widget {
