@@ -102,6 +102,7 @@ void Shader::Init_Shader() {
     SH.General_Gui_Shader.Shader = Create_Shader("MyCraft/shaders/Gui_vert.glsl", "MyCraft/shaders/Gui_Frag.glsl");
     SH.SelectionBox_Shader.Shader = Create_Shader("MyCraft/shaders/Selection_Vert.glsl", "MyCraft/shaders/Selection_Frag.glsl");
     SH.SkyBox_Shader.Shader = Create_Shader("MyCraft/Shaders/FullScreen_vert.glsl", "MyCraft/Shaders/SkyBox/SkyBox_frag.glsl");
+    //SH.Clouds_Shader.Shader = Create_Shader("MyCraft/Shaders/FullScreen_vert.glsl", "MyCraft/Shaders/SkyBox/Clouds.glsl");
 
     SH.Solid_Shader_Blocks.Texture0 = Load_Texture("MyCraft/Assets/Textures/Blocks/Atlas.png");
     SH.General_Gui_Shader.Texture0 = SH.Solid_Shader_Blocks.Texture0;

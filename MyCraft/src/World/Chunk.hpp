@@ -61,7 +61,10 @@ public:
     // Mesh Stuff
     bool has_terrain = false;
     bool is_edge = false;
+    bool in_mesher = false;
+    bool pending_mesh = false;
     bool has_mesh = false;
+    bool send_mesh = false;
     bool InRender = false;
     bool DirtyFlag = true;
 

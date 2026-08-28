@@ -1,10 +1,14 @@
 #include <glad/glad.h>
 #include "Generation.hpp"
 #include <iostream>
+#include <ranges>
+
+#include "Mesh/Mesh.hpp"
 #include "Render/Camera.hpp"
 
+ChunkGeneration GenerateChunk;
+
 void ChunkGeneration::LookForChunks() {
-    auto& World = World_Map::World;
     const int Rd = Camera.RenderDistance;
     for (int dx = -Rd-1; dx <= Rd+1; ++dx) {
         for (int dz = -Rd-1; dz <= Rd+1; ++dz) {
@@ -16,16 +20,23 @@ void ChunkGeneration::LookForChunks() {
             const bool isEdge = dist > Rd;
 
             {
-                std::lock_guard lock(GenMutex);
-                if (World.find(key) == World.end() && GeneratingChunks.find(key) == GeneratingChunks.end()) {
+                if (!World_Map::World.contains(key) && !GeneratingChunks.contains(key)) {
+                    std::lock_guard lock(GenMutex);
                     GenQueue.push(key);
                     GeneratingChunks.insert(key);
                 }
             }
 
-            auto it = World.find(key);
-            if (it != World.end()) {
-                it->second.is_edge = isEdge;
+            auto *chunk = World_Map::find_chunk(key.first, key.second);
+            if (chunk) {
+                chunk->is_edge = isEdge;
+                if (chunk->is_edge) continue;
+
+                if (!chunk->pending_mesh && !chunk->has_mesh && !chunk->InRender) {
+                    chunk->DirtyFlag = true;
+                    chunk->pending_mesh = true;
+                    mesher.pendingChunks.push_back(chunk);
+                }
             }
         }
     }
@@ -45,27 +56,23 @@ void ChunkGeneration::GenerateChunk() {
             GenQueue.pop();
         }
 
-        Chunk data = Terrain.Generate_Terrain_Chunk(chunkPos.first, chunkPos.second);
+        auto data = std::make_unique<Chunk>();
+
+        Terrain.Generate_Terrain_Chunk(*data, chunkPos.first, chunkPos.second);
 
         {
             std::lock_guard lock(ResultMutex);
             ReadyChunks.push_back(std::move(data));
-        }
-        {
-            std::lock_guard lock(GenMutex);
-            GeneratingChunks.erase(chunkPos);
         }
     }
 }
 
 
 void ChunkGeneration::RemoveChunks() {
-    auto& World = World_Map::World;
-    auto& chunk = World_Map::Mesh_Queue;
-    auto& RL = World_Map::Render_List;
-    std::vector<std::pair<int,int>> toRemove;
+    std::vector<decltype(World_Map::World)::iterator> toRemove;
 
-    for (const auto& [key, chunk] : World) {
+    for (auto it = World_Map::World.begin(); it != World_Map::World.end(); ++it) {
+        const auto& key = it->first;
         const int chunkX = key.first;
         const int chunkZ = key.second;
 
@@ -74,44 +81,50 @@ void ChunkGeneration::RemoveChunks() {
 
         const int dist = std::max(std::abs(dx), std::abs(dz));
 
-        if (dist > Camera.RenderDistance+1) {
-            toRemove.push_back(key);
+        if (dist > Camera.RenderDistance+1 && !it->second->in_mesher) {
+            toRemove.push_back(it);
         }
     }
-    if (!RL.empty()) glFinish();
-    for (const auto& key : toRemove) {
-        const int cx = key.first;
-        const int cz = key.second;
-        if (!RL.empty()) {
-            for (int i = RL.size(); i-- > 0;) {
-                if (RL[i].chunkX == cx && RL[i].chunkZ == cz) {
-                    auto& chunk1 = World_Map::World.find({RL[i].chunkX, RL[i].chunkZ})->second;
-                    chunk1.InRender = false;
-                    glDeleteBuffers(1, &RL[i].vbo);
-                    glDeleteVertexArrays(1, &RL[i].vao);
-                    // Fast delete by moving chunk to back
-                    RL[i] = RL.back();
-                    RL.pop_back();
-                    break;
-                }
-            }
-        }
 
-        if (!chunk.empty()){
-            for (int i = chunk.size(); i-- > 0;) {
-                if (chunk[i]->chunkX == cx && chunk[i]->chunkZ == cz) {
-                    // Fast delete by moving chunk to back
-                    chunk[i] = chunk.back();
-                    chunk.pop_back();
-                    break;
-                }
-            }
-        }
+    for (auto it : toRemove) {
+        it->second->RemoveData();
+        World_Map::World.erase(it);
+    }
 
-        auto it = World.find(key);
-        if (it != World.end()) {
-            it->second.RemoveData();
-            World.erase(it);
+    for (int i = World_Map::Render_List.size(); i-- > 0;) {
+        auto &info = World_Map::Render_List[i];
+        const int chunkX = info.chunkX;
+        const int chunkZ = info.chunkZ;
+
+        const int dx = chunkX - Camera.Chunk.x;
+        const int dz = chunkZ - Camera.Chunk.z;
+
+        const int dist = std::max(std::abs(dx), std::abs(dz));
+
+        if (dist > Camera.RenderDistance+1) {
+            auto chunk = World_Map::find_chunk(chunkX, chunkZ);
+            if (chunk) chunk->InRender = false;
+            glDeleteBuffers(1, &info.vbo);
+            glDeleteVertexArrays(1, &info.vao);
+            info = World_Map::Render_List.back();
+            World_Map::Render_List.pop_back();
+        }
+    }
+
+    for (int i = mesher.pendingChunks.size(); i-- > 0;) {
+        auto chunk = mesher.pendingChunks[i];
+
+        const int chunkX = chunk->chunkX;
+        const int chunkZ = chunk->chunkZ;
+
+        const int dx = chunkX - Camera.Chunk.x;
+        const int dz = chunkZ - Camera.Chunk.z;
+
+        const int dist = std::max(std::abs(dx), std::abs(dz));
+
+        if (dist > Camera.RenderDistance+1) {
+            mesher.pendingChunks[i] = mesher.pendingChunks.back();
+            mesher.pendingChunks.pop_back();
         }
     }
 }

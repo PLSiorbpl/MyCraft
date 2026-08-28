@@ -53,7 +53,7 @@ void Terrain_Action::RayCastBlock(camera &Camera, int Action, int block, Selecti
         
         auto it = World.find({cx, cz});
         if (it != World.end()) {
-            Chunk& chunk = it->second;
+            Chunk& chunk = *it->second;
 
             // Actions:  Break | Place | Interact | Show SelectionBox
             if (c_block.y >= 0 && c_block.y < Chunk::HEIGHT - 1) {

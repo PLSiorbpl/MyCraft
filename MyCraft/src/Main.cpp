@@ -1,5 +1,6 @@
 #include "Main.hpp"
 #define WIN32_LEAN_AND_MEAN
+#include <ranges>
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -19,6 +20,7 @@
 #include "World/Mesh.hpp"
 #include "Tick/Tick.hpp"
 #include "Shader_Utils/Shader.hpp"
+#include "World/Mesh/Mesh.hpp"
 
 void framebuffer_size_callback(GLFWwindow* window, const int width, const int height) {
     game_settings.width = width;
@@ -30,27 +32,27 @@ void Game::MainLoop() {
     init_block_state();
     World_Map::World.reserve(512);
     World_Map::World.max_load_factor(0.5f);
-    World_Map::Mesh_Queue.reserve(256);
     World_Map::Render_List.reserve(1024);
-
     game.TimeOfDay = 0.985;
 
-    ChunkGeneration GenerateChunk;
     glfwGetWindowSize(window, &game_settings.width, &game_settings.height);
     selection.Init(SH.SelectionBox_Shader.Shader);
     Fps.Init();
     GenerateChunk.Start(game_settings.Generation_Threads);
+    mesher.start(game_settings.Mesher_Threads);
     skybox.Create_SkyBox();
 
     while (!glfwWindowShouldClose(window)) {
-
         game.DeltaTime = Fps.Start();
+
         FrameTime.Reset();
         if (game_settings.width == 0 || game_settings.height == 0) {
             glfwPollEvents();
             continue;
         }
+        time.Reset();
         glfwPollEvents();
+        PerfS.pollevents = time.ElapsedMs();
 
         //-------------------------
         // Clearing Screen
@@ -69,12 +71,12 @@ void Game::MainLoop() {
 
         static constexpr auto model = glm::mat4(1.0f);
         const glm::mat4 view = Movement::GetViewMatrix();
-        const glm::mat4 proj = glm::perspective(glm::radians(FOV), aspectRatio, 0.1f, 2000.0f);
+        const glm::mat4 proj = glm::perspective(glm::radians(FOV), aspectRatio, 0.1f, 10000.0f);
         const glm::mat4 invView = glm::inverse(view);
         const glm::mat4 invProj = glm::inverse(proj);
 
-        game.Seconds_elapsed += Fps.GetDeltaTime();
-        game.TimeOfDay += Fps.GetDeltaTime() / game_settings.DayCycleDuration;
+        //game.Seconds_elapsed += Fps.GetDeltaTime();
+        //game.TimeOfDay += Fps.GetDeltaTime() / game_settings.DayCycleDuration;
         game.TimeOfDay = fmod(game.TimeOfDay, 1.0f);
 
         const float angle = game.TimeOfDay * glm::two_pi<float>();
@@ -83,7 +85,10 @@ void Game::MainLoop() {
         sunDir = glm::normalize(sunDir);
         const float dayFactor = glm::clamp(sunDir.y * 0.5f + 0.5f, 0.0f, 1.0f);
 
+        time.Reset();
         skybox.Render_SkyBox(invProj, invView, sunDir);
+        //skybox.Render_Clouds(invProj, invView, sunDir);
+        PerfS.skybox = time.ElapsedMs();
 
         glUseProgram(SH.Solid_Shader_Blocks.Shader);
         Shader::Set_Int(SH.Solid_Shader_Blocks.Shader, "BaseTexture", 0);
@@ -112,6 +117,48 @@ void Game::MainLoop() {
         }
 
         //-------------------------
+        // World Generation
+        //-------------------------
+        time.Reset();
+        if (game.ChunkUpdated) {
+            if (game.World_Updates == 0) {
+                GenerateChunk.LookForChunks();
+            }
+        }
+        PerfS.chunk = time.ElapsedMs();
+
+        time.Reset();
+        if (game.ChunkUpdated) {
+            ChunkGeneration::RemoveChunks();
+        }
+        PerfS.remove = time.ElapsedMs();
+
+        //-------------------------
+        // World moving
+        time.Reset();
+        {
+            std::lock_guard lock(GenerateChunk.ResultMutex);
+            while (!GenerateChunk.ReadyChunks.empty()) {
+                if (time.ElapsedMs() > 3.0)
+                    break;
+
+                auto chunk = std::move(GenerateChunk.ReadyChunks.front());
+                GenerateChunk.ReadyChunks.pop_front();
+
+                const auto pos = std::pair{chunk->chunkX, chunk->chunkZ};
+                Chunk* ptr = chunk.get();
+
+                World_Map::World[pos] = std::move(chunk);
+
+                mesher.pendingChunks.push_back(ptr);
+                ptr->pending_mesh = true;
+
+                GenerateChunk.GeneratingChunks.erase(pos);
+            }
+        }
+        PerfS.chunk += time.ElapsedMs();
+
+        //-------------------------
         // Tick Update
         //-------------------------
         time.Reset();
@@ -122,16 +169,21 @@ void Game::MainLoop() {
             }
         }
         PerfS.tick = time.ElapsedMs();
+
+
         //-------------------------
-        // Mesh Generation
-        //-------------------------
+        // Deleting mesh
         if (!World_Map::Render_List.empty()) {
             for (size_t i = World_Map::Render_List.size(); i-- > 0;) {
                 auto& info = World_Map::Render_List[i];
-                if (info.Delete == 5) {
+                const int dist = std::max(std::abs(info.chunkX-Camera.Chunk.x), std::abs(info.chunkZ-Camera.Chunk.z));
+                if (info.Delete == 5 || dist > Camera.RenderDistance+1) {
 
-                    auto& chunk = World_Map::World.find({info.chunkX, info.chunkZ})->second;
-                    chunk.InRender = false;
+                    auto *chunk = World_Map::find_chunk(info.chunkX, info.chunkZ);
+                    if (chunk) {
+                        chunk->InRender = false;
+                        chunk->has_mesh = false;
+                    }
 
                     glDeleteBuffers(1, &info.vbo);
                     glDeleteVertexArrays(1, &info.vao);
@@ -143,116 +195,89 @@ void Game::MainLoop() {
                 }
             }
         }
+
         //-------------------------
-        game.Updates = 0;
-        time.Reset();
-        for (Chunk* chunk : World_Map::Mesh_Queue) {
-            if (!chunk->has_terrain || chunk->is_edge || !chunk->DirtyFlag || chunk->InRender)
-                continue;
-            if (game.Updates >= game.Mesh_Updates)
-                break;
-
-            if (World_Map::find_chunk(chunk->chunkX, chunk->chunkZ + 1) == nullptr) continue;
-            if (World_Map::find_chunk(chunk->chunkX, chunk->chunkZ - 1) == nullptr) continue;
-            if (World_Map::find_chunk(chunk->chunkX + 1, chunk->chunkZ) == nullptr) continue;
-            if (World_Map::find_chunk(chunk->chunkX - 1, chunk->chunkZ) == nullptr) continue;
-
-            if (!World_Map::find_chunk(chunk->chunkX, chunk->chunkZ + 1)->has_terrain) continue;
-            if (!World_Map::find_chunk(chunk->chunkX, chunk->chunkZ - 1)->has_terrain) continue;
-            if (!World_Map::find_chunk(chunk->chunkX + 1, chunk->chunkZ)->has_terrain) continue;
-            if (!World_Map::find_chunk(chunk->chunkX - 1, chunk->chunkZ)->has_terrain) continue;
-
-            const auto chunkMin = glm::vec3(chunk->chunkX * Chunk::WIDTH, 0, chunk->chunkZ * Chunk::DEPTH);
-            const glm::vec3 chunkMax = chunkMin + glm::vec3(Chunk::WIDTH, Chunk::HEIGHT, Chunk::DEPTH);
-
-            const bool visible = Frustum::IsAABBVisible(Frust, chunkMin, chunkMax);
-            // Normal Updates
-            if (visible && game.Updates < game.Mesh_Updates) {
-                chunk->Mesh.clear();
-                Mesh::GenerateMesh(*chunk);
-                chunk->SendData();
-                World_Map::Render_List.push_back({
-                    chunk->chunkX,
-                    chunk->chunkZ,
-                    chunk->vao,
-                    chunk->vbo,
-                    chunk->indexCount,
-                    chunk->Mesh.size()*sizeof(Chunk::Vertex),
-                    chunk->Mesh.capacity()*sizeof(Chunk::Vertex),
-                    chunk->Mesh.size()/3,
-                    0
-                });
-                chunk->vao = 0;
-                chunk->vbo = 0;
-                chunk->Mesh.clear();
-                chunk->Mesh.shrink_to_fit();
-                chunk->has_mesh = true;
-                chunk->InRender = true;
-                game.Updates++;
-                continue;
-            }
-
-            // Lazy Updates
-            if (!visible && game.Updates < game.Lazy_Mesh_Updates) {
-                chunk->Mesh.clear();
-                Mesh::GenerateMesh(*chunk);
-                chunk->SendData();
-                World_Map::Render_List.push_back({
-                    chunk->chunkX,
-                    chunk->chunkZ,
-                    chunk->vao,
-                    chunk->vbo,
-                    chunk->indexCount,
-                    chunk->Mesh.size()*sizeof(Chunk::Vertex),
-                    chunk->Mesh.capacity()*sizeof(Chunk::Vertex),
-                    chunk->Mesh.size()/3,
-                    0
-                });
-                chunk->vao = 0;
-                chunk->vbo = 0;
-                chunk->Mesh.clear();
-                chunk->Mesh.shrink_to_fit();
-                chunk->has_mesh = true;
-                chunk->InRender = true;
-                game.Updates++;
-            }
-        }
-        // Delete already done chunks
-        if (!World_Map::Mesh_Queue.empty()) {
-            for (size_t i = World_Map::Mesh_Queue.size(); i-- > 0;) {
-                const Chunk* chunk = World_Map::Mesh_Queue[i];
-
-                if (!chunk->has_mesh)
-                    continue;
-
-                if (i != World_Map::Mesh_Queue.size() - 1)
-                    std::swap(World_Map::Mesh_Queue[i], World_Map::Mesh_Queue.back());
-                World_Map::Mesh_Queue.pop_back();
-            }
-        }
-        PerfS.mesh = time.ElapsedMs();
-        //-------------------------
-        // World Generation
+        // Mesher
         //-------------------------
         time.Reset();
         {
-            std::lock_guard lock(GenerateChunk.ResultMutex);
-            for (auto& r : GenerateChunk.ReadyChunks) {
-                World_Map::World[{r.chunkX, r.chunkZ}] = r;
-                World_Map::Mesh_Queue.push_back(&World_Map::World[{r.chunkX, r.chunkZ}]);
+            std::lock_guard lock(mesher.meshInMutex);
+            for (const auto chunk : mesher.pendingChunks) {
+                chunk->pending_mesh = false;
+                if (!chunk->has_terrain || chunk->is_edge || !chunk->DirtyFlag) continue;
+                mesher.meshQueue.emplace(chunk->chunkX, chunk->chunkZ);
+                chunk->in_mesher = true;
             }
-            GenerateChunk.ReadyChunks.clear();
+            mesher.meshCV.notify_all();
         }
+        mesher.pendingChunks.clear();
+        PerfS.meshIn = time.ElapsedMs();
 
-        if (game.ChunkUpdated) {
-            if (game.World_Updates == 0) {
-                GenerateChunk.LookForChunks();
-                PerfS.chunk = time.ElapsedMs();
+        time.Reset();
+        {
+            while (true) {
+                if (time.ElapsedMs() > 3.0) break;
+                mesh_t mesh;
+                {
+                    std::lock_guard lock(mesher.meshOutMutex);
+                    if (mesher.meshOutQueue.empty()) break;
+                    mesh = std::move(mesher.meshOutQueue.front());
+                    mesher.meshOutQueue.pop_front();
+                }
+
+                if (mesh.R == result::Invalid_ptr) continue;
+                const auto chunk = World_Map::find_chunk(mesh.chunkX, mesh.chunkZ);
+
+                if (mesh.R == result::Bad_Flags) {
+                    chunk->in_mesher = false;
+                    continue;
+                }
+
+                if (chunk) {
+                    if (mesh.R == result::Missing_N) {
+                        chunk->in_mesher = false;
+                        mesher.pendingChunks.push_back(chunk);
+                        chunk->pending_mesh = true;
+                        continue;
+                    }
+                    if (chunk->InRender) {
+                        chunk->InRender = false;
+                        chunk->has_mesh = false;
+                        auto it = std::ranges::find_if(World_Map::Render_List,
+                                                         [&chunk](const World_Map::Render_Info &r){ return r.chunkX == chunk->chunkX && r.chunkZ == chunk->chunkZ; });
+
+                        if (it != World_Map::Render_List.end()) {
+                            glDeleteBuffers(1, &it->vbo);
+                            glDeleteVertexArrays(1, &it->vao);
+                            *it = World_Map::Render_List.back();
+                            World_Map::Render_List.pop_back();
+                        }
+                    }
+                    chunk->in_mesher = false;
+                    chunk->DirtyFlag = false;
+                    chunk->InRender = true;
+                    chunk->has_mesh = true;
+                    chunk->vao = 0; chunk->vbo = 0;
+                    chunk->Mesh.clear();
+                    chunk->Mesh = std::move(mesh.mesh);
+                    chunk->SendData();
+                    World_Map::Render_List.push_back({
+                        chunk->chunkX,
+                        chunk->chunkZ,
+                        chunk->vao,
+                        chunk->vbo,
+                        chunk->indexCount,
+                        chunk->Mesh.size()*sizeof(Chunk::Vertex),
+                        chunk->Mesh.capacity()*sizeof(Chunk::Vertex),
+                        chunk->Mesh.size()/3,
+                        0
+                    });
+                    chunk->Mesh.clear();
+                    chunk->Mesh.shrink_to_fit();
+                }
             }
-            time.Reset();
-            ChunkGeneration::RemoveChunks();
-            PerfS.remove = time.ElapsedMs();
         }
+        PerfS.meshOut = time.ElapsedMs();
 
         //-------------------------
         // Drawing Mesh to Screen
@@ -264,9 +289,8 @@ void Game::MainLoop() {
         PerfS.Capacity = 0; PerfS.Mesh_Size = 0; PerfS.Triangles = 0; PerfS.Total_Triangles = 0;
         if (game_settings.width != 0 && game_settings.height != 0) {
             for (auto& info : World_Map::Render_List) {
-                if (info.Delete > 0) {
+                if (info.Delete > 0)
                     info.Delete++;
-                }
 
                 const auto chunkMin = glm::vec3(info.chunkX * Chunk::WIDTH, 0, info.chunkZ * Chunk::DEPTH);
                 const glm::vec3 chunkMax = chunkMin + glm::vec3(Chunk::WIDTH, Chunk::HEIGHT, Chunk::DEPTH);
@@ -294,6 +318,7 @@ void Game::MainLoop() {
             }
         }
         glDisable(GL_CULL_FACE);
+
         PerfS.render = time.ElapsedMs();
 
         //-------------------------
@@ -333,9 +358,11 @@ void Game::MainLoop() {
         }
         // --------------------------
         // Bloom
+        time.Reset();
         bloom.Extract(sceneTex);
         bloom.Blur();
         bloom.Combine(sceneTex);
+        PerfS.bloom = time.ElapsedMs();
 
         // Update Screen
         glfwSwapBuffers(window);
@@ -343,12 +370,13 @@ void Game::MainLoop() {
         game.FPS = Fps.End();
     }
     GenerateChunk.Stop();
+    mesher.stop();
 }
 
 void Game::CleanUp() {
     glFinish();
-    for (auto& [key, chunk] : World_Map::World) {
-        chunk.RemoveData();
+    for (const auto &chunk: World_Map::World | std::views::values) {
+        chunk->RemoveData();
     }
     net.client.Stop_Client();
     net.server.Stop_Server();

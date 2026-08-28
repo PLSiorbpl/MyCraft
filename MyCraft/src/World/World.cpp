@@ -2,12 +2,12 @@
 
 #include <algorithm>
 
+#include "Mesh/Mesh.hpp"
 #include "Tick/Tick.hpp"
 
 namespace World_Map {
-    std::unordered_map<std::pair<int, int>, Chunk, PairHash> World;
+    std::unordered_map<std::pair<int, int>, std::unique_ptr<Chunk>, PairHash> World;
     std::vector<Render_Info> Render_List;
-    std::vector<Chunk*> Mesh_Queue;
 
     void Set_Dirty(const int chunkx, const int chunkz) {
         const auto chunk = find_chunk(chunkx, chunkz);
@@ -18,8 +18,9 @@ namespace World_Map {
                 if (info.chunkX == chunkx && info.chunkZ == chunkz)
                     info.Delete = 1;
             }
-            if(std::find(Mesh_Queue.begin(), Mesh_Queue.end(), chunk) == Mesh_Queue.end()) {
-                Mesh_Queue.push_back(chunk);
+            if(!chunk->pending_mesh) {
+                mesher.pendingChunks.push_back(chunk);
+                chunk->pending_mesh = true;
             }
         }
     }

@@ -6,7 +6,7 @@
 
 class Mesh {
     public:
-    static void GenerateMesh(Chunk& chunk);
+    static void GenerateMesh(Chunk& chunk, std::vector<Chunk::Vertex> *vertices);
 
     static void MeshZFace(std::vector<Chunk::Vertex> *vertices, const glm::ivec3& local, const Element &elem, Block *block, int dir);
     static void MeshYFace(std::vector<Chunk::Vertex> *vertices, const glm::ivec3& local, const Element &elem, Block *block, int dir);

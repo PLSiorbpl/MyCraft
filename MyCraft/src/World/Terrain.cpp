@@ -6,8 +6,8 @@ inline float lerp(const float a, const float b, const float t) {
     return a + (b - a) * t;
 }
 
-Chunk TerrainGen::Generate_Terrain_Chunk(const int ChunkX, const int ChunkZ) {
-    Chunk chunk(ChunkX, ChunkZ);
+void TerrainGen::Generate_Terrain_Chunk(Chunk& chunk, const int ChunkX, const int ChunkZ) {
+    chunk.chunkX = ChunkX; chunk.chunkZ = ChunkZ;
     chunk.has_terrain = true;
     chunk.DirtyFlag = true;
 
@@ -116,5 +116,4 @@ Chunk TerrainGen::Generate_Terrain_Chunk(const int ChunkX, const int ChunkZ) {
         }
 
     }
-    return chunk;
 }

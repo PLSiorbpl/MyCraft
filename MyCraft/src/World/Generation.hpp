@@ -22,7 +22,7 @@ public:
     std::vector<std::thread> Workers;
 
     std::queue<std::pair<int, int>> GenQueue;
-    std::deque<Chunk> ReadyChunks;
+    std::deque<std::unique_ptr<Chunk>> ReadyChunks;
     std::unordered_set<std::pair<int,int>, World_Map::PairHash> GeneratingChunks;
 
     void LookForChunks();
@@ -50,3 +50,5 @@ public:
 
     static void RemoveChunks();
 };
+
+extern ChunkGeneration GenerateChunk;

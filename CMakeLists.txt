@@ -31,6 +31,7 @@ target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
         -march=native
         -g
         -O3
+        #-fopenmp
         #-Werror
         #-DNDEBUG
         #-Wall
@@ -40,6 +41,7 @@ target_link_options(MyCraft PRIVATE
         -static
         -static-libgcc
         -static-libstdc++
+        #-fopenmp
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE glad

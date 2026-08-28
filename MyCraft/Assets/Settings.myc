@@ -1,15 +1,16 @@
 // General Options:
 Render Distance=32
-Generation Threads=4 // Recommended 1-4
-Day Cycle Duration=300 // in seconds
+Generation Threads=3 // Recommended 1-4
+Mesher Threads=4 // Recommended 1-3
+Day Cycle Duration=30 // in seconds
 
 // Bloom Settings:
 Blur Texture Scale=4   // (width/n, heigh/n)   n - Scale
 Blur Passes=5          // How many times blur Bright Texture
-Extraction Threshold=0.99f
+Extraction Threshold=0.998f
 Exposure=1.0f
 
-RAM=8192 // in MB
+RAM=25000 // in MB
 V-Sync=1
 
 Mesh Updates=32
@@ -38,4 +39,4 @@ Tick Rate=60.0f
 // Player:
 FOV=80
 Speed=0.1f
-Sprint Speed=0.1f
+Sprint Speed=10.1f

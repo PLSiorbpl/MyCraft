@@ -11,23 +11,25 @@
 -  Movement: **WASD** Keys
 -  Jump: **"SPACE"** Key
 -  Game mode Spectator/Creative: **"1"** key
--  Fly Up: **"E"** Key
+-  Fly Up: **"SPACE"** Key
 -  Fly Down: **"CTRL"** Key
 -  Menu: **"ESCAPE"** Key
 -  HotBar: **"Scroll Wheel"** on Mouse
 -  Place/Break: **"Mouse"** Buttons
 -  Debug view: **"F3"** Key
 -  Health: **"TAB"** Key
+-  Inventory **"E""**
 
 ## Features
 -  **Infinite** World Generation
--  **Customizable** Terrain (/MyCraft/Assets/Settings.txt)
--  Efficient mesh generation
+-  Redstone
+-  Placing/Breaking
+-  Threaded mesh generation
+-  Threaded terrain generation
 -  Cool Gui System
--  Game is already **Compiled** (**Windows** and *sometimes **Linux***)
--  In-game Settings menu
+-  In-game Settings
 -  ~~Easy to use Multiplayer (currently only chat)~~ (in progress)
--  **Bloom effect** (can be *customized* in Settings file)
+-  **Cool** shaders easy to change
 
 ## Project Structure
 ```bash 
@@ -44,8 +46,15 @@
 └── README.md   # You are reading this xd
 ```
 
-## Build
--  You can compile game with **CMake**, **cmakelists.txt** is included
+## Building
+-  You can compile game yourself with **CMake, Ninja, g++/gcc** (should work with clang/msvc but needs some changes)
+```bash
+mkdir build
+cd build
+cmake -G Ninja ..
+ninja
+#NOTE MyCraft.exe needs to be folder up from /build/
+```
 
 ## Troubleshooting
 - If you encounter any issues while compiling or playing the game, feel free to **open an issue** on [GitHub](https://github.com/PLSiorbpl/MyCraft/issues)

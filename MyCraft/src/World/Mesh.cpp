@@ -4,7 +4,7 @@
 #include "World.hpp"
 #include "Direction.hpp"
 
-void Mesh::GenerateMesh(Chunk& chunk) {
+void Mesh::GenerateMesh(Chunk& chunk, std::vector<Chunk::Vertex> *vertices) {
     const int chunkX = chunk.chunkX;
     const int chunkZ = chunk.chunkZ;
 
@@ -12,8 +12,6 @@ void Mesh::GenerateMesh(Chunk& chunk) {
     const auto cxn = World_Map::find_chunk(chunkX - 1, chunkZ);
     const auto czp = World_Map::find_chunk(chunkX, chunkZ + 1);
     const auto czn = World_Map::find_chunk(chunkX, chunkZ - 1);
-
-    auto *vertices = &chunk.Mesh;
 
     std::array<std::vector<uint32_t>, 6> Occlusion;
     for (auto& v : Occlusion)

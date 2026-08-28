@@ -59,6 +59,7 @@ struct Terrain_Settings {
 
 struct Game_Settings {
     unsigned int Generation_Threads;
+    unsigned int Mesher_Threads;
     int World_Generation_Type;
     int width, height;
     int Scaled_w, Scaled_h;
@@ -69,9 +70,13 @@ struct Game_Settings {
 
 struct PerfStats {
     // Times in ms
+    double pollevents = 0;
     double chunk = 0;
-    double mesh = 0;
+    double meshIn = 0;
+    double meshOut = 0;
     double render = 0;
+    double skybox = 0;
+    double bloom = 0;
     double remove = 0;
     double tick = 0;
     double gui = 0;
@@ -106,6 +111,7 @@ struct Shaders {
     Sh General_Gui_Shader;
     Sh SelectionBox_Shader;
     Sh SkyBox_Shader;
+    Sh Clouds_Shader;
     Sh extractShader;
     Sh blurShader;
     Sh combineShader;

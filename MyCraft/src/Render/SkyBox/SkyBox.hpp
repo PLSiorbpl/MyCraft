@@ -4,9 +4,11 @@
 
 class SkyBox {
 private:
-    GLuint vao;
+    GLuint vao = 0;
 
 public:
     void Create_SkyBox();
     void Render_SkyBox(const glm::mat4 &invProj, const glm::mat4 &invView, const glm::vec3 &SunDir);
+
+    void Render_Clouds(const glm::mat4 &invProj, const glm::mat4 &invView, const glm::vec3 &SunDir);
 };

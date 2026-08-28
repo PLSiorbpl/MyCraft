@@ -33,7 +33,7 @@ bool colisions::isSolidAt(const glm::vec3 pos) {
     
     auto it = World.find({chunkX, chunkZ});
     if (it != World.end()) {
-        const Chunk& chunk = it->second;
+        const Chunk& chunk = *it->second;
 
         if (blockY >= 0 && blockY < Chunk::HEIGHT) {
             return chunk.get_state(localX, blockY, localZ)->is_solid;

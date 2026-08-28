@@ -6,6 +6,8 @@
 #include "World/Chunk.hpp"
 #include <format>
 #include "Common/Textures.hpp"
+#include "World/Generation.hpp"
+#include "World/Mesh/Mesh.hpp"
 
 using namespace gui;
 
@@ -206,7 +208,7 @@ void Gui::Settings() {
     y = 0;
 
     layout.Size = {150, 20};
-    renderd = static_cast<int>(std::lerp(2, 96, Big_slider.Value));
+    renderd = static_cast<int>(std::lerp(2, 256, Big_slider.Value));
     label.text = std::format("Render Distance {}", renderd);
     Slider(layout, Big_slider, label);
 
@@ -269,6 +271,7 @@ void Gui::DebugScreen() {
      Looking direction
      Block held
      Looking at
+     Time
      */
 
     static float y = 0;
@@ -290,11 +293,31 @@ void Gui::DebugScreen() {
     layout.Move_Y();
     Text(Anchor(layout), label);
 
-    label.text = std::format("Mesh Time: {:.3f}ms", PerfS.mesh);
+    label.text = std::format("PollEvents Time: {:.3f}ms", PerfS.pollevents);
+    layout.Move_Y();
+    Text(Anchor(layout), label);
+
+    label.text = std::format("Chunk Time: {:.3f}ms", PerfS.chunk);
+    layout.Move_Y();
+    Text(Anchor(layout), label);
+
+    label.text = std::format("Remove Time: {:.3f}ms", PerfS.remove);
+    layout.Move_Y();
+    Text(Anchor(layout), label);
+
+    label.text = std::format("Mesh Time: In {:.3f}ms  Out {:.3f}ms", PerfS.meshIn, PerfS.meshOut);
     layout.Move_Y();
     Text(Anchor(layout), label);
 
     label.text = std::format("Render Time: {:.3f}ms", PerfS.render);
+    layout.Move_Y();
+    Text(Anchor(layout), label);
+
+    label.text = std::format("  Skybox Time: {:.3f}ms", PerfS.skybox);
+    layout.Move_Y();
+    Text(Anchor(layout), label);
+
+    label.text = std::format("  Bloom Time: {:.3f}ms", PerfS.bloom);
     layout.Move_Y();
     Text(Anchor(layout), label);
 
@@ -350,6 +373,13 @@ void Gui::DebugScreen() {
         layout.Move_Y();
         Text(Anchor(layout), {.text = std::format("Looking at: {}", Camera.looking_at->get_name()), .Style = {.Scale = 0.5}});
     }
+
+    layout.Move_Y();
+    Text(Anchor(layout), {.text = std::format("mesh: pending {} In {} Out {}", mesher.pendingChunks.size(), mesher.meshQueue.size(), mesher.meshOutQueue.size()), .Style = {.Scale = 0.5}});
+
+    layout.Move_Y();
+    Text(Anchor(layout), {.text = std::format("chunk: In {} Out {}", GenerateChunk.GenQueue.size(), GenerateChunk.ReadyChunks.size()), .Style = {.Scale = 0.5}});
+
 
     y = layout.Offset.y + layout.Size.y + 1;
 }

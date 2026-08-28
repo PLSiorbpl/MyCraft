@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 
@@ -30,14 +31,13 @@ namespace World_Map {
         int Delete;
     };
 
-    extern std::unordered_map<std::pair<int, int>, Chunk, PairHash> World;
+    extern std::unordered_map<std::pair<int, int>, std::unique_ptr<Chunk>, PairHash> World;
     extern std::vector<Render_Info> Render_List;
-    extern std::vector<Chunk*> Mesh_Queue;
 
     inline Chunk *find_chunk(const int chunkx, const int chunkz) {
         const auto c = World.find({chunkx, chunkz});
         if (c != World.end())
-            return &c->second;
+            return c->second.get();
         return nullptr;
     }
 

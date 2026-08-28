@@ -119,6 +119,7 @@ bool Game::Init_Settings(const std::string& Path) {
     // General Options:
     Camera.RenderDistance = Settings.Get<int>("Render Distance", 2);
     game_settings.Generation_Threads = Settings.Get<unsigned int>("Generation Threads", 2);
+    game_settings.Mesher_Threads = Settings.Get<unsigned int>("Mesher Threads", 2);
     game_settings.DayCycleDuration = Settings.Get<unsigned int>("Day Cycle Duration", 600);
 
     video_settings.Blur_Scale = Settings.Get<unsigned int>("Blur Texture Scale", 4);
