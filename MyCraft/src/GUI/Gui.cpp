@@ -4,6 +4,7 @@
 #include "Render/Camera.hpp"
 #include <Utils/InputManager.hpp>
 #include "World/Chunk.hpp"
+#include <algorithm>
 #include <format>
 #include "Common/Textures.hpp"
 #include "World/Generation.hpp"
@@ -259,81 +260,86 @@ void Gui::Settings() {
 
 void Gui::DebugScreen() {
     /*
-     FPS
-     Frame time
-     Mesh time
-     Render time
-     Gui time
-     Tick time
-     RAM
-     Triangle
-     Coordinates
-     Looking direction
-     Block held
-     Looking at
-     Time
+     FPS + frame time
+     [poll | skybox | chunk | remove | tick | mesh | render | gui | bloom | other]
+     Legend: color chip + segment name + ms value
+     RAM / Triangles progress bars
+     Coordinates, facing, block held, target, queues
      */
 
+    struct Src { const char* name; const Timer* timer; uint64_t color; };
+    static const Src sources[] = {
+        {"Poll",   &PerfS.pollevents, 0xC8B560},
+        {"Skybox", &PerfS.skybox,     0x5B9BD5},
+        {"Chunk",  &PerfS.chunk,      0x70C060},
+        {"Remove", &PerfS.remove,     0xC07850},
+        {"Tick",   &PerfS.tick,       0xB070C0},
+        {"Mesh",   &PerfS.mesh,       0x50C0C0},
+        {"Render", &PerfS.render,     0xE0C050},
+        {"Gui",    &PerfS.gui,        0xD07090},
+        {"Bloom",  &PerfS.bloom,      0x90A0E0},
+    };
+    constexpr int SourceCount = std::size(sources);
+
+    std::vector<TimeSegment> segments;
+    segments.reserve(SourceCount + 1);
+    for (const auto &[name, timer, color] : sources)
+        segments.push_back({.name = name, .value = timer->Avg(), .color = rgba(color)});
+
+    double accounted = 0.0;
+    for (const auto &it : segments)
+        accounted += it.value;
+    const double entire = PerfS.EntireTime.Avg();
+    const double other = std::max(0.0, entire - accounted);
+
+    segments.push_back({.name = "Other", .value = other, .color = rgba(0x505050)});
+
+    std::vector<std::string> info;
+    info.push_back(std::format("Pos: x: {:.1f} y: {:.1f} z: {:.1f}", Camera.Position.x, Camera.Position.y, Camera.Position.z));
+    info.push_back(std::format("Chunk: x: {} z: {}", Camera.Chunk.x, Camera.Chunk.z));
+    info.push_back(std::format("Facing: {} ({})", Direction_to_String(Camera.direction), Direction_to_Axis(Camera.direction)));
+    if (block_cache[Camera.ItemHeld])
+        info.push_back(std::format("Block: {}", block_cache[Camera.ItemHeld]->get_name()));
+    if (Camera.looking_at)
+        info.push_back(std::format("Target: {}", Camera.looking_at->get_name()));
+    info.push_back(std::format("mesh: pending {} In {} Out {}", mesher.pendingChunks.size(), mesher.meshQueue.size(), mesher.meshOutQueue.size()));
+    info.push_back(std::format("chunk: In {} Out {}", GenerateChunk.GenQueue.size(), GenerateChunk.ReadyChunks.size()));
+
+    const auto TextWidth = [](const std::string& text) {
+        return MeasureText({.text = text, .Style = {.Scale = 0.5}}).x;
+    };
+
+    // Calculate Width
+    float content_w = TextWidth(std::format("FPS: {}  {:.2f}ms", game.FPS, entire));
+    for (const auto& segment : segments)
+        content_w = std::max(content_w, 4.0f + 2.0f + TextWidth(segment.name) + 6.0f + TextWidth(std::format("{:.3f}ms", segment.value)));
+    for (const auto& line : info)
+        content_w = std::max(content_w, TextWidth(line));
+
     static float y = 0;
-    Layout box = {Anch::TopLeft, {80, y}, {1,1}};
-    Layout layout = {Anch::TopLeft, {0, 5}, {2, 1}, &box};
-    Label label = {.text = {}, .Style = {.Scale = 0.5}};
+    const float inner_w = content_w + 2.0f;
+    const Layout box = {.Anchor = Anch::TopLeft, .Size = {inner_w + 4.0f, y}, .Offset = {1, 1}};
+    Layout layout = {.Anchor = Anch::TopLeft, .Size = {0, 5}, .Offset = {2, 1}, .Parent = &box};
 
-    DrawRectangle(box, {{rgba(0x101010)}});
+    DrawRectangle(box, {.BgColor = rgba(0x101010E6)});
 
-    y = 0;
-    label.text = std::format("FPS: {}", game.FPS);
-    Text(Anchor(layout), label);
-
-    label.text = "CPU times:";
+    // Header
+    Text(Anchor(layout), {.text = std::format("FPS: {}  {:.2f}ms", game.FPS, entire), .Style = {.Scale = 0.5}});
     layout.Move_Y();
-    Text(Anchor(layout), label);
 
-    label.text = std::format("Frame Time: {:.3f}ms", PerfS.EntireTime);
-    layout.Move_Y();
-    Text(Anchor(layout), label);
+    // Frame time as progress bar: [poll | skybox | chunk | ... | other]
+    TimeBar(layout.WithSize({inner_w, 5}), segments.data(), static_cast<int>(segments.size()), static_cast<float>(accounted + other));
+    layout.Move_Y(2);
 
-    label.text = std::format("PollEvents Time: {:.3f}ms", PerfS.pollevents);
-    layout.Move_Y();
-    Text(Anchor(layout), label);
+    // Legend
+    for (const auto& segment : segments) {
+        TimeLegendRow(layout.WithSize({inner_w, 5}), segment);
+        layout.Move_Y();
+    }
 
-    label.text = std::format("Chunk Time: {:.3f}ms", PerfS.chunk);
-    layout.Move_Y();
-    Text(Anchor(layout), label);
-
-    label.text = std::format("Remove Time: {:.3f}ms", PerfS.remove);
-    layout.Move_Y();
-    Text(Anchor(layout), label);
-
-    label.text = std::format("Mesh Time: In {:.3f}ms  Out {:.3f}ms", PerfS.meshIn, PerfS.meshOut);
-    layout.Move_Y();
-    Text(Anchor(layout), label);
-
-    label.text = std::format("Render Time: {:.3f}ms", PerfS.render);
-    layout.Move_Y();
-    Text(Anchor(layout), label);
-
-    label.text = std::format("  Skybox Time: {:.3f}ms", PerfS.skybox);
-    layout.Move_Y();
-    Text(Anchor(layout), label);
-
-    label.text = std::format("  Bloom Time: {:.3f}ms", PerfS.bloom);
-    layout.Move_Y();
-    Text(Anchor(layout), label);
-
-    label.text = std::format("Gui Time: {:.3f}ms", PerfS.gui);
-    layout.Move_Y();
-    Text(Anchor(layout), label);
-
-    label.text = std::format("Tick Time: {:.3f}ms", PerfS.tick);
-    layout.Move_Y();
-    Text(Anchor(layout), label);
-
+    // RAM
     static ProgressStyle ram_style = {.TextureId = Texture_Id::None};
-    static ProgressStyle tri_style = {.TextureId = Texture_Id::None};
     static Label label_ram = {.Style = {.Scale = 0.5}, .anchor = Anch::Center};
-    static Label label_tris = {.Style = {.Scale = 0.5}, .anchor = Anch::Center};
-
     static size_t LastRam;
     const float ramUsedRatio = static_cast<float>(PerfS.ramUsed) / static_cast<float>(game.Max_Ram * 1024 * 1024);
     ram_style.Progress = ramUsedRatio;
@@ -342,44 +348,32 @@ void Gui::DebugScreen() {
         label_ram.text = std::format("{}/{}", Fun::FormatSize(PerfS.ramUsed), Fun::FormatSize(game.Max_Ram * 1024 * 1024));
         LastRam = PerfS.ramUsed;
     }
-    layout.Move_Y();
-    layout.Size = {53, 10};
+    layout.Move_Y(2);
+    layout.Size = {inner_w, 10};
     ProgressBar(layout, ram_style, &label_ram);
 
+    // Triangles
+    static ProgressStyle tri_style = {.TextureId = Texture_Id::None};
+    static Label label_tris = {.Style = {.Scale = 0.5}, .anchor = Anch::Center};
     static uint64_t LastTris;
-    const float TrisVisibleRatio = static_cast<float>(PerfS.Triangles) / static_cast<float>(PerfS.Total_Triangles);
+    const float TrisVisibleRatio = PerfS.Total_Triangles ? static_cast<float>(PerfS.Triangles) / static_cast<float>(PerfS.Total_Triangles) : 0.0f;
     tri_style.Progress = TrisVisibleRatio;
     if (LastTris != PerfS.Triangles) {
         tri_style.BgColor = Gradient(TrisVisibleRatio, rgba(0x00ff00), rgba(0xffff00), rgba(0xff0000));
         label_tris.text = std::format("{}/{}", Fun::FormatNumber(PerfS.Triangles), Fun::FormatNumber(PerfS.Total_Triangles));
         LastTris = PerfS.Triangles;
     }
-    layout.Move_Y();
+    layout.Move_Y(2);
     ProgressBar(layout, tri_style, &label_tris);
 
-    layout.Move_Y();
+    // World | player info
+    layout.Move_Y(2);
     layout.Size = {0, 5};
-    Text(Anchor(layout), {.text = std::format("x: {:.1f} y: {:.1f} z: {:.1f}", Camera.Position.x, Camera.Position.y, Camera.Position.z), .Style = {.Scale = 0.5}});
-
-    layout.Move_Y();
-    Text(Anchor(layout), {.text = std::format("Looking at: {}", Direction_to_String(Camera.direction)), .Style = {.Scale = 0.5}});
-
-    if (block_cache[Camera.ItemHeld]) {
-        layout.Move_Y();
-        Text(Anchor(layout), {.text = std::format("Block: {}", block_cache[Camera.ItemHeld]->get_name()), .Style = {.Scale = 0.5}});
+    for (size_t i = 0; i < info.size(); i++) {
+        Text(Anchor(layout), {.text = info[i], .Style = {.Scale = 0.5}});
+        if (i + 1 < info.size())
+            layout.Move_Y();
     }
-
-    if (Camera.looking_at) {
-        layout.Move_Y();
-        Text(Anchor(layout), {.text = std::format("Looking at: {}", Camera.looking_at->get_name()), .Style = {.Scale = 0.5}});
-    }
-
-    layout.Move_Y();
-    Text(Anchor(layout), {.text = std::format("mesh: pending {} In {} Out {}", mesher.pendingChunks.size(), mesher.meshQueue.size(), mesher.meshOutQueue.size()), .Style = {.Scale = 0.5}});
-
-    layout.Move_Y();
-    Text(Anchor(layout), {.text = std::format("chunk: In {} Out {}", GenerateChunk.GenQueue.size(), GenerateChunk.ReadyChunks.size()), .Style = {.Scale = 0.5}});
-
 
     y = layout.Offset.y + layout.Size.y + 1;
 }

@@ -45,14 +45,14 @@ void Game::MainLoop() {
     while (!glfwWindowShouldClose(window)) {
         game.DeltaTime = Fps.Start();
 
-        FrameTime.Reset();
+        PerfS.EntireTime.Reset();
         if (game_settings.width == 0 || game_settings.height == 0) {
             glfwPollEvents();
             continue;
         }
-        time.Reset();
+        PerfS.pollevents.Reset();
         glfwPollEvents();
-        PerfS.pollevents = time.ElapsedMs();
+        PerfS.pollevents.Stop();
 
         //-------------------------
         // Clearing Screen
@@ -85,10 +85,10 @@ void Game::MainLoop() {
         sunDir = glm::normalize(sunDir);
         const float dayFactor = glm::clamp(sunDir.y * 0.5f + 0.5f, 0.0f, 1.0f);
 
-        time.Reset();
+        PerfS.skybox.Reset();
         skybox.Render_SkyBox(invProj, invView, sunDir);
         //skybox.Render_Clouds(invProj, invView, sunDir);
-        PerfS.skybox = time.ElapsedMs();
+        PerfS.skybox.Stop();
 
         glUseProgram(SH.Solid_Shader_Blocks.Shader);
         Shader::Set_Int(SH.Solid_Shader_Blocks.Shader, "BaseTexture", 0);
@@ -119,27 +119,25 @@ void Game::MainLoop() {
         //-------------------------
         // World Generation
         //-------------------------
-        time.Reset();
+        PerfS.remove.Reset();
+        if (game.ChunkUpdated) {
+            ChunkGeneration::RemoveChunks();
+        }
+        PerfS.remove.Stop();
+
+        PerfS.chunk.Reset();
         if (game.ChunkUpdated) {
             if (game.World_Updates == 0) {
                 GenerateChunk.LookForChunks();
             }
         }
-        PerfS.chunk = time.ElapsedMs();
-
-        time.Reset();
-        if (game.ChunkUpdated) {
-            ChunkGeneration::RemoveChunks();
-        }
-        PerfS.remove = time.ElapsedMs();
 
         //-------------------------
         // World moving
-        time.Reset();
         {
             std::lock_guard lock(GenerateChunk.ResultMutex);
             while (!GenerateChunk.ReadyChunks.empty()) {
-                if (time.ElapsedMs() > 3.0)
+                if (PerfS.chunk.ElapsedMs() > 3.0)
                     break;
 
                 auto chunk = std::move(GenerateChunk.ReadyChunks.front());
@@ -156,23 +154,24 @@ void Game::MainLoop() {
                 GenerateChunk.GeneratingChunks.erase(pos);
             }
         }
-        PerfS.chunk += time.ElapsedMs();
+        PerfS.chunk.Stop();
 
         //-------------------------
         // Tick Update
         //-------------------------
-        time.Reset();
+        PerfS.tick.Reset();
         while (game.Tick_Timer >= game.TickRate) {
             game.Tick_Timer -= game.TickRate;
             if (!game.ChunkUpdated) {
                 Tick::Tick(movement, selection);
             }
         }
-        PerfS.tick = time.ElapsedMs();
+        PerfS.tick.Stop();
 
 
         //-------------------------
         // Deleting mesh
+        PerfS.mesh.Reset();
         if (!World_Map::Render_List.empty()) {
             for (size_t i = World_Map::Render_List.size(); i-- > 0;) {
                 auto& info = World_Map::Render_List[i];
@@ -199,7 +198,6 @@ void Game::MainLoop() {
         //-------------------------
         // Mesher
         //-------------------------
-        time.Reset();
         {
             std::lock_guard lock(mesher.meshInMutex);
             for (const auto chunk : mesher.pendingChunks) {
@@ -212,78 +210,74 @@ void Game::MainLoop() {
             mesher.meshCV.notify_all();
         }
         mesher.pendingChunks.clear();
-        PerfS.meshIn = time.ElapsedMs();
 
-        time.Reset();
-        {
-            while (true) {
-                if (time.ElapsedMs() > 3.0) break;
-                mesh_t mesh;
-                {
-                    std::lock_guard lock(mesher.meshOutMutex);
-                    if (mesher.meshOutQueue.empty()) break;
-                    mesh = std::move(mesher.meshOutQueue.front());
-                    mesher.meshOutQueue.pop_front();
-                }
+        while (true) {
+            if (PerfS.mesh.ElapsedMs() > 3.0) break;
+            mesh_t mesh;
+            {
+                std::lock_guard lock(mesher.meshOutMutex);
+                if (mesher.meshOutQueue.empty()) break;
+                mesh = std::move(mesher.meshOutQueue.front());
+                mesher.meshOutQueue.pop_front();
+            }
 
-                if (mesh.R == result::Invalid_ptr) continue;
-                const auto chunk = World_Map::find_chunk(mesh.chunkX, mesh.chunkZ);
+            if (mesh.R == result::Invalid_ptr) continue;
+            const auto chunk = World_Map::find_chunk(mesh.chunkX, mesh.chunkZ);
 
-                if (chunk) {
-                    if (mesh.R == result::Bad_Flags) {
-                        chunk->in_mesher = false;
-                        continue;
-                    }
-
-                    if (mesh.R == result::Missing_N) {
-                        chunk->in_mesher = false;
-                        mesher.pendingChunks.push_back(chunk);
-                        chunk->pending_mesh = true;
-                        continue;
-                    }
-                    if (chunk->InRender) {
-                        chunk->InRender = false;
-                        chunk->has_mesh = false;
-                        auto it = std::ranges::find_if(World_Map::Render_List,
-                                                         [&chunk](const World_Map::Render_Info &r){ return r.chunkX == chunk->chunkX && r.chunkZ == chunk->chunkZ; });
-
-                        if (it != World_Map::Render_List.end()) {
-                            glDeleteBuffers(1, &it->vbo);
-                            glDeleteVertexArrays(1, &it->vao);
-                            *it = World_Map::Render_List.back();
-                            World_Map::Render_List.pop_back();
-                        }
-                    }
+            if (chunk) {
+                if (mesh.R == result::Bad_Flags) {
                     chunk->in_mesher = false;
-                    chunk->DirtyFlag = false;
-                    chunk->InRender = true;
-                    chunk->has_mesh = true;
-                    chunk->vao = 0; chunk->vbo = 0;
-                    chunk->Mesh.clear();
-                    chunk->Mesh = std::move(mesh.mesh);
-                    chunk->SendData();
-                    World_Map::Render_List.push_back({
-                        chunk->chunkX,
-                        chunk->chunkZ,
-                        chunk->vao,
-                        chunk->vbo,
-                        chunk->indexCount,
-                        chunk->Mesh.size()*sizeof(Chunk::Vertex),
-                        chunk->Mesh.capacity()*sizeof(Chunk::Vertex),
-                        chunk->Mesh.size()/3,
-                        0
-                    });
-                    chunk->Mesh.clear();
-                    chunk->Mesh.shrink_to_fit();
+                    continue;
                 }
+
+                if (mesh.R == result::Missing_N) {
+                    chunk->in_mesher = false;
+                    mesher.pendingChunks.push_back(chunk);
+                    chunk->pending_mesh = true;
+                    continue;
+                }
+                if (chunk->InRender) {
+                    chunk->InRender = false;
+                    chunk->has_mesh = false;
+                    auto it = std::ranges::find_if(World_Map::Render_List,
+                                                     [&chunk](const World_Map::Render_Info &r){ return r.chunkX == chunk->chunkX && r.chunkZ == chunk->chunkZ; });
+
+                    if (it != World_Map::Render_List.end()) {
+                        glDeleteBuffers(1, &it->vbo);
+                        glDeleteVertexArrays(1, &it->vao);
+                        *it = World_Map::Render_List.back();
+                        World_Map::Render_List.pop_back();
+                    }
+                }
+                chunk->in_mesher = false;
+                chunk->DirtyFlag = false;
+                chunk->InRender = true;
+                chunk->has_mesh = true;
+                chunk->vao = 0; chunk->vbo = 0;
+                chunk->Mesh.clear();
+                chunk->Mesh = std::move(mesh.mesh);
+                chunk->SendData();
+                World_Map::Render_List.push_back({
+                    chunk->chunkX,
+                    chunk->chunkZ,
+                    chunk->vao,
+                    chunk->vbo,
+                    chunk->indexCount,
+                    chunk->Mesh.size()*sizeof(Chunk::Vertex),
+                    chunk->Mesh.capacity()*sizeof(Chunk::Vertex),
+                    chunk->Mesh.size()/3,
+                    0
+                });
+                chunk->Mesh.clear();
+                chunk->Mesh.shrink_to_fit();
             }
         }
-        PerfS.meshOut = time.ElapsedMs();
+        PerfS.mesh.Stop();
 
         //-------------------------
         // Drawing Mesh to Screen
         //-------------------------
-        time.Reset();
+        PerfS.render.Reset();
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
@@ -320,18 +314,18 @@ void Game::MainLoop() {
         }
         glDisable(GL_CULL_FACE);
 
-        PerfS.render = time.ElapsedMs();
+        PerfS.render.Stop();
 
         //-------------------------
         // GUI - My Own GUI Engine
         //-------------------------
-        time.Reset();
+        PerfS.gui.Reset();
         gui.backend.ResetFrame();
         gui.Update();
         gui.Generate();
         gui.backend.SendMesh();
         gui.backend.RenderFrame();
-        PerfS.gui = time.ElapsedMs();
+        PerfS.gui.Stop();
 
         //-------------------------
         // Out Of VRam Error
@@ -359,15 +353,15 @@ void Game::MainLoop() {
         }
         // --------------------------
         // Bloom
-        time.Reset();
+        PerfS.bloom.Reset();
         bloom.Extract(sceneTex);
         bloom.Blur();
         bloom.Combine(sceneTex);
-        PerfS.bloom = time.ElapsedMs();
+        PerfS.bloom.Stop();
 
         // Update Screen
         glfwSwapBuffers(window);
-        PerfS.EntireTime = FrameTime.ElapsedMs();
+        PerfS.EntireTime.Stop();
         game.FPS = Fps.End();
     }
     GenerateChunk.Stop();

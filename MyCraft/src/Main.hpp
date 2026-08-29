@@ -8,15 +8,12 @@
 
 #include "Render/SkyBox/SkyBox.hpp"
 #include "Render/Bloom/Bloom.hpp"
-
 #include "Utils/FPS.hpp"
+
 #include "Utils/Settings.hpp"
-#include "Utils/Timer.hpp"
 
 class Game {
 private:
-    Timer time;
-    Timer FrameTime;
     FPS Fps;
     Movement movement = {};
     Gui gui = {};

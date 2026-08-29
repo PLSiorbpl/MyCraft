@@ -67,6 +67,8 @@ public:
     // Widgets
     bool Button(const gui::Layout &layout, const gui::ButtonStyle &style, const gui::Label &label, gui::Animation_State<glm::vec2>* state = nullptr);
     void ProgressBar(const gui::Layout& layout, const gui::ProgressStyle& style, const gui::Label* label = nullptr);
+    void TimeBar(const gui::Layout& layout, const gui::TimeSegment* segments, int count, double total);
+    void TimeLegendRow(const gui::Layout& row, const gui::TimeSegment& segment);
     void Text(const glm::vec2& Pos, const gui::Label& label);
     bool TextInput(const gui::Layout& layout, const gui::TextInputStyle& style, gui::Label& label, gui::Animation_State<glm::vec2>* state = nullptr);
     void Slider(const gui::Layout& layout, gui::SliderStyle &style, const gui::Label& label);

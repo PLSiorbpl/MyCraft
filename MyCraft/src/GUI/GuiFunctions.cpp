@@ -4,6 +4,7 @@
 #include "Common/Gui_Types.hpp"
 #include <Utils/InputManager.hpp>
 #include "World/Chunk.hpp"
+#include <format>
 
 using namespace gui;
 
@@ -150,6 +151,37 @@ void Gui::ProgressBar(const Layout& layout, const ProgressStyle& style, const La
         const glm::vec2 TextPos = AnchorText(Pos, layout.Size, *label);
         Text(TextPos, *label);
     }
+}
+
+// {[  mesh  ][chunk][   render   ][ other ]}
+void Gui::TimeBar(const Layout& layout, const TimeSegment* segments, const int count, const double total) {
+    DrawRectangle(layout, {.BgColor = rgba(0x303030)});
+    if (segments == nullptr || count <= 0 || total <= 0.0)
+        return;
+
+    Layout segment = {.Anchor = Anch::TopLeft, .Size = {}, .Offset = {}, .Parent = &layout};
+    float x = 0.0f;
+    for (int i = 0; i < count; i++) {
+        const float width = layout.Size.x * static_cast<float>(segments[i].value / total);
+        if (width <= 0.0f)
+            continue;
+        segment.Size = {width, layout.Size.y};
+        segment.Offset = {x, 0.0f};
+        DrawRectangle(segment, {.BgColor = segments[i].color});
+        x += width;
+    }
+}
+
+// [color] name .............. value
+void Gui::TimeLegendRow(const Layout& row, const TimeSegment& segment) {
+    DrawRectangle({.Anchor = Anch::TopLeft, .Size = {4, 4}, .Offset = {0, 0.5f}, .Parent = &row}, {.BgColor = segment.color});
+
+    const glm::vec2 Pos = Anchor(row);
+    Text(Pos, {.text = segment.name, .Style = {.Scale = 0.5}, .Offset = {6, 0}});
+
+    const std::string value = std::format("{:.3f}ms", segment.value);
+    const glm::vec2 Size = MeasureText({.text = value, .Style = {.Scale = 0.5}});
+    Text(Pos, {.text = value, .Style = {.Scale = 0.5}, .Offset = {row.Size.x - Size.x, 0}});
 }
 
 void Gui::Slider(const Layout &layout, SliderStyle &style, const Label &label) {

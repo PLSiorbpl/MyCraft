@@ -5,6 +5,7 @@
 out/
 build/
 cmake-build-debug/
+/.codex/config.toml
 
 # Windows
 Thumbs.db

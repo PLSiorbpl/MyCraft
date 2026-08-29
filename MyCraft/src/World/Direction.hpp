@@ -39,6 +39,18 @@ inline std::string Direction_to_String(const Direction dir) {
     }
 }
 
+inline std::string Direction_to_Axis(const Direction dir) {
+    switch (dir) {
+        case Direction::West: return "X-";
+        case Direction::East: return "X+";
+        case Direction::Down: return "Y-";
+        case Direction::Up: return "Y+";
+        case Direction::North: return "Z-";
+        case Direction::South: return "Z+";
+        default: return "All";
+    }
+}
+
 inline Direction Opposite(const Direction dir) {
     switch (dir) {
         case Direction::West: return Direction::East;

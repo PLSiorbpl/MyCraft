@@ -8,6 +8,7 @@
     #include <psapi.h>
 #endif
 
+#include "Timer.hpp"
 #include "Network/Network.hpp"
 
 struct Game_Variables {
@@ -70,17 +71,16 @@ struct Game_Settings {
 
 struct PerfStats {
     // Times in ms
-    double pollevents = 0;
-    double chunk = 0;
-    double meshIn = 0;
-    double meshOut = 0;
-    double render = 0;
-    double skybox = 0;
-    double bloom = 0;
-    double remove = 0;
-    double tick = 0;
-    double gui = 0;
-    double EntireTime = 0;
+    Timer pollevents;
+    Timer chunk;
+    Timer mesh;
+    Timer render;
+    Timer skybox;
+    Timer bloom;
+    Timer remove;
+    Timer tick;
+    Timer gui;
+    Timer EntireTime;
     // OpenGL Version
     int major = 0, minor = 0;
     bool isModernGL = false;

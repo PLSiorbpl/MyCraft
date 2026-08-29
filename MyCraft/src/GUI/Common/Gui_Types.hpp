@@ -132,6 +132,13 @@ namespace gui {
         Widget_Direction direction = Widget_Direction::Right;
     };
 
+    // slice of a TimeBar
+    struct TimeSegment {
+        const char* name = "";
+        double value = 0; // ms
+        glm::vec4 color = {};
+    };
+
     struct BoxStyle {
         glm::vec4 BgColor;
         Texture_Id TextureId = Texture_Id::None;
