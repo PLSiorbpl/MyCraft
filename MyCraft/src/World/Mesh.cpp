@@ -8,10 +8,10 @@ void Mesh::GenerateMesh(Chunk& chunk, std::vector<Chunk::Vertex> *vertices) {
     const int chunkX = chunk.chunkX;
     const int chunkZ = chunk.chunkZ;
 
-    const auto cxp = World_Map::find_chunk(chunkX + 1, chunkZ);
-    const auto cxn = World_Map::find_chunk(chunkX - 1, chunkZ);
-    const auto czp = World_Map::find_chunk(chunkX, chunkZ + 1);
-    const auto czn = World_Map::find_chunk(chunkX, chunkZ - 1);
+    const auto cxp = World_Map::find_shared_chunk(chunkX + 1, chunkZ);
+    const auto cxn = World_Map::find_shared_chunk(chunkX - 1, chunkZ);
+    const auto czp = World_Map::find_shared_chunk(chunkX, chunkZ + 1);
+    const auto czn = World_Map::find_shared_chunk(chunkX, chunkZ - 1);
 
     std::array<std::vector<uint32_t>, 6> Occlusion;
     for (auto& v : Occlusion)

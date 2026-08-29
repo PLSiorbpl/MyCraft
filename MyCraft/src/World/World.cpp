@@ -6,7 +6,7 @@
 #include "Tick/Tick.hpp"
 
 namespace World_Map {
-    std::unordered_map<std::pair<int, int>, std::unique_ptr<Chunk>, PairHash> World;
+    std::unordered_map<std::pair<int, int>, std::shared_ptr<Chunk>, PairHash> World;
     std::vector<Render_Info> Render_List;
 
     void Set_Dirty(const int chunkx, const int chunkz) {

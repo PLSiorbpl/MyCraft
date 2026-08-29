@@ -6,6 +6,7 @@
 
 #include "Chunk.hpp"
 #include "Direction.hpp"
+#include "Render/Camera.hpp"
 
 namespace World_Map {
     struct PairHash {
@@ -31,13 +32,31 @@ namespace World_Map {
         int Delete;
     };
 
-    extern std::unordered_map<std::pair<int, int>, std::unique_ptr<Chunk>, PairHash> World;
+    extern std::unordered_map<std::pair<int, int>, std::shared_ptr<Chunk>, PairHash> World;
     extern std::vector<Render_Info> Render_List;
+
+    inline bool is_edge(const Chunk* chunk) noexcept {
+        if (!chunk) return false;
+
+        const int dx = chunk->chunkX - Camera.Chunk.x;
+        const int dz = chunk->chunkZ - Camera.Chunk.z;
+
+        const int dist = std::max(std::abs(dx), std::abs(dz));
+
+        return dist > Camera.RenderDistance;
+    }
 
     inline Chunk *find_chunk(const int chunkx, const int chunkz) {
         const auto c = World.find({chunkx, chunkz});
         if (c != World.end())
             return c->second.get();
+        return nullptr;
+    }
+
+    inline std::shared_ptr<Chunk> find_shared_chunk(const int chunkx, const int chunkz) {
+        const auto c = World.find({chunkx, chunkz});
+        if (c != World.end())
+            return c->second;
         return nullptr;
     }
 

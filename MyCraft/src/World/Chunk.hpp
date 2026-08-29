@@ -1,7 +1,9 @@
 #pragma once
 #include <array>
+#include <mutex>
 #include <glm/glm.hpp>
 #include <vector>
+#include <atomic>
 
 #include "Block.hpp"
 
@@ -31,6 +33,8 @@ void init_block_state();
 
 class Chunk {
 public:
+    mutable std::mutex stateMutex;
+
     struct block {
         block_type id = block_type::Air;
         uint16_t state = 0; // 0 - global  1-...
@@ -59,14 +63,14 @@ public:
     int chunkX, chunkZ;
 
     // Mesh Stuff
-    bool has_terrain = false;
-    bool is_edge = false;
-    bool in_mesher = false;
-    bool pending_mesh = false;
-    bool has_mesh = false;
-    bool send_mesh = false;
-    bool InRender = false;
-    bool DirtyFlag = true;
+    std::atomic<bool> has_terrain = false;
+    std::atomic<bool> is_edge = false;
+    std::atomic<bool> in_mesher = false;
+    std::atomic<bool> pending_mesh = false;
+    std::atomic<bool> has_mesh = false;
+    std::atomic<bool> send_mesh = false;
+    std::atomic<bool> InRender = false;
+    std::atomic<bool> DirtyFlag = true;
 
     std::vector<Vertex> Mesh;
     GLuint vao = 0;
@@ -92,6 +96,7 @@ public:
 
     [[nodiscard]]
     Block* get_state(const int x, const int y, const int z) noexcept {
+        std::lock_guard lock(stateMutex);
         const auto& b = blocks[index(x, y, z)];
 
         if (b.state == 0) {
@@ -105,6 +110,7 @@ public:
 
     [[nodiscard]]
     const Block* get_state(const int x, const int y, const int z) const noexcept {
+        std::lock_guard lock(stateMutex);
         const auto& b = blocks[index(x, y, z)];
 
         if (b.state == 0)
@@ -114,6 +120,7 @@ public:
     }
 
     void create_state(const int x, const int y, const int z) {
+        std::lock_guard lock(stateMutex);
         auto &b = blocks[index(x, y, z)];
         if (b.state == 0 && block_cache[static_cast<size_t>(b.id)]->needsState()) {
             block_state.push_back(block_cache[static_cast<size_t>(b.id)]->clone());
@@ -123,6 +130,7 @@ public:
     }
 
     void set(const int x, const int y, const int z, const block& block) {
+        std::lock_guard lock(stateMutex);
         auto &b = blocks[index(x, y, z)];
         if (b.state != 0) {
             const size_t removeIdx = b.state - 1;

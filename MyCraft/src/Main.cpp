@@ -203,6 +203,7 @@ void Game::MainLoop() {
         {
             std::lock_guard lock(mesher.meshInMutex);
             for (const auto chunk : mesher.pendingChunks) {
+                chunk->is_edge = World_Map::is_edge(chunk);
                 chunk->pending_mesh = false;
                 if (!chunk->has_terrain || chunk->is_edge || !chunk->DirtyFlag) continue;
                 mesher.meshQueue.emplace(chunk->chunkX, chunk->chunkZ);
@@ -228,12 +229,12 @@ void Game::MainLoop() {
                 if (mesh.R == result::Invalid_ptr) continue;
                 const auto chunk = World_Map::find_chunk(mesh.chunkX, mesh.chunkZ);
 
-                if (mesh.R == result::Bad_Flags) {
-                    chunk->in_mesher = false;
-                    continue;
-                }
-
                 if (chunk) {
+                    if (mesh.R == result::Bad_Flags) {
+                        chunk->in_mesher = false;
+                        continue;
+                    }
+
                     if (mesh.R == result::Missing_N) {
                         chunk->in_mesher = false;
                         mesher.pendingChunks.push_back(chunk);

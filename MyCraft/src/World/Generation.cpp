@@ -1,7 +1,6 @@
 #include <glad/glad.h>
 #include "Generation.hpp"
 #include <iostream>
-#include <ranges>
 
 #include "Mesh/Mesh.hpp"
 #include "Render/Camera.hpp"
@@ -56,7 +55,7 @@ void ChunkGeneration::GenerateChunk() {
             GenQueue.pop();
         }
 
-        auto data = std::make_unique<Chunk>();
+        auto data = std::make_shared<Chunk>();
 
         Terrain.Generate_Terrain_Chunk(*data, chunkPos.first, chunkPos.second);
 
@@ -81,7 +80,7 @@ void ChunkGeneration::RemoveChunks() {
 
         const int dist = std::max(std::abs(dx), std::abs(dz));
 
-        if (dist > Camera.RenderDistance+1 && !it->second->in_mesher) {
+        if (dist > Camera.RenderDistance+1) {
             toRemove.push_back(it);
         }
     }
