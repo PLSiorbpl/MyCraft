@@ -3,6 +3,7 @@
 in vec2 FragPos;
 in vec4 TexCoord;
 flat in uint Flags;
+in vec4 Color;
 
 out vec4 FragColor;
 
@@ -26,7 +27,7 @@ void main() {
         } else if (Get(Flags, 2)) {
             // Font
             float tex = texture2D(FontTexture, TexCoord.xy).a;
-            color = vec4(vec3(0.9647f, 0.9569f, 0.9255f), tex);
+            color = vec4(Color.rgb, tex);
         }
     } else {
         color = vec4(TexCoord);

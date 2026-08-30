@@ -130,8 +130,6 @@ bool Game::Init_Settings(const std::string& Path) {
     game.Max_Ram = Settings.Get<int>("RAM", 2048);
     game.V_Sync = Settings.Get<int>("V-Sync", 0);
 
-    game.Mesh_Updates = Settings.Get<int>("Mesh Updates", 0);
-    game.Lazy_Mesh_Updates = Settings.Get<int>("Lazy Mesh Updates", 0);
     game.ramHandle = Settings.Get<int>("Out Of ram", 1);
 
     // World Generation:

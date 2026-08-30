@@ -21,6 +21,7 @@
 #include "Tick/Tick.hpp"
 #include "Shader_Utils/Shader.hpp"
 #include "World/Mesh/Mesh.hpp"
+#include "Entities/Entities.hpp"
 
 void framebuffer_size_callback(GLFWwindow* window, const int width, const int height) {
     game_settings.width = width;
@@ -127,9 +128,7 @@ void Game::MainLoop() {
 
         PerfS.chunk.Reset();
         if (game.ChunkUpdated) {
-            if (game.World_Updates == 0) {
                 GenerateChunk.LookForChunks();
-            }
         }
 
         //-------------------------

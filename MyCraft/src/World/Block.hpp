@@ -11,10 +11,10 @@ public:
     [[nodiscard]] virtual Block* clone() const = 0;
     [[nodiscard]] virtual bool needsState() const { return false; }
 
-    Model *model;
-    glm::ivec2 uv;
-    bool is_solid;
-    bool is_transparent;
+    Model *model = nullptr;
+    glm::ivec2 uv = {};
+    bool is_solid = {};
+    bool is_transparent = {};
 
     virtual void onPlace(const glm::ivec3& pos, const glm::ivec2 &chunk, Direction dir) {}
     virtual uint8_t getPower(const glm::ivec3& pos, const glm::ivec2 &chunk, PowerType strong, const Direction dir) { return 0; }

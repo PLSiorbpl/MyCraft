@@ -57,38 +57,10 @@ void Gui::Text(const glm::vec2& Pos, const Label& label) {
         const auto Size = glm::vec2((glypW * label.Style.Scale), (glypH * label.Style.Scale));
         DrawRectangle(
             {.Anchor = Anch::None, .Size = Size, .Offset = Cursor},
-            {.BgColor = uv, .TextureId = Texture_Id::Font}
+            {.UV = uv, .TextureId = Texture_Id::Font, .Color = PackRGBA(label.Style.Color)}
         );
         Cursor += glm::vec2(Size.x - (label.Style.PaddingX * label.Style.Scale) - (Advance[idx] * label.Style.Scale), 0);
     }
-}
-
-bool Gui::UpdateText(TextCache& cache, const int value, const char* fmt) {
-    if (cache.i == value) return false;
-    cache.i = value;
-
-    char buf[128];
-    std::snprintf(buf, 64, fmt, value);
-    cache.text = buf;
-    return true;
-}
-
-bool Gui::UpdateText(TextCache& cache, const float value, const char* fmt) {
-    if (std::abs(cache.f - value) < 1e-5f) return false;
-    cache.f = value;
-    char buf[128];
-    std::snprintf(buf, sizeof(buf), fmt, value);
-    cache.text = buf;
-    return true;
-}
-
-bool Gui::UpdateText(TextCache& cache, const double value, const char* fmt) {
-    if (std::abs(cache.d - value) < 1e-9) return false;
-    cache.d = value;
-    char buf[128];
-    std::snprintf(buf, sizeof(buf), fmt, value);
-    cache.text = buf;
-    return true;
 }
 
 glm::vec4 Gui::Color(const glm::vec4& color, uint32_t &Flags) {
@@ -100,33 +72,34 @@ void Gui::DrawRectangle(const Layout& layout, const BoxStyle& style) {
     uint32_t Flags = 0;
     const glm::vec2 Pos = Anchor(layout);
     const glm::vec2 Size = layout.Size;
+    const uint32_t color = style.Color;
 
     glm::vec4 UV;
     if (style.TextureId == Texture_Id::None) {
         // Solid Color
-        UV = Color(style.BgColor, Flags);
-        backend.PushToMesh({Pos, UV, Flags});
-        backend.PushToMesh({Pos + glm::vec2(Size.x, 0.0f), UV, Flags});
-        backend.PushToMesh({Pos + glm::vec2(0.0f, Size.y), UV, Flags});
+        UV = Color(style.UV, Flags);
+        backend.PushToMesh({Pos                            , UV, Flags, color});
+        backend.PushToMesh({Pos + glm::vec2(Size.x, 0.0f), UV, Flags, color});
+        backend.PushToMesh({Pos + glm::vec2(0.0f, Size.y), UV, Flags, color});
 
-        backend.PushToMesh({Pos + Size, UV, Flags});
-        backend.PushToMesh({Pos + glm::vec2(Size.x, 0.0f), UV, Flags});
-        backend.PushToMesh({Pos + glm::vec2(0.0f, Size.y), UV, Flags});
+        backend.PushToMesh({Pos + Size                     , UV, Flags, color});
+        backend.PushToMesh({Pos + glm::vec2(Size.x, 0.0f), UV, Flags, color});
+        backend.PushToMesh({Pos + glm::vec2(0.0f, Size.y), UV, Flags, color});
     } else {
         // Texture
-        UV = Texture(style.TextureId, style.BgColor, Flags);
-        backend.PushToMesh({Pos, {UV.x, UV.y, 0, 0}, Flags});
-        backend.PushToMesh({Pos + glm::vec2(Size.x, 0.0f), {UV.z, UV.y, 0, 0}, Flags});
-        backend.PushToMesh({Pos + glm::vec2(0.0f, Size.y), {UV.x, UV.w, 0, 0}, Flags});
+        UV = Texture(style.TextureId, style.UV, Flags);
+        backend.PushToMesh({Pos                            , {UV.x, UV.y, 0, 0}  , Flags, color});
+        backend.PushToMesh({Pos + glm::vec2(Size.x, 0.0f), {UV.z, UV.y, 0, 0}, Flags, color});
+        backend.PushToMesh({Pos + glm::vec2(0.0f, Size.y), {UV.x, UV.w, 0, 0}, Flags, color});
 
-        backend.PushToMesh({Pos + Size, {UV.z, UV.w, 0, 0}, Flags});
-        backend.PushToMesh({Pos + glm::vec2(Size.x, 0.0f), {UV.z, UV.y, 0, 0}, Flags});
-        backend.PushToMesh({Pos + glm::vec2(0.0f, Size.y), {UV.x, UV.w, 0, 0}, Flags});
+        backend.PushToMesh({Pos + Size                     , {UV.z, UV.w, 0, 0}, Flags, color});
+        backend.PushToMesh({Pos + glm::vec2(Size.x, 0.0f), {UV.z, UV.y, 0, 0}  , Flags, color});
+        backend.PushToMesh({Pos + glm::vec2(0.0f, Size.y), {UV.x, UV.w, 0, 0}  , Flags, color});
     }
 }
 
 void Gui::ProgressBar(const Layout& layout, const ProgressStyle& style, const Label* label) {
-    const BoxStyle bstyle = {.BgColor = style.BgColor, .TextureId = style.TextureId};
+    const BoxStyle bstyle = {.UV = style.BgColor, .TextureId = style.TextureId};
     const glm::vec2 Pos = Anchor(layout);
     const float Progress = glm::clamp(style.Progress, 0.0f, 1.0f);
     Layout filled = layout;
@@ -155,33 +128,32 @@ void Gui::ProgressBar(const Layout& layout, const ProgressStyle& style, const La
 
 // {[  mesh  ][chunk][   render   ][ other ]}
 void Gui::TimeBar(const Layout& layout, const TimeSegment* segments, const int count, const double total) {
-    DrawRectangle(layout, {.BgColor = rgba(0x303030)});
+    DrawRectangle(layout, {.UV = rgba(0x303030)});
     if (segments == nullptr || count <= 0 || total <= 0.0)
         return;
 
     Layout segment = {.Anchor = Anch::TopLeft, .Size = {}, .Offset = {}, .Parent = &layout};
     float x = 0.0f;
     for (int i = 0; i < count; i++) {
-        const float width = layout.Size.x * static_cast<float>(segments[i].value / total);
+        const float width = layout.Size.x * static_cast<float>(segments[i].val / total);
         if (width <= 0.0f)
             continue;
         segment.Size = {width, layout.Size.y};
         segment.Offset = {x, 0.0f};
-        DrawRectangle(segment, {.BgColor = segments[i].color});
+        DrawRectangle(segment, {.UV = segments[i].color});
         x += width;
     }
 }
 
 // [color] name .............. value
-void Gui::TimeLegendRow(const Layout& row, const TimeSegment& segment) {
-    DrawRectangle({.Anchor = Anch::TopLeft, .Size = {4, 4}, .Offset = {0, 0.5f}, .Parent = &row}, {.BgColor = segment.color});
+void Gui::TimeLegendRow(const Layout& row, const TimeSegment& segment, const LegendStyle &style) {
+    DrawRectangle({.Anchor = Anch::TopLeft, .Size = style.Chip_size, .Offset = {0, 0.5f}, .Parent = &row}, {.UV = segment.color});
 
     const glm::vec2 Pos = Anchor(row);
-    Text(Pos, {.text = segment.name, .Style = {.Scale = 0.5}, .Offset = {6, 0}});
+    Text(Pos, {.text = segment.name, .Style = style.name, .Offset = {style.Chip_size.x+2, 0}});
 
-    const std::string value = std::format("{:.3f}ms", segment.value);
-    const glm::vec2 Size = MeasureText({.text = value, .Style = {.Scale = 0.5}});
-    Text(Pos, {.text = value, .Style = {.Scale = 0.5}, .Offset = {row.Size.x - Size.x, 0}});
+    const glm::vec2 Size = MeasureText({.text = segment.value, .Style = style.value});
+    Text(Pos, {.text = segment.value, .Style = style.value, .Offset = {row.Size.x - Size.x, 0}});
 }
 
 void Gui::Slider(const Layout &layout, SliderStyle &style, const Label &label) {
@@ -209,11 +181,11 @@ void Gui::Slider(const Layout &layout, SliderStyle &style, const Label &label) {
     }
 
     const glm::vec2 Text_pos = AnchorText(Pos, layout.Size, label);
-    DrawRectangle(layout,{.BgColor = style.BgColor, .TextureId = style.TextureId}); // Background
+    DrawRectangle(layout,{.UV = style.BgColor, .TextureId = style.TextureId}); // Background
     if (hover_slider)
         Text(Text_pos, {label.text, {{0.9647f, 0.9569f, 0.9255f, 0.5f}, label.Style.Scale, label.Style.PaddingX, label.Style.PaddingY}});
 
-    DrawRectangle(sl, {.BgColor = ActiveId == id ? style.ActiveSliderColor : style.SliderColor, .TextureId = style.TextureId}); // Slider
+    DrawRectangle(sl, {.UV = ActiveId == id ? style.ActiveSliderColor : style.SliderColor, .TextureId = style.TextureId}); // Slider
 
     if (!hover_slider)
         Text(Text_pos, label);
@@ -309,9 +281,9 @@ bool Gui::TextInput(const Layout &layout, const TextInputStyle &style, Label& la
     }
 
     if (state != nullptr) {
-        DrawRectangle({layout.Anchor, state->inter.getValue(), layout.Offset},{.BgColor = Col, .TextureId = style.style.TextureId});
+        DrawRectangle({layout.Anchor, state->inter.getValue(), layout.Offset},{.UV = Col, .TextureId = style.style.TextureId});
     } else {
-        DrawRectangle(layout,{.BgColor = Col, .TextureId = style.style.TextureId});
+        DrawRectangle(layout,{.UV = Col, .TextureId = style.style.TextureId});
     }
 
     if (!label.text.empty()) {
@@ -463,11 +435,11 @@ bool Gui::Button(const Layout &layout, const ButtonStyle &style, const Label &la
 
     if (state != nullptr) {
         const glm::vec2 TextPos = AnchorText(Pos, state->inter.getValue(), label);
-        DrawRectangle(layout.WithSize(state->inter.getValue()),{.BgColor = Col, .TextureId = style.TextureId});
+        DrawRectangle(layout.WithSize(state->inter.getValue()),{.UV = Col, .TextureId = style.TextureId});
         Text(TextPos, label);
     } else {
         const glm::vec2 TextPos = AnchorText(Pos, layout.Size, label);
-        DrawRectangle(layout,{.BgColor = Col, .TextureId = style.TextureId});
+        DrawRectangle(layout,{.UV = Col, .TextureId = style.TextureId});
         Text(TextPos, label);
     }
 

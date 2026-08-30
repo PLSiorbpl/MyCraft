@@ -24,10 +24,6 @@ struct Game_Variables {
     int V_Sync;
     float FOV;
     int FPS = 0;
-    int Mesh_Updates;
-    int Lazy_Mesh_Updates;
-    int World_Updates;
-    int Updates;
     bool Gui_Init = false;
     float DeltaTime;
     bool InServer = false;
@@ -70,7 +66,6 @@ struct Game_Settings {
 };
 
 struct PerfStats {
-    // Times in ms
     Timer pollevents;
     Timer chunk;
     Timer mesh;

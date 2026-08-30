@@ -58,14 +58,14 @@ void Gui::Inventory() {
         Layout Inventory_Slot_layout = {.Anchor = Anch::TopLeft, .Size = Inventory_Slot_Size, .Offset = {1, 1}, .Parent = &Inventory_layout};
         const Layout Item_layout = {.Anchor = Anch::Center, .Size = Inventory_Item_Size, .Offset = {0, 0}, .Parent = &Inventory_Slot_layout};
 
-        DrawRectangle(Inventory_layout, {.BgColor = rgba(0x202020), .TextureId = Texture_Id::None});
+        DrawRectangle(Inventory_layout, {.UV = rgba(0x202020), .TextureId = Texture_Id::None});
 
         for (int y = 0; y < 6; y++) {
             for (int x = 0; x < 10; x++) {
                 if (Button(Inventory_Slot_layout, {.BgColor = Slot, .HoverColor = Slot_Active, .TextureId = Texture_Id::Gui}, {})) {
                     item_selected = x+1+(y*10);
                 }
-                DrawRectangle(Item_layout, {.BgColor = {x+1+(y*10),0,0,0}, .TextureId = Texture_Id::Block});
+                DrawRectangle(Item_layout, {.UV = {x+1+(y*10),0,0,0}, .TextureId = Texture_Id::Block});
                 Inventory_Slot_layout.Move_X(1);
             }
             Inventory_Slot_layout.Move_Y(1);
@@ -73,7 +73,7 @@ void Gui::Inventory() {
         }
 
         if (item_selected != -1 && item_selected < static_cast<int>(block_type::_count)) {
-            DrawRectangle({.Size = Item_Size, .Offset = game_settings.Mouse}, {.BgColor = {item_selected,0,0,0}, .TextureId = Texture_Id::Block});
+            DrawRectangle({.Size = Item_Size, .Offset = game_settings.Mouse}, {.UV = {item_selected,0,0,0}, .TextureId = Texture_Id::Block});
         }
 
         Layout Slot_layout = {Anch::LeftCenter, Slot_Size, {0, 0}, &Hotbar_layout};
@@ -110,12 +110,12 @@ void Gui::Food_bar() {
 
     // Food
     Progress_layout.Parent = &Food_layout;
-    DrawRectangle(Food_layout, {.BgColor = rgba(0x404040)});
+    DrawRectangle(Food_layout, {.UV = rgba(0x404040)});
     ProgressBar(Progress_layout, {game.TimeOfDay, rgba(0xff8c00), Texture_Id::None, Widget_Direction::Right});
 
     // Water
     Progress_layout.Parent = &Water_layout;
-    DrawRectangle(Water_layout, {.BgColor = rgba(0x404040)});
+    DrawRectangle(Water_layout, {.UV = rgba(0x404040)});
     ProgressBar(Progress_layout, {game.TimeOfDay, rgba(0x00f7ff), Texture_Id::None, Widget_Direction::Left});
 }
 
@@ -136,10 +136,10 @@ void Gui::Crosschair() {
     const glm::vec4 color = rgba(0xffffffD9);
 
     auto Size = glm::vec2(0.5f, 5.0f);
-    DrawRectangle({.Anchor = Anch::Center, .Size = Size}, {.BgColor = color});
+    DrawRectangle({.Anchor = Anch::Center, .Size = Size}, {.UV = color});
 
     Size = glm::vec2(5.0f, 0.5f);
-    DrawRectangle({.Anchor = Anch::Center, .Size = Size}, {.BgColor = color});
+    DrawRectangle({.Anchor = Anch::Center, .Size = Size}, {.UV = color});
 }
 
 void Gui::Menu() {
@@ -284,15 +284,15 @@ void Gui::DebugScreen() {
     std::vector<TimeSegment> segments;
     segments.reserve(SourceCount + 1);
     for (const auto &[name, timer, color] : sources)
-        segments.push_back({.name = name, .value = timer->Avg(), .color = rgba(color)});
+        segments.push_back({.name = name, .value = std::format("{:.3f}ms", timer->Avg()), .val = timer->Avg(), .color = rgba(color)});
 
     double accounted = 0.0;
-    for (const auto &it : segments)
-        accounted += it.value;
+    for (const auto &it : sources)
+        accounted += it.timer->Avg();
     const double entire = PerfS.EntireTime.Avg();
     const double other = std::max(0.0, entire - accounted);
 
-    segments.push_back({.name = "Other", .value = other, .color = rgba(0x505050)});
+    segments.push_back({.name = "Other", .value = std::format("{:.3f}ms", other), .val = other, .color = rgba(0x505050)});
 
     std::vector<std::string> info;
     info.push_back(std::format("Pos: x: {:.1f} y: {:.1f} z: {:.1f}", Camera.Position.x, Camera.Position.y, Camera.Position.z));
@@ -312,7 +312,7 @@ void Gui::DebugScreen() {
     // Calculate Width
     float content_w = TextWidth(std::format("FPS: {}  {:.2f}ms", game.FPS, entire));
     for (const auto& segment : segments)
-        content_w = std::max(content_w, 4.0f + 2.0f + TextWidth(segment.name) + 6.0f + TextWidth(std::format("{:.3f}ms", segment.value)));
+        content_w = std::max(content_w, 4.0f + 2.0f + TextWidth(segment.name) + 6.0f + TextWidth(segment.value));
     for (const auto& line : info)
         content_w = std::max(content_w, TextWidth(line));
 
@@ -321,7 +321,7 @@ void Gui::DebugScreen() {
     const Layout box = {.Anchor = Anch::TopLeft, .Size = {inner_w + 4.0f, y}, .Offset = {1, 1}};
     Layout layout = {.Anchor = Anch::TopLeft, .Size = {0, 5}, .Offset = {2, 1}, .Parent = &box};
 
-    DrawRectangle(box, {.BgColor = rgba(0x101010E6)});
+    DrawRectangle(box, {.UV = rgba(0x101010E6)});
 
     // Header
     Text(Anchor(layout), {.text = std::format("FPS: {}  {:.2f}ms", game.FPS, entire), .Style = {.Scale = 0.5}});
@@ -333,7 +333,7 @@ void Gui::DebugScreen() {
 
     // Legend
     for (const auto& segment : segments) {
-        TimeLegendRow(layout.WithSize({inner_w, 5}), segment);
+        TimeLegendRow(layout.WithSize({inner_w, 5}), segment, {.name = {.Color = segment.color, .Scale = 0.5}, .value = {.Scale = 0.5}});
         layout.Move_Y();
     }
 

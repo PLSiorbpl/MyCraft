@@ -47,6 +47,10 @@ void GuiBackend::SendMesh() {
         glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(GuiVertex), reinterpret_cast<void *>(offsetof(GuiVertex, Flags)));
         glEnableVertexAttribArray(2);
 
+        // aColor (location = 3)
+        glVertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(GuiVertex), reinterpret_cast<void *>(offsetof(GuiVertex, Color)));
+        glEnableVertexAttribArray(3);
+
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
     }
@@ -78,6 +82,6 @@ void GuiBackend::RenderFrame() const {
     glDisable(GL_BLEND);
 }
 
-void GuiBackend::PushToMesh(const gui::GuiVertex &vertex) {
+void GuiBackend::PushToMesh(const GuiVertex &vertex) {
     Mesh.push_back(vertex);
 }

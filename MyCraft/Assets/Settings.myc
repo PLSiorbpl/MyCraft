@@ -13,8 +13,6 @@ Exposure=1.0f
 RAM=25000 // in MB
 V-Sync=1
 
-Mesh Updates=32
-Lazy Mesh Updates=24
 Out Of ram=1 // 1 - Dont Exit Program and change RenderDist by -1 | 0 - Exit Program (Crash)
 
 // World Generation:

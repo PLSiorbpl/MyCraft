@@ -34,6 +34,7 @@ namespace gui {
         glm::vec2 Pos;
         glm::vec4 UV;
         uint32_t Flags;
+        uint32_t Color;
         /*
             Flags Layout: (bits)
             0 - Describes if shader uses texture or solid color
@@ -134,14 +135,16 @@ namespace gui {
 
     // slice of a TimeBar
     struct TimeSegment {
-        const char* name = "";
-        double value = 0; // ms
+        std::string name;
+        std::string value;
+        double val;
         glm::vec4 color = {};
     };
 
     struct BoxStyle {
-        glm::vec4 BgColor;
+        glm::vec4 UV;
         Texture_Id TextureId = Texture_Id::None;
+        uint32_t Color;
     };
 
     struct ButtonStyle {
@@ -187,11 +190,17 @@ namespace gui {
         glm::vec2 Offset = {0.0f, 0.0f};
         Anch anchor = Anch::None;
 
-        Label WithText(const std::string &t) const {
+        [[nodiscard]] Label WithText(const std::string &t) const {
             Label result = *this;
             result.text = t;
             return result;
         }
+    };
+
+    struct LegendStyle {
+        glm::vec2 Chip_size = {4, 4};
+        TextStyle name = {.Color = {0.9647f, 0.9569f, 0.9255f, 0.0f}, .Scale = 1, .PaddingX = 1, .PaddingY = 0};
+        TextStyle value = {.Color = {0.9647f, 0.9569f, 0.9255f, 0.0f}, .Scale = 1, .PaddingX = 1, .PaddingY = 0};
     };
 
     struct Button_Widget {
@@ -199,16 +208,6 @@ namespace gui {
         ButtonStyle style;
         Label label;
         Animation_State<glm::vec2> state;
-    };
-
-    struct TextCache {
-        /*
-            stores last value to prevent rebuilding string every frame
-         */
-        int i = 0;
-        float f = 0.0001f;
-        double d = std::numeric_limits<double>::quiet_NaN();
-        std::string text;
     };
 
     enum class FlagBit : int {

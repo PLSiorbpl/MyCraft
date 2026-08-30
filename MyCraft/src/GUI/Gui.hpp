@@ -68,7 +68,7 @@ public:
     bool Button(const gui::Layout &layout, const gui::ButtonStyle &style, const gui::Label &label, gui::Animation_State<glm::vec2>* state = nullptr);
     void ProgressBar(const gui::Layout& layout, const gui::ProgressStyle& style, const gui::Label* label = nullptr);
     void TimeBar(const gui::Layout& layout, const gui::TimeSegment* segments, int count, double total);
-    void TimeLegendRow(const gui::Layout& row, const gui::TimeSegment& segment);
+    void TimeLegendRow(const gui::Layout& row, const gui::TimeSegment& segment, const gui::LegendStyle &style);
     void Text(const glm::vec2& Pos, const gui::Label& label);
     bool TextInput(const gui::Layout& layout, const gui::TextInputStyle& style, gui::Label& label, gui::Animation_State<glm::vec2>* state = nullptr);
     void Slider(const gui::Layout& layout, gui::SliderStyle &style, const gui::Label& label);
@@ -82,7 +82,7 @@ public:
     static glm::vec4 Texture(gui::Texture_Id tex, const glm::vec4 &Size, uint32_t &Flags);
     static glm::vec4 Gradient(float x, const glm::vec4& a, const glm::vec4& b);
     static glm::vec4 Gradient(float x, const glm::vec4& a, const glm::vec4& b, const glm::vec4& c);
-    static glm::vec4 Color(const glm::vec4& color, uint32_t &Flags) ;
+    static glm::vec4 Color(const glm::vec4& color, uint32_t &Flags);
     [[nodiscard]] static inline glm::vec4 rgba(const uint64_t color) {
         const float a = (color > 0xFFFFFFu) ? (color & 0xFF) / 255.0f : 1.0f;
         return {
@@ -93,17 +93,16 @@ public:
         };
     }
 
-    // Text Cache | Format
-    static bool UpdateText(gui::TextCache& cache, int value, const char* fmt = "");
-    static bool UpdateText(gui::TextCache& cache, float value, const char* fmt = "");
-    static bool UpdateText(gui::TextCache& cache, double value, const char* fmt = "");
-
     // Helpers
     [[nodiscard]] static inline int wrap(const int value, const int max) {
         return (value % max + max) % max;
     };
     [[nodiscard]] static inline bool MouseInRect(const glm::vec2 &Pos, const glm::vec2 &Size) {
         return (game_settings.Mouse.x >= Pos.x && game_settings.Mouse.y >= Pos.y && game_settings.Mouse.x <= Pos.x+Size.x && game_settings.Mouse.y <= Pos.y+Size.y);
+    }
+    static inline uint32_t PackRGBA(const glm::vec4& c) {
+        return (static_cast<uint32_t>(c.r * 255.0f) << 0) | (static_cast<uint32_t>(c.g * 255.0f) << 8)
+             | (static_cast<uint32_t>(c.b * 255.0f) << 16) | (static_cast<uint32_t>(c.a * 255.0f) << 24);
     }
 
     // Screens
