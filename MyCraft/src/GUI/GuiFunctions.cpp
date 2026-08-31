@@ -1,10 +1,12 @@
-#include <iostream>
 #include <glad/glad.h>
 #include "Gui.hpp"
-#include "Common/Gui_Types.hpp"
-#include <Utils/InputManager.hpp>
-#include "World/Chunk.hpp"
+#include <iostream>
 #include <format>
+
+#include <Utils/InputManager.hpp>
+#include "Common/Gui_Types.hpp"
+#include "World/Chunk.hpp"
+#include "Common/common.hpp"
 
 using namespace gui;
 
@@ -46,8 +48,7 @@ void Gui::Text(const glm::vec2& Pos, const Label& label) {
     constexpr int glypW = 8;
     constexpr int glypH = 9;
     glm::vec2 Cursor = Pos + label.Offset;
-    for (unsigned char c : label.text) {
-        if (c < ' ' || c > '~') c = '?';
+    ForEach_Glyph(label, [&](const unsigned char c, const uint32_t packed) {
         const int idx = c - ' ';
         const int col = idx % Cols;
         const int row = idx / Cols;
@@ -57,10 +58,10 @@ void Gui::Text(const glm::vec2& Pos, const Label& label) {
         const auto Size = glm::vec2((glypW * label.Style.Scale), (glypH * label.Style.Scale));
         DrawRectangle(
             {.Anchor = Anch::None, .Size = Size, .Offset = Cursor},
-            {.UV = uv, .TextureId = Texture_Id::Font, .Color = PackRGBA(label.Style.Color)}
+            {.UV = uv, .TextureId = Texture_Id::Font, .Color = packed}
         );
         Cursor += glm::vec2(Size.x - (label.Style.PaddingX * label.Style.Scale) - (Advance[idx] * label.Style.Scale), 0);
-    }
+    });
 }
 
 glm::vec4 Gui::Color(const glm::vec4& color, uint32_t &Flags) {
@@ -146,8 +147,8 @@ void Gui::TimeBar(const Layout& layout, const TimeSegment* segments, const int c
 }
 
 // [color] name .............. value
-void Gui::TimeLegendRow(const Layout& row, const TimeSegment& segment, const LegendStyle &style) {
-    DrawRectangle({.Anchor = Anch::TopLeft, .Size = style.Chip_size, .Offset = {0, 0.5f}, .Parent = &row}, {.UV = segment.color});
+void Gui::LegendRow(const Layout& row, const TimeSegment& segment, const LegendStyle &style) {
+    DrawRectangle({.Anchor = Anch::TopLeft, .Size = style.Chip_size, .Offset = {0, 0.5f}, .Parent = &row}, {.UV = segment.color, .TextureId = segment.TextureId});
 
     const glm::vec2 Pos = Anchor(row);
     Text(Pos, {.text = segment.name, .Style = style.name, .Offset = {style.Chip_size.x+2, 0}});
@@ -350,15 +351,12 @@ glm::vec2 Gui::MeasureText(const Label& label) {
     constexpr int glypW = 8;
     constexpr int glypH = 9;
     glm::vec2 TextSize = {0, glypH * label.Style.Scale};
-    for (unsigned char c : label.text) {
-        if (c < ' ' || c > '~') c = '?';
+    ForEach_Glyph(label, [&](const unsigned char c, uint32_t) {
         const int idx = c - ' ';
-        const auto Size = glm::vec2(glypW * label.Style.Scale, glypH * label.Style.Scale);
-        TextSize.x += Size.x - (label.Style.PaddingX * label.Style.Scale) - (Advance[idx] * label.Style.Scale);
-    }
+        TextSize.x += (glypW * label.Style.Scale) - (label.Style.PaddingX * label.Style.Scale) - (Advance[idx] * label.Style.Scale);
+    });
     return TextSize;
 }
-
 glm::vec2 Gui::AnchorText(const glm::vec2& Pos, const glm::vec2& Size, const Label& label) {
     const glm::vec2 TextSize = MeasureText(label);
     constexpr glm::vec2 TextOffset = {0.0f, -1.0f};

@@ -76,8 +76,8 @@ void Game::MainLoop() {
         const glm::mat4 invView = glm::inverse(view);
         const glm::mat4 invProj = glm::inverse(proj);
 
-        //game.Seconds_elapsed += Fps.GetDeltaTime();
-        //game.TimeOfDay += Fps.GetDeltaTime() / game_settings.DayCycleDuration;
+        game.Seconds_elapsed += Fps.GetDeltaTime();
+        game.TimeOfDay += Fps.GetDeltaTime() / game_settings.DayCycleDuration;
         game.TimeOfDay = fmod(game.TimeOfDay, 1.0f);
 
         const float angle = game.TimeOfDay * glm::two_pi<float>();
@@ -86,10 +86,8 @@ void Game::MainLoop() {
         sunDir = glm::normalize(sunDir);
         const float dayFactor = glm::clamp(sunDir.y * 0.5f + 0.5f, 0.0f, 1.0f);
 
-        PerfS.skybox.Reset();
         skybox.Render_SkyBox(invProj, invView, sunDir);
         //skybox.Render_Clouds(invProj, invView, sunDir);
-        PerfS.skybox.Stop();
 
         glUseProgram(SH.Solid_Shader_Blocks.Shader);
         Shader::Set_Int(SH.Solid_Shader_Blocks.Shader, "BaseTexture", 0);
@@ -352,11 +350,9 @@ void Game::MainLoop() {
         }
         // --------------------------
         // Bloom
-        PerfS.bloom.Reset();
         bloom.Extract(sceneTex);
         bloom.Blur();
         bloom.Combine(sceneTex);
-        PerfS.bloom.Stop();
 
         // Update Screen
         glfwSwapBuffers(window);

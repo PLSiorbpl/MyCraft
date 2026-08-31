@@ -6,6 +6,8 @@
 #include "World/Chunk.hpp"
 #include <algorithm>
 #include <format>
+
+#include "Common/common.hpp"
 #include "Common/Textures.hpp"
 #include "World/Generation.hpp"
 #include "World/Mesh/Mesh.hpp"
@@ -130,6 +132,8 @@ void Gui::Health() {
     Text(Anchor(Text_layout), {.text = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"});
     Text_layout.Move_Y(10);
     Text(Anchor(Text_layout), {.text = "abcdefghijklmnopqrstuvwxyz"});
+    Text_layout.Move_Y(10);
+    Text(Anchor(Text_layout), {.text = "&aGreen &cRed #ff00ffPink #55ff55Alpha #ff1010&&## #ffff00literal &rreset #ffbad"});
 }
 
 void Gui::Crosschair() {
@@ -270,14 +274,12 @@ void Gui::DebugScreen() {
     struct Src { const char* name; const Timer* timer; uint64_t color; };
     static const Src sources[] = {
         {"Poll",   &PerfS.pollevents, 0xC8B560},
-        {"Skybox", &PerfS.skybox,     0x5B9BD5},
         {"Chunk",  &PerfS.chunk,      0x70C060},
         {"Remove", &PerfS.remove,     0xC07850},
         {"Tick",   &PerfS.tick,       0xB070C0},
         {"Mesh",   &PerfS.mesh,       0x50C0C0},
         {"Render", &PerfS.render,     0xE0C050},
         {"Gui",    &PerfS.gui,        0xD07090},
-        {"Bloom",  &PerfS.bloom,      0x90A0E0},
     };
     constexpr int SourceCount = std::size(sources);
 
@@ -292,18 +294,18 @@ void Gui::DebugScreen() {
     const double entire = PerfS.EntireTime.Avg();
     const double other = std::max(0.0, entire - accounted);
 
-    segments.push_back({.name = "Other", .value = std::format("{:.3f}ms", other), .val = other, .color = rgba(0x505050)});
+    segments.push_back({.name = "Other", .value = std::format("{:.3f}ms", other), .val = other, .color = rgba(0x606060)});
 
     std::vector<std::string> info;
-    info.push_back(std::format("Pos: x: {:.1f} y: {:.1f} z: {:.1f}", Camera.Position.x, Camera.Position.y, Camera.Position.z));
-    info.push_back(std::format("Chunk: x: {} z: {}", Camera.Chunk.x, Camera.Chunk.z));
-    info.push_back(std::format("Facing: {} ({})", Direction_to_String(Camera.direction), Direction_to_Axis(Camera.direction)));
+    info.push_back(std::format("#4FC3F7Pos&r: #90A4AEx&r: #B3E5FC{:.1f} #90A4AEy&r: #B3E5FC{:.1f} #90A4AEz&r: #B3E5FC{:.1f}", Camera.Position.x, Camera.Position.y, Camera.Position.z));
+    info.push_back(std::format("#2979FFChunk&r: #90A4AEx&r: #82B1FF{} #90A4AEz&r: #82B1FF{}", Camera.Chunk.x, Camera.Chunk.z));
+    info.push_back(std::format("#7C83FFFacing&r: #B39DDB{} #607D8B(#B39DDB{}#607D8B)", Direction_to_String(Camera.direction), Direction_to_Axis(Camera.direction)));
     if (block_cache[Camera.ItemHeld])
-        info.push_back(std::format("Block: {}", block_cache[Camera.ItemHeld]->get_name()));
+        info.push_back(std::format("#66BB6ABlock&r: #A5D6A7{}", block_cache[Camera.ItemHeld]->get_name()));
     if (Camera.looking_at)
-        info.push_back(std::format("Target: {}", Camera.looking_at->get_name()));
-    info.push_back(std::format("mesh: pending {} In {} Out {}", mesher.pendingChunks.size(), mesher.meshQueue.size(), mesher.meshOutQueue.size()));
-    info.push_back(std::format("chunk: In {} Out {}", GenerateChunk.GenQueue.size(), GenerateChunk.ReadyChunks.size()));
+        info.push_back(std::format("#EF5350Target&r: #FFCDD2{}", Camera.looking_at->get_name()));
+    info.push_back(std::format("#FFB74DMesh&r: #90A4AEpending #FFE0B2{} #90A4AEIn #FFE0B2{} #90A4AEOut #FFE0B2{}", mesher.pendingChunks.size(), mesher.meshQueue.size(), mesher.meshOutQueue.size()));
+    info.push_back(std::format("#FFD54FChunk&r: #90A4AEIn #FFE0B2{} #90A4AEOut #FFE0B2{}", GenerateChunk.GenQueue.size(), GenerateChunk.ReadyChunks.size()));
 
     const auto TextWidth = [](const std::string& text) {
         return MeasureText({.text = text, .Style = {.Scale = 0.5}}).x;
@@ -324,7 +326,7 @@ void Gui::DebugScreen() {
     DrawRectangle(box, {.UV = rgba(0x101010E6)});
 
     // Header
-    Text(Anchor(layout), {.text = std::format("FPS: {}  {:.2f}ms", game.FPS, entire), .Style = {.Scale = 0.5}});
+    Text(Anchor(layout), {.text = std::format("#70C060FPS&r: #B9F6CA{}  #B9F6CA{:.2f}#69F0AEms", game.FPS, entire), .Style = {.Scale = 0.5}});
     layout.Move_Y();
 
     // Frame time as progress bar: [poll | skybox | chunk | ... | other]
@@ -333,7 +335,7 @@ void Gui::DebugScreen() {
 
     // Legend
     for (const auto& segment : segments) {
-        TimeLegendRow(layout.WithSize({inner_w, 5}), segment, {.name = {.Color = segment.color, .Scale = 0.5}, .value = {.Scale = 0.5}});
+        LegendRow(layout.WithSize({inner_w, 5}), segment, {.name = {.Color = segment.color, .Scale = 0.5}, .value = {.Scale = 0.5}});
         layout.Move_Y();
     }
 

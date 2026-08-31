@@ -139,12 +139,13 @@ namespace gui {
         std::string value;
         double val;
         glm::vec4 color = {};
+        Texture_Id TextureId = Texture_Id::None;
     };
 
     struct BoxStyle {
         glm::vec4 UV;
         Texture_Id TextureId = Texture_Id::None;
-        uint32_t Color;
+        uint32_t Color = 0xFFFFFFFF;
     };
 
     struct ButtonStyle {
@@ -178,7 +179,7 @@ namespace gui {
     };
 
     struct TextStyle {
-        glm::vec4 Color = {0.9647f, 0.9569f, 0.9255f, 0.0f};
+        glm::vec4 Color = {0.9647f, 0.9569f, 0.9255f, 1.0f};
         float Scale = 1;
         int PaddingX = 1;
         int PaddingY = 0;
@@ -186,7 +187,7 @@ namespace gui {
 
     struct Label {
         std::string text = {};
-        TextStyle Style = {.Color = {0.9647f, 0.9569f, 0.9255f, 0.0f}, .Scale = 1, .PaddingX = 1, .PaddingY = 0};
+        TextStyle Style = {.Color = {0.9647f, 0.9569f, 0.9255f, 1.0f}, .Scale = 1, .PaddingX = 1, .PaddingY = 0};
         glm::vec2 Offset = {0.0f, 0.0f};
         Anch anchor = Anch::None;
 
@@ -199,8 +200,8 @@ namespace gui {
 
     struct LegendStyle {
         glm::vec2 Chip_size = {4, 4};
-        TextStyle name = {.Color = {0.9647f, 0.9569f, 0.9255f, 0.0f}, .Scale = 1, .PaddingX = 1, .PaddingY = 0};
-        TextStyle value = {.Color = {0.9647f, 0.9569f, 0.9255f, 0.0f}, .Scale = 1, .PaddingX = 1, .PaddingY = 0};
+        TextStyle name = {.Color = {0.9647f, 0.9569f, 0.9255f, 1.0f}, .Scale = 1, .PaddingX = 1, .PaddingY = 0};
+        TextStyle value = {.Color = {0.9647f, 0.9569f, 0.9255f, 1.0f}, .Scale = 1, .PaddingX = 1, .PaddingY = 0};
     };
 
     struct Button_Widget {

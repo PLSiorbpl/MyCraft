@@ -2,7 +2,7 @@
 Render Distance=32
 Generation Threads=3 // Recommended 1-4
 Mesher Threads=4 // Recommended 1-3
-Day Cycle Duration=30 // in seconds
+Day Cycle Duration=150 // in seconds
 
 // Bloom Settings:
 Blur Texture Scale=4   // (width/n, heigh/n)   n - Scale

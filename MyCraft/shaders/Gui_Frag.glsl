@@ -27,7 +27,7 @@ void main() {
         } else if (Get(Flags, 2)) {
             // Font
             float tex = texture2D(FontTexture, TexCoord.xy).a;
-            color = vec4(Color.rgb, tex);
+            color = vec4(Color.rgb, tex * Color.a);
         }
     } else {
         color = vec4(TexCoord);

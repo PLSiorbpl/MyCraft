@@ -70,8 +70,6 @@ struct PerfStats {
     Timer chunk;
     Timer mesh;
     Timer render;
-    Timer skybox;
-    Timer bloom;
     Timer remove;
     Timer tick;
     Timer gui;
